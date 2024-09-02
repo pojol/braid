@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+package router;
+
+service Acceptor {
+    rpc routing(routeReq) returns (routeRes) {}
+}
+
+message Header {
+//    string OrgService = 2;
+//    string OrgNode = 1;
+
+//    string TargetService = 3;
+//    string TargetNode = 4;
+
+//    string OrgActorID = 5;
+//    string OrgActorType = 6;
+
+    string TargetActorID = 7;
+    string TargetActorType = 8;
+
+    string Event = 9;
+    string Token = 10;
+    int64 Timestamp = 11;
+
+    map<string, string> Custom = 12;
+
+}
+
+message Message {
+    Header header = 1;
+    bytes body = 2;
+}
+
+message routeReq {
+    Message msg = 1;
+}
+
+message routeRes {
+    Message msg = 2;
+}
