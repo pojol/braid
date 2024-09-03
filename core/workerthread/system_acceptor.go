@@ -1,4 +1,4 @@
-package actor
+package workerthread
 
 import (
 	context "context"

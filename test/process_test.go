@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pojol/braid/core/actor"
 	"github.com/pojol/braid/core/cluster/node"
+	"github.com/pojol/braid/core/workerthread"
 	"github.com/pojol/braid/def"
 	"github.com/pojol/braid/router"
 
@@ -22,26 +22,26 @@ func TestApp(t *testing.T) {
 			Name: "test",
 		},
 	}
-	actor.Init(
-		actor.SystemService("", "001"),
-		actor.SystemActorConstructor(
-			[]actor.ActorConstructor{
-				{Type: def.MockActorEntity, Constructor: func(p *actor.CreateActorParm) actor.IActor {
-					return &userActorProxy{&actor.BaseActor{Id: "mockentity", Ty: def.MockActorEntity}}
+	workerthread.Init(
+		workerthread.SystemService("", "001"),
+		workerthread.SystemActorConstructor(
+			[]workerthread.ActorConstructor{
+				{Type: def.MockActorEntity, Constructor: func(p *workerthread.CreateActorParm) workerthread.IActor {
+					return &userActorProxy{&workerthread.BaseActor{Id: "mockentity", Ty: def.MockActorEntity}}
 				}},
-				{Type: def.MockActorClac, Constructor: func(p *actor.CreateActorParm) actor.IActor {
-					return &clacActorProxy{&actor.BaseActor{Id: "mockclac", Ty: def.MockActorClac}}
+				{Type: def.MockActorClac, Constructor: func(p *workerthread.CreateActorParm) workerthread.IActor {
+					return &clacActorProxy{&workerthread.BaseActor{Id: "mockclac", Ty: def.MockActorClac}}
 				}},
 			},
 		),
 	)
 
-	_, err = actor.Regist(def.MockActorClac, actor.CreateActorWithID("mockclac"))
+	_, err = workerthread.Regist(def.MockActorClac, workerthread.CreateActorWithID("mockclac"))
 	if err != nil {
 		panic(err) // 创建非法的 actor
 	}
 
-	_, err = actor.Regist(def.MockActorEntity, actor.CreateActorWithID("mockentity"))
+	_, err = workerthread.Regist(def.MockActorEntity, workerthread.CreateActorWithID("mockentity"))
 	if err != nil {
 		panic(err)
 	}
@@ -50,7 +50,7 @@ func TestApp(t *testing.T) {
 	assert.Equal(t, err, nil)
 
 	app.Update()
-	actor.Call(context.TODO(), router.Target{
+	workerthread.Call(context.TODO(), router.Target{
 		ID: "mockclac",
 		Ty: def.MockActorClac,
 		Ev: "clacA",

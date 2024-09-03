@@ -1,4 +1,4 @@
-package actor
+package workerthread
 
 import (
 	"context"
@@ -89,13 +89,6 @@ func Actors() []IActor {
 	return actors
 }
 
-func Send(ctx context.Context, tar router.Target, msg *router.MsgWrapper) error {
-	sys.RLock()
-	defer sys.RUnlock()
-
-	return nil
-}
-
 func Call(ctx context.Context, tar router.Target, msg *router.MsgWrapper) error {
 
 	// 设置消息头部信息
@@ -163,6 +156,17 @@ func handleRemoteCall(ctx context.Context, targetID string, msg *router.MsgWrapp
 
 	msg.Res = res.Msg
 
+	return nil
+}
+
+func Send(ctx context.Context, tar router.Target, msg *router.MsgWrapper) error {
+	sys.RLock()
+	defer sys.RUnlock()
+
+	return nil
+}
+
+func Pub(ctx context.Context, tar router.Target, msg *router.MsgWrapper) error {
 	return nil
 }
 

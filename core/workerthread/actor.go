@@ -1,36 +1,10 @@
-package actor
+package workerthread
 
 import (
 	"context"
 
 	"github.com/pojol/braid/router"
 )
-
-// 从一个 actor 发给另外一个 actor (理论上绝大部份的场景都应该避免这种形势的调用
-// a.system.call(ctx, addr:{target : $id, ev : ""}, msg, res interface{})
-
-// 领取邮件
-// a.system.callwait(ctx, addr: {target : $mail, ev : "recv", msg, res interface{}})
-
-// 私聊
-// a.system.call(ctx, addr : {target : $chat, ev : "ch_private", msg, interface{}})
-
-// 组队
-// a.system.call(ctx, addr : {target : $social, ev : "teamup", msg, res, interface{}})
-
-// 退出公会
-// a.system.call(ctx, addr : {target : $guild, ev :"exit", msg, res interface{}})
-
-// 给客户端同步消息
-// a.system.call(ctx, addr : {target : $client, ev : "push", msg, nil interface{}})
-
-// 广播消息给客户端
-// a.system.call(ctx, addr : {target : $client, ev : "bloadcast", msg, nil, interface{}})
-
-//
-// a.system.call(ctx, addr : {target : $login, "ev" : "login"})
-// a.system.call(ctx, addr : {target : $game, "ev" : "login"})
-// a.system.call(ctx, addr : {target : $entity, "ev" : "ev"})
 
 /*
 IActor 对线程（协程）的抽象，在Node(进程)中，是由1～N个actor执行具体的业务逻辑
@@ -67,6 +41,9 @@ type ISystem interface {
 
 	// 异步调用语义，不阻塞当前的goroutine，用于耗时较长的rpc调用
 	Send(ctx context.Context, tar router.Target, msg *router.MsgWrapper) error
+
+	// pubsub 的pub语义，用于将消息发布到某个 actor 的消息缓存队列中
+	Pub(ctx context.Context, tar router.Target, msg *router.MsgWrapper) error
 }
 
 // chlidren ...

@@ -1,4 +1,4 @@
-package actor
+package workerthread
 
 type SystemParm struct {
 	ServiceName string

@@ -1,6 +1,6 @@
 package node
 
-import "github.com/pojol/braid/core/actor"
+import "github.com/pojol/braid/core/workerthread"
 
 /*
 	init - 初始化进程
@@ -10,7 +10,7 @@ import "github.com/pojol/braid/core/actor"
 
 type INode interface {
 	Init(...Option) error
-	Update(...actor.IActor)
+	Update(...workerthread.IActor)
 	WaitClose()
 
 	ID() string

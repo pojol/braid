@@ -6,7 +6,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/pojol/braid/core/actor"
+	"github.com/pojol/braid/core/workerthread"
 )
 
 type process struct {
@@ -27,14 +27,14 @@ func (pn *process) Name() string {
 
 func (pn *process) Init(opts ...Option) error {
 
-	for _, a := range actor.Actors() {
+	for _, a := range workerthread.Actors() {
 		a.Init()
 	}
 
 	return nil
 }
 
-func (pn *process) Update(actors ...actor.IActor) {
+func (pn *process) Update(actors ...workerthread.IActor) {
 	for _, a := range actors {
 		go a.Update()
 	}

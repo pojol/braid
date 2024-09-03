@@ -3,20 +3,20 @@ package nodeprocess
 import (
 	"context"
 
-	"github.com/pojol/braid/core/actor"
+	"github.com/pojol/braid/core/workerthread"
 	"github.com/pojol/braid/def"
 	"github.com/pojol/braid/router"
 )
 
 type clacActorProxy struct {
-	*actor.BaseActor
+	*workerthread.BaseActor
 }
 
 func (a *clacActorProxy) Init() {
 	a.BaseActor.Init()
 
-	a.RegisterEventChain("clacA", &actor.DefaultChain{
-		Before: []actor.MiddlewareHandler{},
+	a.RegisterEventChain("clacA", &workerthread.DefaultChain{
+		Before: []workerthread.MiddlewareHandler{},
 		Handler: func(ctx context.Context, m *router.MsgWrapper) error {
 
 			//entity := m.Entity.(*PlayerEntity)
