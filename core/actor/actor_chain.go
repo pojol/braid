@@ -1,8 +1,9 @@
 package actor
 
 import (
-	"braid/router"
 	"context"
+
+	"github.com/pojol/braid/router"
 )
 
 type IChain interface {

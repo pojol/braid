@@ -1,14 +1,15 @@
 package actor
 
 import (
-	"braid/def"
-	"braid/lib/unbounded"
-	"braid/router"
 	"context"
 	"fmt"
 	"runtime/debug"
 	"sync/atomic"
 	"time"
+
+	"github.com/pojol/braid/def"
+	"github.com/pojol/braid/lib/unbounded"
+	"github.com/pojol/braid/router"
 )
 
 type RecoveryFunc func(interface{})

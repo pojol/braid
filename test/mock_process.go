@@ -1,12 +1,13 @@
 package nodeprocess
 
 import (
-	"braid/core/actor"
-	"braid/core/cluster/node"
 	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
+
+	"github.com/pojol/braid/core/actor"
+	"github.com/pojol/braid/core/cluster/node"
 )
 
 type ProcessNode struct {

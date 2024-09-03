@@ -1,8 +1,9 @@
 package mgo
 
 import (
-	"braid/lib/tracer"
 	"context"
+
+	"github.com/pojol/braid/lib/tracer"
 
 	"go.mongodb.org/mongo-driver/mongo"
 )

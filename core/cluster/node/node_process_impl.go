@@ -1,11 +1,12 @@
 package node
 
 import (
-	"braid/core/actor"
 	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
+
+	"github.com/pojol/braid/core/actor"
 )
 
 type process struct {

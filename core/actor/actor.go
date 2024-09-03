@@ -1,8 +1,9 @@
 package actor
 
 import (
-	"braid/router"
 	"context"
+
+	"github.com/pojol/braid/router"
 )
 
 // 从一个 actor 发给另外一个 actor (理论上绝大部份的场景都应该避免这种形势的调用

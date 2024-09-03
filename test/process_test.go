@@ -1,13 +1,14 @@
 package nodeprocess
 
 import (
-	"braid/core/actor"
-	"braid/core/cluster/node"
-	"braid/def"
-	"braid/router"
 	"context"
 	"testing"
 	"time"
+
+	"github.com/pojol/braid/core/actor"
+	"github.com/pojol/braid/core/cluster/node"
+	"github.com/pojol/braid/def"
+	"github.com/pojol/braid/router"
 
 	"github.com/stretchr/testify/assert"
 )

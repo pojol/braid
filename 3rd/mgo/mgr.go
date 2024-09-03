@@ -1,10 +1,11 @@
 package mgo
 
 import (
-	"braid/lib/tracer"
 	"context"
 	"fmt"
 	"sync"
+
+	"github.com/pojol/braid/lib/tracer"
 
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"

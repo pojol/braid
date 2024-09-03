@@ -1,13 +1,14 @@
 package actor
 
 import (
-	"braid/core/addressbook"
-	"braid/def"
-	"braid/lib/grpc"
-	"braid/router"
 	"context"
 	fmt "fmt"
 	"sync"
+
+	"github.com/pojol/braid/core/addressbook"
+	"github.com/pojol/braid/def"
+	"github.com/pojol/braid/lib/grpc"
+	"github.com/pojol/braid/router"
 )
 
 type NormalSystem struct {

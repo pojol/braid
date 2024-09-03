@@ -1,6 +1,6 @@
 package router
 
-import "braid/lib/warpwaitgroup"
+import "github.com/pojol/braid/lib/warpwaitgroup"
 
 type MsgWrapper struct {
 	Req    *Message // The proto-defined Message

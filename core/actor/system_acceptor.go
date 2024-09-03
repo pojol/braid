@@ -1,11 +1,12 @@
 package actor
 
 import (
-	"braid/lib/grpc"
-	"braid/router"
 	context "context"
 	fmt "fmt"
 	"runtime"
+
+	"github.com/pojol/braid/lib/grpc"
+	"github.com/pojol/braid/router"
 
 	realgrpc "google.golang.org/grpc"
 

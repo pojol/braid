@@ -1,10 +1,11 @@
 package nodeprocess
 
 import (
-	"braid/core/actor"
-	"braid/def"
-	"braid/router"
 	"context"
+
+	"github.com/pojol/braid/core/actor"
+	"github.com/pojol/braid/def"
+	"github.com/pojol/braid/router"
 )
 
 type clacActorProxy struct {

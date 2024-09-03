@@ -1,6 +1,6 @@
 package node
 
-import "braid/core/actor"
+import "github.com/pojol/braid/core/actor"
 
 /*
 	init - 初始化进程

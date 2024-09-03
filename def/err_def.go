@@ -1,6 +1,6 @@
 package def
 
-import "braid/lib/errcode"
+import "github.com/pojol/braid/lib/errcode"
 
 var (
 	ErrActorRepeatRegisterEvent = func(args ...interface{}) errcode.Code {

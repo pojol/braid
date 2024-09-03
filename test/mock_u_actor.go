@@ -1,10 +1,11 @@
 package nodeprocess
 
 import (
-	"braid/core/actor"
-	"braid/router"
 	"context"
 	"fmt"
+
+	"github.com/pojol/braid/core/actor"
+	"github.com/pojol/braid/router"
 )
 
 type userActorProxy struct {

@@ -1,4 +1,4 @@
-module braid
+module github.com/pojol/braid
 
 go 1.21.5
 

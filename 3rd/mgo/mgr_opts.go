@@ -1,8 +1,9 @@
 package mgo
 
 import (
-	"braid/lib/tracer"
 	"time"
+
+	"github.com/pojol/braid/lib/tracer"
 )
 
 type ConnInfo struct {
