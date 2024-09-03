@@ -6,6 +6,7 @@ import (
 
 	"github.com/opentracing/opentracing-go"
 	"github.com/pojol/braid/lib/tracer"
+	"github.com/uber/jaeger-client-go"
 )
 
 // MethonTracer methon tracer
