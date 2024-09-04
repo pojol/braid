@@ -15,7 +15,7 @@ type clacActorProxy struct {
 func (a *clacActorProxy) Init() {
 	a.BaseActor.Init()
 
-	a.RegisterEventChain("clacA", &workerthread.DefaultChain{
+	a.RegisterEvent("clacA", &workerthread.DefaultChain{
 		Before: []workerthread.MiddlewareHandler{},
 		Handler: func(ctx context.Context, m *router.MsgWrapper) error {
 
