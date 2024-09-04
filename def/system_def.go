@@ -12,3 +12,8 @@ const (
 	// - 注 这个符号只能用于 send 接口（异步调用
 	SymbolAll = "*"
 )
+
+const (
+	RedisAddressbookIDField = "braid.addressbook.id"
+	RedisAddressbookTyField = "braid.addressbook.ty."
+)

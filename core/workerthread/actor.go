@@ -31,7 +31,7 @@ type CreateFunc func(p *CreateActorParm) IActor
 
 type ISystem interface {
 	CreateActor() (IActor, error)
-	Regist(ty string, opts ...CreateActorOption) // 注册 actor 到节点内
+	Register(ctx context.Context, ty string, opts ...CreateActorOption)
 	Actors() []IActor
 
 	FindActor(id string) (IActor, error)

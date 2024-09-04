@@ -4,6 +4,7 @@ import (
 	context "context"
 	fmt "fmt"
 	"runtime"
+	"strconv"
 
 	"github.com/pojol/braid/lib/grpc"
 	"github.com/pojol/braid/router"
@@ -48,11 +49,11 @@ func recoverHandler(r interface{}) error {
 	return fmt.Errorf("[GRPC-SERVER RECOVER] err: %v stack: %s", err, buf)
 }
 
-func NewAcceptor(port string) {
+func acceptorInit(port int) {
 
 	acceptorptr = &acceptor{
 		server: grpc.BuildServerWithOption(
-			grpc.WithServerListen(":"+port),
+			grpc.WithServerListen(":"+strconv.Itoa(port)),
 			grpc.WithServerGracefulStop(),
 			grpc.ServerRegisterHandler(func(s *realgrpc.Server) {
 				router.RegisterAcceptorServer(s, &listen{})
@@ -64,11 +65,11 @@ func NewAcceptor(port string) {
 	acceptorptr.server.Init()
 }
 
-func Update() {
+func acceptorUpdate() {
 	acceptorptr.server.Run()
 }
 
-func Exit() {
+func acceptorExit() {
 	acceptorptr.server.Close()
 }
 

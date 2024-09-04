@@ -24,7 +24,9 @@ var sys *NormalSystem
 
 func Init(opts ...SystemOption) {
 
-	p := SystemParm{}
+	p := SystemParm{
+		Ip: "127.0.0.1",
+	}
 	for _, opt := range opts {
 		opt(&p)
 	}
@@ -32,12 +34,26 @@ func Init(opts ...SystemOption) {
 	// init grpc client
 	grpc.BuildClientWithOption()
 
-	sys.addressbook.NodeID = p.NodeID
-	sys.addressbook.ServiceName = p.ServiceName
+	sys.addressbook = addressbook.New(addressbook.AddressInfo{
+		Node:    p.NodeID,
+		Service: p.ServiceName,
+		Ip:      p.Ip,
+		Port:    p.Port,
+	})
 	sys.p = p
+
+	if p.Port != 0 {
+		acceptorInit(p.Port)
+	}
 }
 
-func Regist(ty string, opts ...CreateActorOption) (IActor, error) {
+func Run() {
+	if sys.p.Port != 0 {
+		acceptorUpdate()
+	}
+}
+
+func Register(ctx context.Context, ty string, opts ...CreateActorOption) (IActor, error) {
 
 	createParm := &CreateActorParm{}
 	for _, opt := range opts {
@@ -76,7 +92,7 @@ func Regist(ty string, opts ...CreateActorOption) (IActor, error) {
 	sys.actoridmap[createParm.ID] = actor
 	sys.Unlock()
 
-	sys.addressbook.Regist(ty, createParm.ID)
+	sys.addressbook.Register(ctx, ty, createParm.ID)
 
 	return actor, nil
 }
@@ -96,9 +112,24 @@ func Call(ctx context.Context, tar router.Target, msg *router.MsgWrapper) error 
 	msg.Req.Header.TargetActorID = tar.ID
 	msg.Req.Header.TargetActorType = tar.Ty
 
+	info := addressbook.AddressInfo{ActorId: tar.ID, ActorTy: tar.Ty}
+
+	if /*tar.ID == def.SymbolAll || */ tar.ID == def.SymbolWildcard {
+
+		lst, err := sys.addressbook.GetByType(ctx, tar.Ty)
+		if err != nil {
+			return err
+		}
+
+		info, err = sys.addressbook.GetWildcardActor(lst)
+		if err != nil {
+			return err
+		}
+	}
+
 	// 检查是否为本地调用
 	sys.RLock()
-	actorp, ok := sys.actoridmap[tar.ID]
+	actorp, ok := sys.actoridmap[info.ActorId]
 	sys.RUnlock()
 
 	if ok {
@@ -106,7 +137,7 @@ func Call(ctx context.Context, tar router.Target, msg *router.MsgWrapper) error 
 	}
 
 	// 处理远程调用
-	return handleRemoteCall(ctx, tar.ID, msg)
+	return handleRemoteCall(ctx, info.ActorId, msg)
 }
 
 func handleLocalCall(ctx context.Context, actorp IActor, msg *router.MsgWrapper) error {
@@ -138,7 +169,7 @@ func handleLocalCall(ctx context.Context, actorp IActor, msg *router.MsgWrapper)
 }
 
 func handleRemoteCall(ctx context.Context, targetID string, msg *router.MsgWrapper) error {
-	addrinfo, err := sys.addressbook.GetAddrInfo(targetID)
+	addrinfo, err := sys.addressbook.GetByID(ctx, targetID)
 	if err != nil {
 		return err
 	}
@@ -180,6 +211,12 @@ func FindActor(ctx context.Context, id string) (IActor, error) {
 	}
 
 	return nil, def.ErrSystemCantFindLocalActor(id)
+}
+
+func Exit() {
+	if sys.p.Port != 0 {
+		acceptorExit()
+	}
 }
 
 func init() {

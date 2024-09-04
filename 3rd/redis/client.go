@@ -142,6 +142,14 @@ func SIsMember(ctx context.Context, key string, member interface{}) *redis.BoolC
 	return client.SIsMember(ctx, key, member)
 }
 
+func SMembers(ctx context.Context, key string) *redis.StringSliceCmd {
+	span, err := doTracing(ctx, spanTag{"cmd", "SMembers"}, spanTag{"key", key})
+	if err == nil {
+		defer span.End(ctx)
+	}
+	return client.SMembers(ctx, key)
+}
+
 func SPop(ctx context.Context, key string) *redis.StringCmd {
 	span, err := doTracing(ctx, spanTag{"cmd", "SPop"}, spanTag{"key", key})
 	if err == nil {

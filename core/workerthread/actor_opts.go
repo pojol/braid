@@ -3,6 +3,8 @@ package workerthread
 type SystemParm struct {
 	ServiceName string
 	NodeID      string
+	Ip          string
+	Port        int
 
 	Constructors []ActorConstructor
 }
@@ -24,6 +26,12 @@ func SystemService(serviceName, nodeID string) SystemOption {
 func SystemActorConstructor(lst []ActorConstructor) SystemOption {
 	return func(sp *SystemParm) {
 		sp.Constructors = append(sp.Constructors, lst...)
+	}
+}
+
+func SystemWithAcceptor(port int) SystemOption {
+	return func(sp *SystemParm) {
+		sp.Port = port
 	}
 }
 

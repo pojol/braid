@@ -15,6 +15,7 @@ import (
 
 func TestApp(t *testing.T) {
 	var err error
+	ctx := context.TODO()
 
 	app := &ProcessNode{
 		p: node.Parm{
@@ -36,12 +37,12 @@ func TestApp(t *testing.T) {
 		),
 	)
 
-	_, err = workerthread.Regist(def.MockActorClac, workerthread.CreateActorWithID("mockclac"))
+	_, err = workerthread.Register(ctx, def.MockActorClac, workerthread.CreateActorWithID("mockclac"))
 	if err != nil {
 		panic(err) // 创建非法的 actor
 	}
 
-	_, err = workerthread.Regist(def.MockActorEntity, workerthread.CreateActorWithID("mockentity"))
+	_, err = workerthread.Register(ctx, def.MockActorEntity, workerthread.CreateActorWithID("mockentity"))
 	if err != nil {
 		panic(err)
 	}
