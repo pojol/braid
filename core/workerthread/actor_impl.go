@@ -48,12 +48,16 @@ func defaultRecovery(r interface{}) {
 	fmt.Printf("Recovered from panic: %v\nStack trace:\n%s\n", r, debug.Stack())
 }
 
-func (a *BaseActor) RegisterEventChain(ev string, chain IChain) error {
+func (a *BaseActor) RegisterEvent(ev string, chain IChain) error {
 	if _, exists := a.chains[ev]; exists {
 		return def.ErrActorRepeatRegisterEvent(ev)
 	}
 	a.chains[ev] = chain
 	return nil
+}
+
+func (a *BaseActor) RegisterTimer(dueTime int64, interval int64, f func() error, args interface{}) {
+
 }
 
 func (a *BaseActor) Call(ctx context.Context, tar router.Target, msg *router.MsgWrapper) error {

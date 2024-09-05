@@ -15,7 +15,7 @@ type userActorProxy struct {
 func (a *userActorProxy) Init() {
 	a.BaseActor.Init()
 
-	a.RegisterEventChain("print", &workerthread.DefaultChain{
+	a.RegisterEvent("print", &workerthread.DefaultChain{
 		Handler: func(ctx context.Context, m *router.MsgWrapper) error {
 
 			fmt.Println("entity actor recved:", string(m.Req.Body))
