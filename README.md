@@ -27,10 +27,45 @@ actor.RegisterEvent("10001", func(e *proto.UserEntity) *workerthread.DefaultChai
 })
 ```
 
-### register timer
-
 ### state machine
+> Both the handler in the timer and the chain handler in the event run in the same goroutine.
+```go
+actor.RegisterTimer(0, 1000, func(e *proto.ActivityEntity) error {
 
+    if e.State == Init {
+        // todo & state transitions
+        e.State = Running
+    } else if e.State == Running {
+
+    } else if e.State == Closing {
+
+    } else if e.State == Closed {
+
+    }
+
+    return nil
+})
+
+```
+
+### Call
+* Sync blocking
+```go
+// Send a mock_test event to actor_1, blocking and waiting
+system.Call(ctx, router.Target{ID: "actor_1", Ty: "mock_actor", Ev: "mock_test"}, nil)
+```
+
+* Asyn call
+```go
+// Send a mock_test event to any actor of type mock_actor, async call, and continue execution directly
+Send(ctx, router.Target{ID:def.SymbolWildcard, Ty: "mock_actor",Ev: "mock_test"}, nil)
+```
+
+* Pub
+```go
+// Publish a ps_mock_test event to mock_actor_1, which will be stored in the redis stream queue first, waiting for ps_mock_test to consume
+Pub(ctx, router.Target{ID: "mock_actor_1", Ty: "mock_actor", Ev: "ps_mock_test"}, nil)
+```
 
 ---
 
