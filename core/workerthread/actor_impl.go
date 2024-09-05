@@ -17,8 +17,9 @@ type MiddlewareHandler func(context.Context, *router.MsgWrapper) error
 type EventHandler func(context.Context, *router.MsgWrapper) error
 
 type BaseActor struct {
-	Id string
-	Ty string
+	Id  string
+	Ty  string
+	Sys ISystem
 	//msgCh    *unbounded.Unbounded
 	q        *mpsc.Queue
 	closed   int32
@@ -61,7 +62,7 @@ func (a *BaseActor) RegisterTimer(dueTime int64, interval int64, f func() error,
 }
 
 func (a *BaseActor) Call(ctx context.Context, tar router.Target, msg *router.MsgWrapper) error {
-	return Call(ctx, tar, msg)
+	return a.Sys.Call(ctx, tar, msg)
 }
 
 func (a *BaseActor) Received(msg *router.MsgWrapper) error {

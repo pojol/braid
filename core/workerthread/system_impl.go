@@ -20,15 +20,17 @@ type NormalSystem struct {
 	sync.RWMutex
 }
 
-var sys *NormalSystem
-
-func Init(opts ...SystemOption) {
+func BuildSystemWithOption(opts ...SystemOption) ISystem {
 
 	p := SystemParm{
 		Ip: "127.0.0.1",
 	}
 	for _, opt := range opts {
 		opt(&p)
+	}
+
+	sys := &NormalSystem{
+		actoridmap: make(map[string]IActor),
 	}
 
 	// init grpc client
@@ -43,17 +45,19 @@ func Init(opts ...SystemOption) {
 	sys.p = p
 
 	if p.Port != 0 {
-		acceptorInit(p.Port)
+		acceptorInit(sys, p.Port)
 	}
+
+	return sys
 }
 
-func Run() {
+func (sys *NormalSystem) Update() {
 	if sys.p.Port != 0 {
 		acceptorUpdate()
 	}
 }
 
-func Register(ctx context.Context, ty string, opts ...CreateActorOption) (IActor, error) {
+func (sys *NormalSystem) Register(ctx context.Context, ty string, opts ...CreateActorOption) (IActor, error) {
 
 	createParm := &CreateActorParm{}
 	for _, opt := range opts {
@@ -97,7 +101,7 @@ func Register(ctx context.Context, ty string, opts ...CreateActorOption) (IActor
 	return actor, nil
 }
 
-func Actors() []IActor {
+func (sys *NormalSystem) Actors() []IActor {
 	actors := []IActor{}
 	for _, v := range sys.actoridmap {
 		actors = append(actors, v)
@@ -105,7 +109,7 @@ func Actors() []IActor {
 	return actors
 }
 
-func Call(ctx context.Context, tar router.Target, msg *router.MsgWrapper) error {
+func (sys *NormalSystem) Call(ctx context.Context, tar router.Target, msg *router.MsgWrapper) error {
 
 	// 设置消息头部信息
 	msg.Req.Header.Event = tar.Ev
@@ -133,14 +137,14 @@ func Call(ctx context.Context, tar router.Target, msg *router.MsgWrapper) error 
 	sys.RUnlock()
 
 	if ok {
-		return handleLocalCall(ctx, actorp, msg)
+		return sys.handleLocalCall(ctx, actorp, msg)
 	}
 
 	// 处理远程调用
-	return handleRemoteCall(ctx, info.ActorId, msg)
+	return sys.handleRemoteCall(ctx, info.ActorId, msg)
 }
 
-func handleLocalCall(ctx context.Context, actorp IActor, msg *router.MsgWrapper) error {
+func (sys *NormalSystem) handleLocalCall(ctx context.Context, actorp IActor, msg *router.MsgWrapper) error {
 	root := msg.Wg.Count() == 0
 	if root {
 		msg.Done = make(chan struct{})
@@ -168,7 +172,7 @@ func handleLocalCall(ctx context.Context, actorp IActor, msg *router.MsgWrapper)
 	}
 }
 
-func handleRemoteCall(ctx context.Context, targetID string, msg *router.MsgWrapper) error {
+func (sys *NormalSystem) handleRemoteCall(ctx context.Context, targetID string, msg *router.MsgWrapper) error {
 	addrinfo, err := sys.addressbook.GetByID(ctx, targetID)
 	if err != nil {
 		return err
@@ -190,18 +194,18 @@ func handleRemoteCall(ctx context.Context, targetID string, msg *router.MsgWrapp
 	return nil
 }
 
-func Send(ctx context.Context, tar router.Target, msg *router.MsgWrapper) error {
+func (sys *NormalSystem) Send(ctx context.Context, tar router.Target, msg *router.MsgWrapper) error {
 	sys.RLock()
 	defer sys.RUnlock()
 
 	return nil
 }
 
-func Pub(ctx context.Context, tar router.Target, msg *router.MsgWrapper) error {
+func (sys *NormalSystem) Pub(ctx context.Context, tar router.Target, msg *router.MsgWrapper) error {
 	return nil
 }
 
-func FindActor(ctx context.Context, id string) (IActor, error) {
+func (sys *NormalSystem) FindActor(ctx context.Context, id string) (IActor, error) {
 	sys.RLock()
 	defer sys.RUnlock()
 
@@ -213,15 +217,8 @@ func FindActor(ctx context.Context, id string) (IActor, error) {
 	return nil, def.ErrSystemCantFindLocalActor(id)
 }
 
-func Exit() {
+func (sys *NormalSystem) Exit() {
 	if sys.p.Port != 0 {
 		acceptorExit()
-	}
-}
-
-func init() {
-	sys = &NormalSystem{
-		actoridmap:  make(map[string]IActor),
-		addressbook: &addressbook.AddressBook{},
 	}
 }

@@ -10,9 +10,9 @@ import "github.com/pojol/braid/core/workerthread"
 
 type INode interface {
 	Init(...Option) error
-	Update(...workerthread.IActor)
+	Update()
 	WaitClose()
 
 	ID() string
-	Name() string
+	System() workerthread.ISystem
 }

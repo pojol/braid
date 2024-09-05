@@ -13,29 +13,51 @@ type process struct {
 	p Parm
 }
 
-func NewProcess() INode {
-	return &process{}
+var pcs *process
+
+func BuildProcessWithOption(opts ...Option) INode {
+
+	p := Parm{
+		Ip: "127.0.0.1",
+	}
+
+	for _, opt := range opts {
+		opt(&p)
+	}
+
+	pcs = &process{
+		p: p,
+	}
+
+	return pcs
+}
+
+func Get() INode {
+	return pcs
 }
 
 func (pn *process) ID() string {
 	return pn.p.ID
 }
 
-func (pn *process) Name() string {
-	return pn.p.Name
+func (pn *process) System() workerthread.ISystem {
+	return pn.p.Sys
 }
 
 func (pn *process) Init(opts ...Option) error {
 
-	for _, a := range workerthread.Actors() {
+	for _, a := range pn.p.Sys.Actors() {
 		a.Init()
 	}
 
 	return nil
 }
 
-func (pn *process) Update(actors ...workerthread.IActor) {
-	for _, a := range actors {
+func (pn *process) Update() {
+
+	pn.p.Sys.Update()
+
+	for _, a := range pn.p.Sys.Actors() {
 		go a.Update()
 	}
 }

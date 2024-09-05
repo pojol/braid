@@ -11,7 +11,8 @@ import (
 )
 
 type ProcessNode struct {
-	p node.Parm
+	p   node.Parm
+	sys workerthread.ISystem
 }
 
 func New() *ProcessNode {
@@ -22,13 +23,13 @@ func (pn *ProcessNode) ID() string {
 	return pn.p.ID
 }
 
-func (pn *ProcessNode) Name() string {
-	return pn.p.Name
+func (pn *ProcessNode) System() workerthread.ISystem {
+	return pn.sys
 }
 
 func (pn *ProcessNode) Init(opts ...node.Option) error {
 
-	for _, a := range workerthread.Actors() {
+	for _, a := range pn.sys.Actors() {
 		a.Init()
 	}
 
@@ -36,7 +37,7 @@ func (pn *ProcessNode) Init(opts ...node.Option) error {
 }
 
 func (pn *ProcessNode) Update() {
-	for _, a := range workerthread.Actors() {
+	for _, a := range pn.sys.Actors() {
 		go a.Update()
 	}
 }

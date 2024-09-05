@@ -4,10 +4,14 @@ import (
 	"context"
 	"strconv"
 	"testing"
+	"time"
 
+	"github.com/google/uuid"
 	"github.com/pojol/braid/core/cluster/node"
+	"github.com/pojol/braid/core/workerthread"
 	"github.com/pojol/braid/def"
 	"github.com/pojol/braid/router"
+	"golang.org/x/exp/rand"
 )
 
 // 2节点	1w个actor	2跳
@@ -33,38 +37,62 @@ func Benchmark2Node1wActor2Jump(b *testing.B) {
 	ActorNum := 10000
 	JumpNum := 2
 
-	for i := 0; i < NodeNum; i++ {
-		node := &ProcessNode{p: node.Parm{ID: strconv.Itoa(i), Name: "node_" + strconv.Itoa(i)}}
+	actorjump1arr := []string{}
 
-		sys := NewSystem(
-			WithServiceInfo(),
-			WithActorConstructor(),
+	for i := 0; i < NodeNum; i++ {
+
+		sys := workerthread.BuildSystemWithOption(
+			workerthread.SystemActorConstructor(
+				[]workerthread.ActorConstructor{
+					{Type: def.MockActorEntity, Constructor: func(p *workerthread.CreateActorParm) workerthread.IActor {
+						return &mockEntityActor{
+							&workerthread.BaseActor{Id: "mockentity", Ty: def.MockActorEntity, Sys: p.Sys},
+						}
+					}},
+				},
+			),
+			workerthread.SystemService("service_"+strconv.Itoa(i), "node_"+strconv.Itoa(i)),
+			workerthread.SystemWithAcceptor(1000+i),
 		)
 
+		node := &ProcessNode{
+			p:   node.Parm{ID: strconv.Itoa(i)},
+			sys: sys,
+		}
+
 		for k := 0; k < JumpNum; k++ {
-			// register jump1
+			// register jump
 			for j := 0; j < ActorNum/JumpNum; j++ {
-				sys.Register(context.TODO(), def.MockActorClac, withid("actor_"+strconv.Itoa(k)+"_"+"uuid"))
+				uid := uuid.NewString()
+				aid := "actor_" + strconv.Itoa(k) + "_" + uid
+
+				if k == 0 { // jump 1
+					actorjump1arr = append(actorjump1arr, aid)
+				}
+
+				sys.Register(context.TODO(),
+					def.MockActorEntity,
+					workerthread.CreateActorWithID(aid))
 			}
 		}
 
-		node := NewProcessNode(
-			WithServiceInfo(),
-			WithSystem(sys),
-		)
-
 		node.Init()
 		node.Update()
-		defer node.Exit()
+		defer node.WaitClose()
 
 		nodes = append(nodes, node)
 	}
 
+	rand.Seed(uint64(time.Now().UnixNano()))
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
+
+		randomIndex := rand.Intn(len(actorjump1arr))
+
 		// 随机找一个第一跳的 actor 发送 event
-		nodes[0].Call(context.TODO(), 
-			router.Target{ID: "actor_0_"+map["randid"], Ty: def.MockActorClac}, 
+		nodes[0].System().Call(context.TODO(),
+			router.Target{ID: actorjump1arr[randomIndex], Ty: def.MockActorEntity},
 			&router.MsgWrapper{Req: &router.Message{Header: &router.Header{}}})
 	}
 

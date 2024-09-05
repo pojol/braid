@@ -41,11 +41,10 @@ type IActor interface {
 type CreateFunc func(p *CreateActorParm) IActor
 
 type ISystem interface {
-	CreateActor() (IActor, error)
-	Register(ctx context.Context, ty string, opts ...CreateActorOption)
+	Register(ctx context.Context, ty string, opts ...CreateActorOption) (IActor, error)
 	Actors() []IActor
 
-	FindActor(id string) (IActor, error)
+	FindActor(ctx context.Context, id string) (IActor, error)
 
 	// 同步调用语义（实际实现是异步的，每个调用都是在独立的goroutine中）
 	Call(ctx context.Context, tar router.Target, msg *router.MsgWrapper) error
@@ -55,6 +54,9 @@ type ISystem interface {
 
 	// pubsub 的pub语义，用于将消息发布到某个 actor 的消息缓存队列中
 	Pub(ctx context.Context, tar router.Target, msg *router.MsgWrapper) error
+
+	Update()
+	Exit()
 }
 
 // chlidren ...

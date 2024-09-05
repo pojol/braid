@@ -22,6 +22,7 @@ var acceptorptr *acceptor
 
 type listen struct {
 	router.AcceptorServer
+	sys ISystem
 }
 
 // Stack returns a formatted stack trace of the goroutine that calls it.
@@ -49,14 +50,14 @@ func recoverHandler(r interface{}) error {
 	return fmt.Errorf("[GRPC-SERVER RECOVER] err: %v stack: %s", err, buf)
 }
 
-func acceptorInit(port int) {
+func acceptorInit(sys ISystem, port int) {
 
 	acceptorptr = &acceptor{
 		server: grpc.BuildServerWithOption(
 			grpc.WithServerListen(":"+strconv.Itoa(port)),
 			grpc.WithServerGracefulStop(),
 			grpc.ServerRegisterHandler(func(s *realgrpc.Server) {
-				router.RegisterAcceptorServer(s, &listen{})
+				router.RegisterAcceptorServer(s, &listen{sys: sys})
 			}),
 			grpc.ServerAppendUnaryInterceptors(grpc_recovery.UnaryServerInterceptor(grpc_recovery.WithRecoveryHandler(recoverHandler))),
 		),
@@ -86,7 +87,7 @@ func (s *listen) Routing(ctx context.Context, msg *router.RouteReq) (*router.Rou
 		},
 	}
 
-	err := Call(ctx, router.Target{
+	err := s.sys.Call(ctx, router.Target{
 		ID: msg.Msg.Header.TargetActorID,
 		Ty: msg.Msg.Header.TargetActorType,
 		Ev: msg.Msg.Header.Event,

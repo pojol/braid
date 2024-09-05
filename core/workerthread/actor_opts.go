@@ -37,6 +37,7 @@ func SystemWithAcceptor(port int) SystemOption {
 
 type CreateActorParm struct {
 	ID     string
+	Sys    ISystem
 	InsPtr interface{}
 }
 

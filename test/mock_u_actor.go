@@ -8,11 +8,11 @@ import (
 	"github.com/pojol/braid/router"
 )
 
-type userActorProxy struct {
+type mockEntityActor struct {
 	*workerthread.BaseActor
 }
 
-func (a *userActorProxy) Init() {
+func (a *mockEntityActor) Init() {
 	a.BaseActor.Init()
 
 	a.RegisterEvent("print", &workerthread.DefaultChain{
