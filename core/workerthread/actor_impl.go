@@ -9,6 +9,7 @@ import (
 
 	"github.com/pojol/braid/def"
 	"github.com/pojol/braid/lib/mpsc"
+	"github.com/pojol/braid/lib/timewheel"
 	"github.com/pojol/braid/router"
 )
 
@@ -26,6 +27,9 @@ type BaseActor struct {
 	closeCh  chan struct{}
 	chains   map[string]IChain
 	recovery RecoveryFunc
+
+	tw       *timewheel.TimeWheel
+	lastTick time.Time
 }
 
 func (a *BaseActor) Type() string {
@@ -43,6 +47,9 @@ func (a *BaseActor) Init() {
 	a.closeCh = make(chan struct{})
 	a.chains = make(map[string]IChain)
 	a.recovery = defaultRecovery
+
+	a.tw = timewheel.New(10*time.Millisecond, 100) // 100个槽位，每个槽位10ms
+	a.lastTick = time.Now()
 }
 
 func defaultRecovery(r interface{}) {
@@ -57,8 +64,17 @@ func (a *BaseActor) RegisterEvent(ev string, chain IChain) error {
 	return nil
 }
 
-func (a *BaseActor) RegisterTimer(dueTime int64, interval int64, f func() error, args interface{}) {
+func (a *BaseActor) RegisterTimer(dueTime int64, interval int64, f func() error, args interface{}) *timewheel.Timer {
+	return a.tw.AddTimer(
+		time.Duration(dueTime)*time.Millisecond,
+		time.Duration(interval)*time.Millisecond,
+		f,
+		args,
+	)
+}
 
+func (a *BaseActor) RemoveTimer(t *timewheel.Timer) {
+	a.tw.RemoveTimer(t)
 }
 
 func (a *BaseActor) Call(ctx context.Context, tar router.Target, msg *router.MsgWrapper) error {
@@ -82,17 +98,18 @@ func (a *BaseActor) Update() {
 		for !a.q.Empty() {
 			time.Sleep(10 * time.Millisecond)
 		}
-		//for a.msgCh.Len() > 0 {
-		//	time.Sleep(10 * time.Millisecond)
-		//}
 		close(a.closeCh)
 	}
 
 	for {
+		now := time.Now()
+		if now.Sub(a.lastTick) >= a.tw.Interval() {
+			a.tw.Tick()
+			a.lastTick = now
+		}
+
 		select {
-		//case msgInterface := <-a.msgCh.Get():
 		case <-a.q.C:
-			//a.msgCh.Load() // 处理完之后从队列中丢弃
 			msgInterface := a.q.Pop()
 
 			msg, ok := msgInterface.(*router.MsgWrapper)
@@ -136,5 +153,5 @@ func (a *BaseActor) Update() {
 }
 
 func (a *BaseActor) Exit() {
-
+	a.tw.Shutdown()
 }

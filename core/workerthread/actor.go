@@ -3,6 +3,7 @@ package workerthread
 import (
 	"context"
 
+	"github.com/pojol/braid/lib/timewheel"
 	"github.com/pojol/braid/router"
 )
 
@@ -27,7 +28,7 @@ type IActor interface {
 	//  interval 每次tick的间隔时间
 	//  f 回调函数
 	//  args 可以将 actor 实体传递给 timer 回调
-	RegisterTimer(dueTime int64, interval int64, f func() error, args interface{})
+	RegisterTimer(dueTime int64, interval int64, f func() error, args interface{}) *timewheel.Timer
 
 	// Actor 的主循环，它在独立的 goroutine 中运行
 	Update()
