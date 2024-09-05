@@ -61,7 +61,3 @@ func TestApp(t *testing.T) {
 
 	time.Sleep(time.Second * 2)
 }
-
-func BenchmarkCall(b *testing.B) {
-
-}

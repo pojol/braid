@@ -18,10 +18,15 @@ type node struct {
 
 type Queue struct {
 	head, tail *node
+	C          chan int32
+	count      int32
 }
 
 func New() *Queue {
-	q := &Queue{}
+	q := &Queue{
+		C:     make(chan int32, 1),
+		count: 0,
+	}
 	stub := &node{}
 	q.head = stub
 	q.tail = stub
@@ -39,6 +44,8 @@ func (q *Queue) Push(x interface{}) {
 
 	// release node to consumer
 	atomic.StorePointer((*unsafe.Pointer)(unsafe.Pointer(&prev.next)), unsafe.Pointer(n))
+
+	q.setCount(1)
 }
 
 // Pop removes the item from the front of the queue or nil if the queue is empty
@@ -51,6 +58,7 @@ func (q *Queue) Pop() interface{} {
 		q.tail = next
 		v := next.val
 		next.val = nil
+		q.setCount(-1)
 		return v
 	}
 	return nil
@@ -63,4 +71,18 @@ func (q *Queue) Empty() bool {
 	tail := q.tail
 	next := (*node)(atomic.LoadPointer((*unsafe.Pointer)(unsafe.Pointer(&tail.next))))
 	return next == nil
+}
+
+func (q *Queue) Count() int32 {
+	return atomic.LoadInt32(&q.count)
+}
+
+func (q *Queue) setCount(delta int32) {
+	count := atomic.AddInt32(&q.count, delta)
+	if count > 0 {
+		select {
+		case q.C <- count:
+		default:
+		}
+	}
 }

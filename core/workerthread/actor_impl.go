@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/pojol/braid/def"
-	"github.com/pojol/braid/lib/unbounded"
+	"github.com/pojol/braid/lib/mpsc"
 	"github.com/pojol/braid/router"
 )
 
@@ -17,9 +17,10 @@ type MiddlewareHandler func(context.Context, *router.MsgWrapper) error
 type EventHandler func(context.Context, *router.MsgWrapper) error
 
 type BaseActor struct {
-	Id       string
-	Ty       string
-	msgCh    *unbounded.Unbounded
+	Id string
+	Ty string
+	//msgCh    *unbounded.Unbounded
+	q        *mpsc.Queue
 	closed   int32
 	closeCh  chan struct{}
 	chains   map[string]IChain
@@ -35,7 +36,8 @@ func (a *BaseActor) ID() string {
 }
 
 func (a *BaseActor) Init() {
-	a.msgCh = unbounded.NewUnbounded()
+	//a.msgCh = unbounded.NewUnbounded()
+	a.q = mpsc.New()
 	atomic.StoreInt32(&a.closed, 0) // 初始化closed状态为0（未关闭）
 	a.closeCh = make(chan struct{})
 	a.chains = make(map[string]IChain)
@@ -63,7 +65,8 @@ func (a *BaseActor) Received(msg *router.MsgWrapper) error {
 	msg.Wg.Add(1)
 
 	if atomic.LoadInt32(&a.closed) == 0 { // 并不是所有的actor都需要处理退出信号
-		a.msgCh.Put(msg)
+		a.q.Push(msg)
+		//a.msgCh.Put(msg)
 	}
 
 	return nil
@@ -71,16 +74,21 @@ func (a *BaseActor) Received(msg *router.MsgWrapper) error {
 
 func (a *BaseActor) Update() {
 	checkClose := func() {
-		for a.msgCh.Len() > 0 {
+		for !a.q.Empty() {
 			time.Sleep(10 * time.Millisecond)
 		}
+		//for a.msgCh.Len() > 0 {
+		//	time.Sleep(10 * time.Millisecond)
+		//}
 		close(a.closeCh)
 	}
 
 	for {
 		select {
-		case msgInterface := <-a.msgCh.Get():
-			a.msgCh.Load() // 处理完之后从队列中丢弃
+		//case msgInterface := <-a.msgCh.Get():
+		case <-a.q.C:
+			//a.msgCh.Load() // 处理完之后从队列中丢弃
+			msgInterface := a.q.Pop()
 
 			msg, ok := msgInterface.(*router.MsgWrapper)
 			if !ok {
