@@ -59,7 +59,7 @@ system.Call(ctx, router.Target{ID: "actor_1", Ty: "mock_actor", Ev: "mock_test"}
 ```go
 // Send a mock_test event to any actor of type mock_actor
 //  async call, and continue execution directly
-Send(ctx, router.Target{ID:def.SymbolWildcard, Ty: "mock_actor",Ev: "mock_test"}, nil)
+system.Send(ctx, router.Target{ID:def.SymbolWildcard, Ty: "mock_actor",Ev: "mock_test"}, nil)
 ```
 
 * Pub
@@ -67,7 +67,7 @@ Send(ctx, router.Target{ID:def.SymbolWildcard, Ty: "mock_actor",Ev: "mock_test"}
 // Publish a ps_mock_test event to mock_actor_1
 //    which will be stored in the redis stream queue first
 //    waiting for ps_mock_test to consume
-Pub(ctx, router.Target{ID: "mock_actor_1", Ty: "mock_actor", Ev: "ps_mock_test"}, nil)
+system.Pub(ctx, router.Target{ID: "mock_actor_1", Ty: "mock_actor", Ev: "ps_mock_test"}, nil)
 ```
 
 ---
