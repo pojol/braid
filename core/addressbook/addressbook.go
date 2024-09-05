@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"sync"
-	"time"
 
 	"github.com/pojol/braid/3rd/redis"
 	"github.com/pojol/braid/def"
@@ -22,13 +21,12 @@ type IAddressBook interface {
 }
 
 type AddressInfo struct {
-	ActorId string // actor id
-	ActorTy string
-
-	Node    string // node id
-	Service string // service name
-	Ip      string // ip
-	Port    int    // port
+	ActorId string `json:"actor_id"`
+	ActorTy string `json:"actor_ty"`
+	Node    string `json:"node"`
+	Service string `json:"service"`
+	Ip      string `json:"ip"`
+	Port    int    `json:"port"`
 }
 
 type AddressBook struct {
@@ -99,7 +97,6 @@ func (ab *AddressBook) Unregister(ctx context.Context, id string) error {
 	mu := &dismutex.Mutex{Token: id}
 	err := mu.Lock(ctx, "[addressbook.unregister]")
 	if err != nil {
-		ab.Unlock()
 		return fmt.Errorf("addressbook.unregister get distributed mutex err %v", err.Error())
 	}
 	defer mu.Unlock(ctx)
@@ -121,7 +118,6 @@ func (ab *AddressBook) Unregister(ctx context.Context, id string) error {
 	pipe.HDel(ctx, def.RedisAddressbookIDField, id)
 	pipe.SRem(ctx, fmt.Sprintf(def.RedisAddressbookTyField+"%s", info.ActorTy), addrJSON)
 	_, err = pipe.Exec(ctx)
-
 	if err == nil {
 		ab.Lock()
 		delete(ab.IDMap, id) // try delete
@@ -184,22 +180,16 @@ func (ab *AddressBook) GetWildcardActor(lst []AddressInfo) (AddressInfo, error) 
 		return AddressInfo{}, fmt.Errorf("GetWildcardActor lst is empty")
 	}
 
-	loclst := []AddressInfo{}
-
-	for _, loc := range lst {
-		if loc.Ip == ab.NodInfo.Ip && loc.Port == ab.NodInfo.Port {
-			loclst = append(loclst, loc)
+	localActors := make([]AddressInfo, 0)
+	for _, actor := range lst {
+		if actor.Ip == ab.NodInfo.Ip && actor.Port == ab.NodInfo.Port {
+			localActors = append(localActors, actor)
 		}
 	}
 
-	// 使用当前时间作为随机数种子
-	rand.Seed(uint64(time.Now().UnixNano()))
-
-	if len(loclst) == 0 {
-		randomIndex := rand.Intn(len(lst))
-		return lst[randomIndex], nil
-	} else {
-		randomIndex := rand.Intn(len(loclst))
-		return loclst[randomIndex], nil
+	if len(localActors) > 0 {
+		return localActors[rand.Intn(len(localActors))], nil
 	}
+
+	return lst[rand.Intn(len(lst))], nil
 }
