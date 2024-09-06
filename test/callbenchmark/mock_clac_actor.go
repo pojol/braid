@@ -1,10 +1,10 @@
-package nodeprocess
+package callbenchmark
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/pojol/braid/core/workerthread"
+	"github.com/pojol/braid/def"
 	"github.com/pojol/braid/router"
 )
 
@@ -18,9 +18,14 @@ func (a *mockEntityActor) Init() {
 	a.RegisterEvent("print", &workerthread.DefaultChain{
 		Handler: func(ctx context.Context, m *router.MsgWrapper) error {
 
-			fmt.Println("entity actor recved:", string(m.Req.Body))
+			a.Call(ctx, router.Target{
+				ID: "mockentity",
+				Ty: def.MockActorEntity,
+				Ev: "print",
+			}, &router.MsgWrapper{Req: &router.Message{Header: &router.Header{}}})
 
 			return nil
 		},
 	})
+
 }

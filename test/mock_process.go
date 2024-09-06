@@ -1,4 +1,4 @@
-package nodeprocess
+package test
 
 import (
 	"fmt"
@@ -11,8 +11,8 @@ import (
 )
 
 type ProcessNode struct {
-	p   node.Parm
-	sys workerthread.ISystem
+	P   node.Parm
+	Sys workerthread.ISystem
 }
 
 func New() *ProcessNode {
@@ -20,16 +20,16 @@ func New() *ProcessNode {
 }
 
 func (pn *ProcessNode) ID() string {
-	return pn.p.ID
+	return pn.P.ID
 }
 
 func (pn *ProcessNode) System() workerthread.ISystem {
-	return pn.sys
+	return pn.Sys
 }
 
 func (pn *ProcessNode) Init(opts ...node.Option) error {
 
-	for _, a := range pn.sys.Actors() {
+	for _, a := range pn.Sys.Actors() {
 		a.Init()
 	}
 
@@ -37,7 +37,9 @@ func (pn *ProcessNode) Init(opts ...node.Option) error {
 }
 
 func (pn *ProcessNode) Update() {
-	for _, a := range pn.sys.Actors() {
+	pn.Sys.Update()
+
+	for _, a := range pn.Sys.Actors() {
 		go a.Update()
 	}
 }
