@@ -48,6 +48,11 @@ func (tw *TimeWheel) AddTimer(delay time.Duration, interval time.Duration, f fun
 		return nil
 	}
 
+	if interval == 0 {
+		// 处理间隔为0的错误情况
+		panic("TimeWheel interval cannot be zero")
+	}
+
 	timer := &Timer{
 		delay:    delay,
 		nextTick: time.Now().Add(delay),
@@ -86,8 +91,17 @@ func (tw *TimeWheel) RemoveTimer(t *Timer) {
 func (tw *TimeWheel) getPositionAndCircle(d time.Duration) (pos int, circle int) {
 	delaySeconds := int(d.Seconds())
 	intervalSeconds := int(tw.interval.Seconds())
-	circle = delaySeconds / intervalSeconds / tw.slotNum
-	pos = (tw.currentPos + delaySeconds/intervalSeconds) % tw.slotNum
+
+	if delaySeconds == 0 {
+		// 如果延迟为0，立即执行
+		pos = tw.currentPos
+		circle = 0
+	} else {
+		// 计算位置和圈数
+		totalSlots := delaySeconds / intervalSeconds
+		circle = totalSlots / tw.slotNum
+		pos = (tw.currentPos + totalSlots) % tw.slotNum
+	}
 
 	return
 }
