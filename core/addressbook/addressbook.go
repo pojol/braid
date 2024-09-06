@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/pojol/braid/3rd/redis"
+	trdredis "github.com/pojol/braid/3rd/redis"
 	"github.com/pojol/braid/def"
 	"github.com/pojol/braid/lib/dismutex"
-	"golang.org/x/exp/rand"
+	"github.com/redis/go-redis/v9"
 )
 
 type IAddressBook interface {
@@ -73,7 +73,7 @@ func (ab *AddressBook) Register(ctx context.Context, ty, id string) error {
 		Port:    ab.NodInfo.Port},
 	)
 	// 使用管道来执行多个 Redis 操作
-	pipe := redis.Pipeline()
+	pipe := trdredis.Pipeline()
 	pipe.HSet(ctx, def.RedisAddressbookIDField, id, addrJSON)
 	pipe.SAdd(ctx, fmt.Sprintf(def.RedisAddressbookTyField+"%s", ty), addrJSON)
 	_, err = pipe.Exec(ctx)
@@ -102,7 +102,7 @@ func (ab *AddressBook) Unregister(ctx context.Context, id string) error {
 	defer mu.Unlock(ctx)
 
 	// 首先获取地址信息
-	addrJSON, err := redis.HGet(ctx, def.RedisAddressbookIDField, id).Result()
+	addrJSON, err := trdredis.HGet(ctx, def.RedisAddressbookIDField, id).Result()
 	if err != nil {
 		return fmt.Errorf("address not found for id: %s", id)
 	}
@@ -114,7 +114,7 @@ func (ab *AddressBook) Unregister(ctx context.Context, id string) error {
 	}
 
 	// 使用管道来执行多个 Redis 操作
-	pipe := redis.Pipeline()
+	pipe := trdredis.Pipeline()
 	pipe.HDel(ctx, def.RedisAddressbookIDField, id)
 	pipe.SRem(ctx, fmt.Sprintf(def.RedisAddressbookTyField+"%s", info.ActorTy), addrJSON)
 	_, err = pipe.Exec(ctx)
@@ -141,7 +141,7 @@ func (ab *AddressBook) GetByID(ctx context.Context, id string) (AddressInfo, err
 	}
 	ab.RUnlock()
 
-	addrJSON, err := redis.HGet(ctx, def.RedisAddressbookIDField, id).Result()
+	addrJSON, err := trdredis.HGet(ctx, def.RedisAddressbookIDField, id).Result()
 	if err != nil {
 		return AddressInfo{}, fmt.Errorf("address not found for id: %s", id)
 	}
@@ -157,7 +157,7 @@ func (ab *AddressBook) GetByID(ctx context.Context, id string) (AddressInfo, err
 
 // GetByType 通过类型获取所有 actor 地址
 func (ab *AddressBook) GetByType(ctx context.Context, actorType string) ([]AddressInfo, error) {
-	addrJSONs, err := redis.SMembers(ctx, fmt.Sprintf(def.RedisAddressbookTyField+"%s", actorType)).Result()
+	addrJSONs, err := trdredis.SMembers(ctx, fmt.Sprintf(def.RedisAddressbookTyField+"%s", actorType)).Result()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get addresses for type: %s", actorType)
 	}
@@ -175,21 +175,24 @@ func (ab *AddressBook) GetByType(ctx context.Context, actorType string) ([]Addre
 	return addresses, nil
 }
 
-func (ab *AddressBook) GetWildcardActor(lst []AddressInfo) (AddressInfo, error) {
-	if len(lst) == 0 {
-		return AddressInfo{}, fmt.Errorf("GetWildcardActor lst is empty")
-	}
+// GetWildcardActor 获取一个指定 actorType 的随机 actor 地址
+func (ab *AddressBook) GetWildcardActor(ctx context.Context, actorType string) (AddressInfo, error) {
+	key := fmt.Sprintf(def.RedisAddressbookTyField+"%s", actorType)
 
-	localActors := make([]AddressInfo, 0)
-	for _, actor := range lst {
-		if actor.Ip == ab.NodInfo.Ip && actor.Port == ab.NodInfo.Port {
-			localActors = append(localActors, actor)
+	// 如果没有本地 actor，则随机获取一个
+	addrJSON, err := trdredis.SRandMember(ctx, key).Result()
+	if err != nil {
+		if err == redis.Nil {
+			return AddressInfo{}, fmt.Errorf("no actors found for type %s", actorType)
 		}
+		return AddressInfo{}, fmt.Errorf("GetWildcardActor SRandMember err %v", err)
 	}
 
-	if len(localActors) > 0 {
-		return localActors[rand.Intn(len(localActors))], nil
+	var addr AddressInfo
+	err = json.Unmarshal([]byte(addrJSON), &addr)
+	if err != nil {
+		return AddressInfo{}, fmt.Errorf("failed to unmarshal address: %v", err)
 	}
 
-	return lst[rand.Intn(len(lst))], nil
+	return addr, nil
 }
