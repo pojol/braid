@@ -44,6 +44,10 @@ func BuildServerWithOption(opts ...ServerOption) *Server {
 		panic(fmt.Errorf("grpc server handler not set"))
 	}
 
+	if rpcserver == nil {
+		panic(fmt.Errorf("grpc server handler not set"))
+	}
+
 	return &Server{
 		parm: p,
 		rpc:  rpcserver,
@@ -56,10 +60,9 @@ func (s *Server) Init() error {
 	rpcListen, err := net.Listen("tcp", s.parm.ListenAddr)
 	if err != nil {
 		return fmt.Errorf("%v [GRPC] server check error %v [%v]", "", "tcp", s.parm.ListenAddr)
-	} else {
-		fmt.Printf("[GRPC] server listen: [tcp] %v\n", s.parm.ListenAddr)
 	}
 
+	fmt.Printf("[GRPC] server listen: [tcp] %v\n", s.parm.ListenAddr)
 	s.listen = rpcListen
 
 	return nil
@@ -78,6 +81,7 @@ func (s *Server) Run() {
 
 	go func() {
 		fmt.Println("[GRPC] server serving ...")
+
 		if err := s.rpc.Serve(s.listen); err != nil {
 			fmt.Printf("[GRPC] server serving err %s", err.Error())
 		}

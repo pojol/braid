@@ -14,6 +14,7 @@ import (
 type NormalSystem struct {
 	addressbook *addressbook.AddressBook
 	actoridmap  map[string]IActor
+	client      *grpc.Client
 
 	p SystemParm
 
@@ -34,7 +35,7 @@ func BuildSystemWithOption(opts ...SystemOption) ISystem {
 	}
 
 	// init grpc client
-	grpc.BuildClientWithOption()
+	sys.client = grpc.BuildClientWithOption()
 
 	sys.addressbook = addressbook.New(addressbook.AddressInfo{
 		Node:    p.NodeID,
@@ -59,7 +60,9 @@ func (sys *NormalSystem) Update() {
 
 func (sys *NormalSystem) Register(ctx context.Context, ty string, opts ...CreateActorOption) (IActor, error) {
 
-	createParm := &CreateActorParm{}
+	createParm := &CreateActorParm{
+		Sys: sys,
+	}
 	for _, opt := range opts {
 		opt(createParm)
 	}
@@ -115,17 +118,13 @@ func (sys *NormalSystem) Call(ctx context.Context, tar router.Target, msg *route
 	msg.Req.Header.Event = tar.Ev
 	msg.Req.Header.TargetActorID = tar.ID
 	msg.Req.Header.TargetActorType = tar.Ty
+	var err error
 
 	info := addressbook.AddressInfo{ActorId: tar.ID, ActorTy: tar.Ty}
 
 	if /*tar.ID == def.SymbolAll || */ tar.ID == def.SymbolWildcard {
 
-		lst, err := sys.addressbook.GetByType(ctx, tar.Ty)
-		if err != nil {
-			return err
-		}
-
-		info, err = sys.addressbook.GetWildcardActor(lst)
+		info, err = sys.addressbook.GetWildcardActor(ctx, tar.Ty)
 		if err != nil {
 			return err
 		}
@@ -179,7 +178,7 @@ func (sys *NormalSystem) handleRemoteCall(ctx context.Context, targetID string, 
 	}
 
 	res := &router.RouteRes{}
-	err = grpc.CallWait(ctx,
+	err = sys.client.CallWait(ctx,
 		fmt.Sprintf("%s:%d", addrinfo.Ip, addrinfo.Port),
 		"/router.Acceptor/routing",
 		&router.RouteReq{Msg: msg.Req},

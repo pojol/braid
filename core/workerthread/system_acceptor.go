@@ -63,7 +63,10 @@ func acceptorInit(sys ISystem, port int) {
 		),
 	}
 
-	acceptorptr.server.Init()
+	err := acceptorptr.server.Init()
+	if err != nil {
+		panic(fmt.Sprintf("Failed to initialize acceptor server: %v", err))
+	}
 }
 
 func acceptorUpdate() {

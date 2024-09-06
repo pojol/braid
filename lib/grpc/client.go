@@ -30,9 +30,7 @@ type Client struct {
 	connmap sync.Map
 }
 
-var client *Client
-
-func BuildClientWithOption(opts ...ClientOption) {
+func BuildClientWithOption(opts ...ClientOption) *Client {
 
 	p := DefaultClientParm
 
@@ -40,20 +38,20 @@ func BuildClientWithOption(opts ...ClientOption) {
 		opt(&p)
 	}
 
-	client = &Client{
+	return &Client{
 		parm: p,
 	}
 }
 
-func newconn(addr string) (*grpc.ClientConn, error) {
+func (c *Client) newconn(addr string) (*grpc.ClientConn, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
 	var conn *grpc.ClientConn
 	var err error
 
-	if len(client.parm.UnaryInterceptors) > 0 {
-		conn, err = grpc.DialContext(ctx, addr, grpc.WithInsecure(), grpc.WithUnaryInterceptor(grpc_middleware.ChainUnaryClient(client.parm.UnaryInterceptors...)))
+	if len(c.parm.UnaryInterceptors) > 0 {
+		conn, err = grpc.DialContext(ctx, addr, grpc.WithInsecure(), grpc.WithUnaryInterceptor(grpc_middleware.ChainUnaryClient(c.parm.UnaryInterceptors...)))
 		if err != nil {
 			goto EXT
 		}
@@ -71,7 +69,7 @@ EXT:
 	return conn, err
 }
 
-func closeconn(conn *grpc.ClientConn) error {
+func (c *Client) closeconn(conn *grpc.ClientConn) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
@@ -93,22 +91,22 @@ func closeconn(conn *grpc.ClientConn) error {
 	}
 }
 
-func Init() error {
+func (c *Client) Init() error {
 
-	for _, addr := range client.parm.AddressLst {
-		conn, err := newconn(addr)
+	for _, addr := range c.parm.AddressLst {
+		conn, err := c.newconn(addr)
 		if err != nil {
 			fmt.Printf("[braid.client] new grpc conn err %s", err.Error())
 		} else {
-			client.connmap.Store(addr, conn)
+			c.connmap.Store(addr, conn)
 		}
 	}
 
 	return nil
 }
 
-func getConn(address string) (*grpc.ClientConn, error) {
-	mc, ok := client.connmap.Load(address)
+func (c *Client) getConn(address string) (*grpc.ClientConn, error) {
+	mc, ok := c.connmap.Load(address)
 	if !ok {
 		return nil, fmt.Errorf("gRPC client Can't find target %s", address)
 	}
@@ -126,20 +124,20 @@ func getConn(address string) (*grpc.ClientConn, error) {
 	return conn, nil
 }
 
-func CallWait(ctx context.Context, addr, methon string, args, reply interface{}, opts ...interface{}) error {
+func (c *Client) CallWait(ctx context.Context, addr, methon string, args, reply interface{}, opts ...interface{}) error {
 
 	var grpcopts []grpc.CallOption
 
-	conn, err := getConn(addr)
+	conn, err := c.getConn(addr)
 	if err != nil {
 		// try create
-		conn, err = newconn(addr)
+		conn, err = c.newconn(addr)
 		if err != nil {
 			fmt.Printf("[braid.client] client get conn warning %s", err.Error())
 			return err
 		}
 
-		client.connmap.Store(addr, conn)
+		c.connmap.Store(addr, conn)
 	}
 
 	if len(opts) != 0 {
@@ -160,11 +158,11 @@ func CallWait(ctx context.Context, addr, methon string, args, reply interface{},
 	return err
 }
 
-func Call(ctx context.Context, addr, methon string, args interface{}, opts ...interface{}) error {
+func (c *Client) Call(ctx context.Context, addr, methon string, args interface{}, opts ...interface{}) error {
 
 	var grpcopts []grpc.CallOption
 
-	conn, err := getConn(addr)
+	conn, err := c.getConn(addr)
 	if err != nil {
 		fmt.Printf("[braid.client] client get conn warning %s", err.Error())
 		return err

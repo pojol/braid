@@ -18,10 +18,9 @@ type MiddlewareHandler func(context.Context, *router.MsgWrapper) error
 type EventHandler func(context.Context, *router.MsgWrapper) error
 
 type BaseActor struct {
-	Id  string
-	Ty  string
-	Sys ISystem
-	//msgCh    *unbounded.Unbounded
+	Id       string
+	Ty       string
+	Sys      ISystem
 	q        *mpsc.Queue
 	closed   int32
 	closeCh  chan struct{}
@@ -41,7 +40,6 @@ func (a *BaseActor) ID() string {
 }
 
 func (a *BaseActor) Init() {
-	//a.msgCh = unbounded.NewUnbounded()
 	a.q = mpsc.New()
 	atomic.StoreInt32(&a.closed, 0) // 初始化closed状态为0（未关闭）
 	a.closeCh = make(chan struct{})
@@ -87,7 +85,6 @@ func (a *BaseActor) Received(msg *router.MsgWrapper) error {
 
 	if atomic.LoadInt32(&a.closed) == 0 { // 并不是所有的actor都需要处理退出信号
 		a.q.Push(msg)
-		//a.msgCh.Put(msg)
 	}
 
 	return nil
