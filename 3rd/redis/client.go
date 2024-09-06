@@ -150,6 +150,14 @@ func SMembers(ctx context.Context, key string) *redis.StringSliceCmd {
 	return client.SMembers(ctx, key)
 }
 
+func SRandMember(ctx context.Context, key string) *redis.StringCmd {
+	span, err := doTracing(ctx, spanTag{"cmd", "SRandMember"}, spanTag{"key", key})
+	if err == nil {
+		defer span.End(ctx)
+	}
+	return client.SRandMember(ctx, key)
+}
+
 func SPop(ctx context.Context, key string) *redis.StringCmd {
 	span, err := doTracing(ctx, spanTag{"cmd", "SPop"}, spanTag{"key", key})
 	if err == nil {
