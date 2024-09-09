@@ -5,15 +5,15 @@ import fmt "fmt"
 func (b *EntityBagModule) produce(item *Item) {
 	_, ok := b.Bag[item.DictID]
 
-	// 检查是否为自动恢复类道具
+	// check if it is a auto-recovery item
 
 	if !ok {
 		b.Bag[item.DictID] = &ItemList{
 			Items: []*Item{item},
 		}
 	} else {
-		// 查看是否可堆叠
-		// 查看是否数量溢出
+		// check if it can be stacked
+		// check if it overflows
 
 	}
 }
@@ -26,7 +26,7 @@ func (b *EntityBagModule) consume(dict bool, item *Item, num int32) (Item, error
 		return refreshItem, fmt.Errorf("not found")
 	}
 
-	var rmv bool // 移除标签
+	var rmv bool // remove tag
 	var idx int
 	var flag bool
 
@@ -99,27 +99,27 @@ func (b *EntityBagModule) enough(dict bool, item *Item) bool {
 	return false
 }
 
-// _checkRecoverIimeItem - 对自动恢复类的道具进行检查
+// _checkRecoverIimeItem - check auto-recovery item
 func (b *EntityBagModule) _checkRecoverIimeItem() {
 
 }
 
-// _checkTimeoutItem - 对可能超时的道具进行检查
+// _checkTimeoutItem - check timeout item
 func (b *EntityBagModule) _checkTimeoutItem() {
 
 }
 
-// EnoughItemWithInsID - 通过 实例ID(唯一) 判断背包中道具是否足够，注：通过实例ID进行判定同时需要传 字典ID
+// EnoughItemWithInsID - check if the item is enough with instance id (unique id), note: need to pass dictionary id
 func (b *EntityBagModule) EnoughItemWithInsID(id string, dictid, num int32) bool {
 	return b.enough(false, &Item{ID: id, DictID: dictid, Num: num})
 }
 
-// EnoughItem - 通过 字典ID 判断背包中道具是否足够
+// EnoughItem - check if the item is enough with dictionary id
 func (b *EntityBagModule) EnoughItem(id, num int32) bool {
 	return b.enough(true, &Item{DictID: id, Num: num})
 }
 
-// EnoughItems - 通过 字典ID 判断背包中道具是否足够
+// EnoughItems - check if the items are enough with dictionary id
 func (b *EntityBagModule) EnoughItems(items []*Item) bool {
 	for _, v := range items {
 		if !b.enough(true, v) {
@@ -134,11 +134,15 @@ func (b *EntityBagModule) ProduceItem(item *Item, num uint32, reason, detail str
 
 }
 
+// ProduceItems - produce items
+//  items: items to produce
+//  reason: produce reason
+//  detail: produce detail
 func (b *EntityBagModule) ProduceItems(items []*Item, reason, detail string) {
 
 }
 
-// ExistItem - 按字典id获取背包中的道具（注：如果
+// ExistItem - get item num with dictionary id
 func (b *EntityBagModule) GetItemNum(id int32) int64 {
 	var num int64
 
@@ -153,7 +157,7 @@ func (b *EntityBagModule) GetItemNum(id int32) int64 {
 	return num
 }
 
-// ConsumeItem - 消耗道具（注意消耗之前一定要进行 enough 判定）
+// ConsumeItem - consume item (must check enough before consume)
 func (b *EntityBagModule) ConsumeItem(id, num int32, reason, detail string) []*Item {
 	refresh := []*Item{}
 
@@ -168,12 +172,12 @@ func (b *EntityBagModule) ConsumeItem(id, num int32, reason, detail string) []*I
 		Num:    ritem.Num,
 	})
 
-	// log 记录
+	// log record
 
 	return refresh
 }
 
-// ConsumeItems - 消耗道具（注意消耗之前一定要进行 enough 判定）
+// ConsumeItems - consume items (must check enough before consume)
 func (b *EntityBagModule) ConsumeItems(items []*Item, reason, detail string) []*Item {
 
 	refresh := []*Item{}
@@ -191,7 +195,7 @@ func (b *EntityBagModule) ConsumeItems(items []*Item, reason, detail string) []*
 		})
 	}
 
-	// log 记录
+	// log record
 
 	return refresh
 }

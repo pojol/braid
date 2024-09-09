@@ -45,7 +45,7 @@ func TestEntity(t *testing.T) {
 
 	warp1.Sync()
 
-	//////	//////	//////	//////	//////	//////	//////
+	//////////////////////////////////////////
 	sys := node.BuildSystemWithOption(
 		node.SystemActorConstructor(
 			[]node.ActorConstructor{

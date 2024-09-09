@@ -28,14 +28,14 @@ func (a *mockUserActor) Init() {
 		panic(fmt.Errorf("load user actor err %v", err.Error()))
 	}
 
-	// 实现各种事件
+	// Implement events
 	a.RegisterEvent("entity_test", &actor.DefaultChain{
 		Handler: func(ctx context.Context, m *router.MsgWrapper) error {
 
 			if a.entity.Bag.EnoughItem(1001, 10) {
 				a.entity.Bag.ConsumeItem(1001, 5, "test", "")
 
-				// 标记成功
+				// mark success
 				m.Res.Header.Custom["code"] = "200"
 			}
 
@@ -43,7 +43,7 @@ func (a *mockUserActor) Init() {
 		},
 	})
 
-	// 1分钟尝试一次将脏
+	// one minute try sync to cache
 	a.RegisterTimer(0, 1000*60, func() error {
 		a.entity.Sync()
 

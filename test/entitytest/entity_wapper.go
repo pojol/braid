@@ -15,7 +15,7 @@ type EntityWapper struct {
 	User     *EntityUserModule
 	TimeInfo *EntityTimeInfoModule
 
-	// 用于判定是否是从cache读取出来的
+	// Used to determine if it was read from cache
 	isCache bool `bson:"-"`
 }
 

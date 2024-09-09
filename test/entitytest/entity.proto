@@ -3,9 +3,9 @@ syntax = "proto3";
 package entitytest;
 
 message Item {
-  string ID = 1;  // 道具实例id (唯一id
-  int32 DictID = 2;  // 字典id（配置id
-  int32 Num = 3; // 道具数量
+  string ID = 1;  // item instance id （unique id）
+  int32 DictID = 2;  // dictionary id （config id）
+  int32 Num = 3; 
 }
 
 message ItemList {
@@ -14,12 +14,12 @@ message ItemList {
 
 // -----------------  entity module -----------------\
 message EntityBagModule {
-  string ID = 1;  // entity id 角色的唯一id
+  string ID = 1;  // actor id
   map<int32, ItemList> Bag = 2;
 }
 
 message EntityTimeInfoModule {
-  string ID = 1;  // entity id 角色的唯一id
+  string ID = 1;  // actor id
 
   int64 LoginTime = 2;
   int64 SyncTime = 3;
@@ -32,14 +32,14 @@ message AirshipProduction {
 }
 
 message EntityAirshipModule {
-  string ID = 1;  // entity id 角色的唯一id
+  string ID = 1; // actor id
 
-  AirshipProduction Production = 2; // 建造队列
+  AirshipProduction Production = 2; // build queue
 }
 
 // -----------------  entity -----------------
 message EntityUserModule {
-  string GameID = 1; // entity id 角色的唯一id
-  string OpenID = 2; // 账号id
+  string GameID = 1; // account actor id
+  string OpenID = 2; // 3rd party open id
   string Token = 3;
 }
