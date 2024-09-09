@@ -63,6 +63,12 @@ func (a *Runtime) RegisterEvent(ev string, chain core.IChain) error {
 	return nil
 }
 
+// RegisterTimer register timer
+//
+//	dueTime: Delay time before starting the timer (in milliseconds). If 0, starts immediately
+//	interval: Time interval between executions (in milliseconds). If 0, executes only once
+//	f: Callback function
+//	args: Arguments for the callback function
 func (a *Runtime) RegisterTimer(dueTime int64, interval int64, f func() error, args interface{}) *timewheel.Timer {
 	return a.tw.AddTimer(
 		time.Duration(dueTime)*time.Millisecond,
