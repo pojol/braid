@@ -7,37 +7,21 @@ import (
 	"sync"
 
 	trdredis "github.com/pojol/braid/3rd/redis"
+	"github.com/pojol/braid/core"
 	"github.com/pojol/braid/def"
 	"github.com/pojol/braid/lib/dismutex"
 	"github.com/redis/go-redis/v9"
 )
 
-type IAddressBook interface {
-	Register(context.Context, string, string) error // 将 actor 注册到 address book；
-	Unregister(context.Context, string) error
-
-	GetByID(context.Context, string) (AddressInfo, error)
-	GetByType(context.Context, string) ([]AddressInfo, error)
-}
-
-type AddressInfo struct {
-	ActorId string `json:"actor_id"`
-	ActorTy string `json:"actor_ty"`
-	Node    string `json:"node"`
-	Service string `json:"service"`
-	Ip      string `json:"ip"`
-	Port    int    `json:"port"`
-}
-
 type AddressBook struct {
-	NodInfo AddressInfo
+	NodInfo core.AddressInfo
 
 	IDMap map[string]bool
 
 	sync.RWMutex
 }
 
-func New(info AddressInfo) *AddressBook {
+func New(info core.AddressInfo) *AddressBook {
 	return &AddressBook{
 		IDMap:   make(map[string]bool),
 		NodInfo: info,
@@ -66,7 +50,7 @@ func (ab *AddressBook) Register(ctx context.Context, ty, id string) error {
 	defer mu.Unlock(ctx)
 
 	// 将地址信息序列化为 JSON
-	addrJSON, _ := json.Marshal(AddressInfo{
+	addrJSON, _ := json.Marshal(core.AddressInfo{
 		ActorId: id,
 		ActorTy: ty,
 		Ip:      ab.NodInfo.Ip,
@@ -107,7 +91,7 @@ func (ab *AddressBook) Unregister(ctx context.Context, id string) error {
 		return fmt.Errorf("address not found for id: %s", id)
 	}
 
-	info := &AddressInfo{}
+	info := &core.AddressInfo{}
 	err = json.Unmarshal([]byte(addrJSON), info)
 	if err != nil {
 		return fmt.Errorf("addressbook.unregister json unmarshal err %v", err.Error())
@@ -128,10 +112,10 @@ func (ab *AddressBook) Unregister(ctx context.Context, id string) error {
 }
 
 // GetByID 通过 ID 获取 actor 地址
-func (ab *AddressBook) GetByID(ctx context.Context, id string) (AddressInfo, error) {
+func (ab *AddressBook) GetByID(ctx context.Context, id string) (core.AddressInfo, error) {
 
 	if id == "" {
-		return AddressInfo{}, fmt.Errorf("actor id or type is empty")
+		return core.AddressInfo{}, fmt.Errorf("actor id or type is empty")
 	}
 
 	ab.RLock()
@@ -143,28 +127,28 @@ func (ab *AddressBook) GetByID(ctx context.Context, id string) (AddressInfo, err
 
 	addrJSON, err := trdredis.HGet(ctx, def.RedisAddressbookIDField, id).Result()
 	if err != nil {
-		return AddressInfo{}, fmt.Errorf("address not found for id: %s", id)
+		return core.AddressInfo{}, fmt.Errorf("address not found for id: %s", id)
 	}
 
-	var addr AddressInfo
+	var addr core.AddressInfo
 	err = json.Unmarshal([]byte(addrJSON), &addr)
 	if err != nil {
-		return AddressInfo{}, fmt.Errorf("failed to unmarshal address: %v", err)
+		return core.AddressInfo{}, fmt.Errorf("failed to unmarshal address: %v", err)
 	}
 
 	return addr, nil
 }
 
 // GetByType 通过类型获取所有 actor 地址
-func (ab *AddressBook) GetByType(ctx context.Context, actorType string) ([]AddressInfo, error) {
+func (ab *AddressBook) GetByType(ctx context.Context, actorType string) ([]core.AddressInfo, error) {
 	addrJSONs, err := trdredis.SMembers(ctx, fmt.Sprintf(def.RedisAddressbookTyField+"%s", actorType)).Result()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get addresses for type: %s", actorType)
 	}
 
-	addresses := make([]AddressInfo, 0, len(addrJSONs))
+	addresses := make([]core.AddressInfo, 0, len(addrJSONs))
 	for _, addrJSON := range addrJSONs {
-		var addr AddressInfo
+		var addr core.AddressInfo
 		err = json.Unmarshal([]byte(addrJSON), &addr)
 		if err != nil {
 			return nil, fmt.Errorf("failed to unmarshal address: %v", err)
@@ -176,22 +160,22 @@ func (ab *AddressBook) GetByType(ctx context.Context, actorType string) ([]Addre
 }
 
 // GetWildcardActor 获取一个指定 actorType 的随机 actor 地址
-func (ab *AddressBook) GetWildcardActor(ctx context.Context, actorType string) (AddressInfo, error) {
+func (ab *AddressBook) GetWildcardActor(ctx context.Context, actorType string) (core.AddressInfo, error) {
 	key := fmt.Sprintf(def.RedisAddressbookTyField+"%s", actorType)
 
 	// 如果没有本地 actor，则随机获取一个
 	addrJSON, err := trdredis.SRandMember(ctx, key).Result()
 	if err != nil {
 		if err == redis.Nil {
-			return AddressInfo{}, fmt.Errorf("no actors found for type %s", actorType)
+			return core.AddressInfo{}, fmt.Errorf("no actors found for type %s", actorType)
 		}
-		return AddressInfo{}, fmt.Errorf("GetWildcardActor SRandMember err %v", err)
+		return core.AddressInfo{}, fmt.Errorf("GetWildcardActor SRandMember err %v", err)
 	}
 
-	var addr AddressInfo
+	var addr core.AddressInfo
 	err = json.Unmarshal([]byte(addrJSON), &addr)
 	if err != nil {
-		return AddressInfo{}, fmt.Errorf("failed to unmarshal address: %v", err)
+		return core.AddressInfo{}, fmt.Errorf("failed to unmarshal address: %v", err)
 	}
 
 	return addr, nil

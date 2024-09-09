@@ -1,4 +1,6 @@
-package workerthread
+package node
+
+import "github.com/pojol/braid/core"
 
 type SystemParm struct {
 	ServiceName string
@@ -11,7 +13,7 @@ type SystemParm struct {
 
 type ActorConstructor struct {
 	Type        string
-	Constructor CreateFunc
+	Constructor core.CreateFunc
 }
 
 type SystemOption func(*SystemParm)
@@ -32,25 +34,5 @@ func SystemActorConstructor(lst []ActorConstructor) SystemOption {
 func SystemWithAcceptor(port int) SystemOption {
 	return func(sp *SystemParm) {
 		sp.Port = port
-	}
-}
-
-type CreateActorParm struct {
-	ID     string
-	Sys    ISystem
-	InsPtr interface{}
-}
-
-type CreateActorOption func(*CreateActorParm)
-
-func CreateActorWithID(id string) CreateActorOption {
-	return func(p *CreateActorParm) {
-		p.ID = id
-	}
-}
-
-func CreateActorWithIns(ins interface{}) CreateActorOption {
-	return func(p *CreateActorParm) {
-		p.InsPtr = ins
 	}
 }

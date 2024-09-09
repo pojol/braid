@@ -6,13 +6,12 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/pojol/braid/core/cluster/node"
-	"github.com/pojol/braid/core/workerthread"
+	"github.com/pojol/braid/core"
 )
 
 type ProcessNode struct {
-	P   node.Parm
-	Sys workerthread.ISystem
+	P   core.NodeParm
+	Sys core.ISystem
 }
 
 func New() *ProcessNode {
@@ -23,11 +22,11 @@ func (pn *ProcessNode) ID() string {
 	return pn.P.ID
 }
 
-func (pn *ProcessNode) System() workerthread.ISystem {
+func (pn *ProcessNode) System() core.ISystem {
 	return pn.Sys
 }
 
-func (pn *ProcessNode) Init(opts ...node.Option) error {
+func (pn *ProcessNode) Init(opts ...core.NodeOption) error {
 
 	for _, a := range pn.Sys.Actors() {
 		a.Init()

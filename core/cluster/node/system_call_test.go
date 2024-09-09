@@ -1,4 +1,4 @@
-package workerthread
+package node
 
 import (
 	"testing"

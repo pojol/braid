@@ -1,4 +1,4 @@
-package workerthread
+package actor
 
 import (
 	"context"
@@ -7,6 +7,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/pojol/braid/core"
 	"github.com/pojol/braid/def"
 	"github.com/pojol/braid/lib/mpsc"
 	"github.com/pojol/braid/lib/timewheel"
@@ -17,33 +18,33 @@ type RecoveryFunc func(interface{})
 type MiddlewareHandler func(context.Context, *router.MsgWrapper) error
 type EventHandler func(context.Context, *router.MsgWrapper) error
 
-type BaseActor struct {
+type Runtime struct {
 	Id       string
 	Ty       string
-	Sys      ISystem
+	Sys      core.ISystem
 	q        *mpsc.Queue
 	closed   int32
 	closeCh  chan struct{}
-	chains   map[string]IChain
+	chains   map[string]core.IChain
 	recovery RecoveryFunc
 
 	tw       *timewheel.TimeWheel
 	lastTick time.Time
 }
 
-func (a *BaseActor) Type() string {
+func (a *Runtime) Type() string {
 	return a.Ty
 }
 
-func (a *BaseActor) ID() string {
+func (a *Runtime) ID() string {
 	return a.Id
 }
 
-func (a *BaseActor) Init() {
+func (a *Runtime) Init() {
 	a.q = mpsc.New()
 	atomic.StoreInt32(&a.closed, 0) // 初始化closed状态为0（未关闭）
 	a.closeCh = make(chan struct{})
-	a.chains = make(map[string]IChain)
+	a.chains = make(map[string]core.IChain)
 	a.recovery = defaultRecovery
 
 	a.tw = timewheel.New(10*time.Millisecond, 100) // 100个槽位，每个槽位10ms
@@ -54,7 +55,7 @@ func defaultRecovery(r interface{}) {
 	fmt.Printf("Recovered from panic: %v\nStack trace:\n%s\n", r, debug.Stack())
 }
 
-func (a *BaseActor) RegisterEvent(ev string, chain IChain) error {
+func (a *Runtime) RegisterEvent(ev string, chain core.IChain) error {
 	if _, exists := a.chains[ev]; exists {
 		return def.ErrActorRepeatRegisterEvent(ev)
 	}
@@ -62,7 +63,7 @@ func (a *BaseActor) RegisterEvent(ev string, chain IChain) error {
 	return nil
 }
 
-func (a *BaseActor) RegisterTimer(dueTime int64, interval int64, f func() error, args interface{}) *timewheel.Timer {
+func (a *Runtime) RegisterTimer(dueTime int64, interval int64, f func() error, args interface{}) *timewheel.Timer {
 	return a.tw.AddTimer(
 		time.Duration(dueTime)*time.Millisecond,
 		time.Duration(interval)*time.Millisecond,
@@ -71,15 +72,15 @@ func (a *BaseActor) RegisterTimer(dueTime int64, interval int64, f func() error,
 	)
 }
 
-func (a *BaseActor) RemoveTimer(t *timewheel.Timer) {
+func (a *Runtime) RemoveTimer(t *timewheel.Timer) {
 	a.tw.RemoveTimer(t)
 }
 
-func (a *BaseActor) Call(ctx context.Context, tar router.Target, msg *router.MsgWrapper) error {
+func (a *Runtime) Call(ctx context.Context, tar router.Target, msg *router.MsgWrapper) error {
 	return a.Sys.Call(ctx, tar, msg)
 }
 
-func (a *BaseActor) Received(msg *router.MsgWrapper) error {
+func (a *Runtime) Received(msg *router.MsgWrapper) error {
 
 	msg.Wg.Add(1)
 
@@ -90,7 +91,7 @@ func (a *BaseActor) Received(msg *router.MsgWrapper) error {
 	return nil
 }
 
-func (a *BaseActor) Update() {
+func (a *Runtime) Update() {
 	checkClose := func() {
 		for !a.q.Empty() {
 			time.Sleep(10 * time.Millisecond)
@@ -149,6 +150,6 @@ func (a *BaseActor) Update() {
 	}
 }
 
-func (a *BaseActor) Exit() {
+func (a *Runtime) Exit() {
 	a.tw.Shutdown()
 }

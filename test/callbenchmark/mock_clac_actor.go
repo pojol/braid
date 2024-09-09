@@ -3,19 +3,19 @@ package callbenchmark
 import (
 	"context"
 
-	"github.com/pojol/braid/core/workerthread"
+	"github.com/pojol/braid/core/actor"
 	"github.com/pojol/braid/def"
 	"github.com/pojol/braid/router"
 )
 
 type mockEntityActor struct {
-	*workerthread.BaseActor
+	*actor.Runtime
 }
 
 func (a *mockEntityActor) Init() {
-	a.BaseActor.Init()
+	a.Runtime.Init()
 
-	a.RegisterEvent("print", &workerthread.DefaultChain{
+	a.RegisterEvent("print", &actor.DefaultChain{
 		Handler: func(ctx context.Context, m *router.MsgWrapper) error {
 
 			a.Call(ctx, router.Target{

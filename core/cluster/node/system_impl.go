@@ -1,10 +1,11 @@
-package workerthread
+package node
 
 import (
 	"context"
 	fmt "fmt"
 	"sync"
 
+	"github.com/pojol/braid/core"
 	"github.com/pojol/braid/core/addressbook"
 	"github.com/pojol/braid/def"
 	"github.com/pojol/braid/lib/grpc"
@@ -13,7 +14,7 @@ import (
 
 type NormalSystem struct {
 	addressbook *addressbook.AddressBook
-	actoridmap  map[string]IActor
+	actoridmap  map[string]core.IActor
 	client      *grpc.Client
 
 	p SystemParm
@@ -21,7 +22,7 @@ type NormalSystem struct {
 	sync.RWMutex
 }
 
-func BuildSystemWithOption(opts ...SystemOption) ISystem {
+func BuildSystemWithOption(opts ...SystemOption) core.ISystem {
 
 	p := SystemParm{
 		Ip: "127.0.0.1",
@@ -31,13 +32,13 @@ func BuildSystemWithOption(opts ...SystemOption) ISystem {
 	}
 
 	sys := &NormalSystem{
-		actoridmap: make(map[string]IActor),
+		actoridmap: make(map[string]core.IActor),
 	}
 
 	// init grpc client
 	sys.client = grpc.BuildClientWithOption()
 
-	sys.addressbook = addressbook.New(addressbook.AddressInfo{
+	sys.addressbook = addressbook.New(core.AddressInfo{
 		Node:    p.NodeID,
 		Service: p.ServiceName,
 		Ip:      p.Ip,
@@ -58,9 +59,9 @@ func (sys *NormalSystem) Update() {
 	}
 }
 
-func (sys *NormalSystem) Register(ctx context.Context, ty string, opts ...CreateActorOption) (IActor, error) {
+func (sys *NormalSystem) Register(ctx context.Context, ty string, opts ...core.CreateActorOption) (core.IActor, error) {
 
-	createParm := &CreateActorParm{
+	createParm := &core.CreateActorParm{
 		Sys: sys,
 	}
 	for _, opt := range opts {
@@ -104,8 +105,8 @@ func (sys *NormalSystem) Register(ctx context.Context, ty string, opts ...Create
 	return actor, nil
 }
 
-func (sys *NormalSystem) Actors() []IActor {
-	actors := []IActor{}
+func (sys *NormalSystem) Actors() []core.IActor {
+	actors := []core.IActor{}
 	for _, v := range sys.actoridmap {
 		actors = append(actors, v)
 	}
@@ -120,7 +121,7 @@ func (sys *NormalSystem) Call(ctx context.Context, tar router.Target, msg *route
 	msg.Req.Header.TargetActorType = tar.Ty
 	var err error
 
-	info := addressbook.AddressInfo{ActorId: tar.ID, ActorTy: tar.Ty}
+	info := core.AddressInfo{ActorId: tar.ID, ActorTy: tar.Ty}
 
 	if /*tar.ID == def.SymbolAll || */ tar.ID == def.SymbolWildcard {
 
@@ -143,7 +144,7 @@ func (sys *NormalSystem) Call(ctx context.Context, tar router.Target, msg *route
 	return sys.handleRemoteCall(ctx, info.ActorId, msg)
 }
 
-func (sys *NormalSystem) handleLocalCall(ctx context.Context, actorp IActor, msg *router.MsgWrapper) error {
+func (sys *NormalSystem) handleLocalCall(ctx context.Context, actorp core.IActor, msg *router.MsgWrapper) error {
 	root := msg.Wg.Count() == 0
 	if root {
 		msg.Done = make(chan struct{})
@@ -204,7 +205,7 @@ func (sys *NormalSystem) Pub(ctx context.Context, tar router.Target, msg *router
 	return nil
 }
 
-func (sys *NormalSystem) FindActor(ctx context.Context, id string) (IActor, error) {
+func (sys *NormalSystem) FindActor(ctx context.Context, id string) (core.IActor, error) {
 	sys.RLock()
 	defer sys.RUnlock()
 

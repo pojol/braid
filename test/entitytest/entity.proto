@@ -1,0 +1,45 @@
+syntax = "proto3";
+
+package entitytest;
+
+message Item {
+  string ID = 1;  // 道具实例id (唯一id
+  int32 DictID = 2;  // 字典id（配置id
+  int32 Num = 3; // 道具数量
+}
+
+message ItemList {
+  repeated Item Items = 1;
+}
+
+// -----------------  entity module -----------------\
+message EntityBagModule {
+  string ID = 1;  // entity id 角色的唯一id
+  map<int32, ItemList> Bag = 2;
+}
+
+message EntityTimeInfoModule {
+  string ID = 1;  // entity id 角色的唯一id
+
+  int64 LoginTime = 2;
+  int64 SyncTime = 3;
+  int64 CreateTime = 4;
+}
+
+message AirshipProduction {
+  string ProductionID = 1;
+  int64 EndTime = 3;
+}
+
+message EntityAirshipModule {
+  string ID = 1;  // entity id 角色的唯一id
+
+  AirshipProduction Production = 2; // 建造队列
+}
+
+// -----------------  entity -----------------
+message EntityUserModule {
+  string GameID = 1; // entity id 角色的唯一id
+  string OpenID = 2; // 账号id
+  string Token = 3;
+}

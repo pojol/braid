@@ -1,4 +1,4 @@
-package workerthread
+package node
 
 import (
 	context "context"
@@ -6,6 +6,7 @@ import (
 	"runtime"
 	"strconv"
 
+	"github.com/pojol/braid/core"
 	"github.com/pojol/braid/lib/grpc"
 	"github.com/pojol/braid/router"
 
@@ -22,7 +23,7 @@ var acceptorptr *acceptor
 
 type listen struct {
 	router.AcceptorServer
-	sys ISystem
+	sys core.ISystem
 }
 
 // Stack returns a formatted stack trace of the goroutine that calls it.
@@ -50,7 +51,7 @@ func recoverHandler(r interface{}) error {
 	return fmt.Errorf("[GRPC-SERVER RECOVER] err: %v stack: %s", err, buf)
 }
 
-func acceptorInit(sys ISystem, port int) {
+func acceptorInit(sys core.ISystem, port int) {
 
 	acceptorptr = &acceptor{
 		server: grpc.BuildServerWithOption(

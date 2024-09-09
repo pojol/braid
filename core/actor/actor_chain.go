@@ -1,14 +1,10 @@
-package workerthread
+package actor
 
 import (
 	"context"
 
 	"github.com/pojol/braid/router"
 )
-
-type IChain interface {
-	Execute(context.Context, *router.MsgWrapper) error
-}
 
 type DefaultChain struct {
 	Before  []MiddlewareHandler

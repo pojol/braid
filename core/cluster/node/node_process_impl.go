@@ -6,18 +6,18 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/pojol/braid/core/workerthread"
+	"github.com/pojol/braid/core"
 )
 
 type process struct {
-	p Parm
+	p core.NodeParm
 }
 
 var pcs *process
 
-func BuildProcessWithOption(opts ...Option) INode {
+func BuildProcessWithOption(opts ...core.NodeOption) core.INode {
 
-	p := Parm{
+	p := core.NodeParm{
 		Ip: "127.0.0.1",
 	}
 
@@ -32,7 +32,7 @@ func BuildProcessWithOption(opts ...Option) INode {
 	return pcs
 }
 
-func Get() INode {
+func Get() core.INode {
 	return pcs
 }
 
@@ -40,11 +40,11 @@ func (pn *process) ID() string {
 	return pn.p.ID
 }
 
-func (pn *process) System() workerthread.ISystem {
+func (pn *process) System() core.ISystem {
 	return pn.p.Sys
 }
 
-func (pn *process) Init(opts ...Option) error {
+func (pn *process) Init(opts ...core.NodeOption) error {
 
 	for _, a := range pn.p.Sys.Actors() {
 		a.Init()

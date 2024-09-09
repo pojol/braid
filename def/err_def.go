@@ -33,4 +33,11 @@ var (
 	ErrAddressbookCheck = func(args ...interface{}) errcode.Code {
 		return errcode.Add(-13000, " [addressbook] check", args...)
 	}
+
+	ErrEntityLoadUnpack = func(args ...interface{}) errcode.Code {
+		return errcode.Add(-14000, " [entity] unpack module failed ", args...)
+	}
+	ErrEntityLoadEntityLoadersEmpty = func(args ...interface{}) errcode.Code {
+		return errcode.Add(-14001, " [entity] loaders empty ", args...)
+	}
 )

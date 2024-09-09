@@ -4,11 +4,11 @@
 
 ### register event
 ```go
-actor.RegisterEvent("10001", func(e *proto.UserEntity) *workerthread.DefaultChain {
+actor.RegisterEvent("10001", func(e *proto.UserEntity) *actor.DefaultChain {
     unpackcfg := &middleware.MsgUnpackCfg[proto.GetUserInfoReq]{}
 
-    return &workerthread.DefaultChain{
-        Before: []workerthread.MiddlewareHandler{
+    return &actor.DefaultChain{
+        Before: []Base.MiddlewareHandler{
             middleware.MsgUnpack(unpackcfg),
         },
         Handler: func(ctx context.Context, msg *router.MsgWrapper) error {
