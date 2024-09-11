@@ -1,8 +1,6 @@
 package router
 
 import (
-	"sync"
-
 	"github.com/pojol/braid/lib/warpwaitgroup"
 )
 
@@ -15,6 +13,81 @@ type MsgWrapper struct {
 	Done chan struct{} // Used for synchronization
 }
 
+// NewMessage create new message
+func newMessage() *Message {
+	m := &Message{
+		Header: &Header{
+			Custom: make(map[string]string),
+		},
+	}
+	return m
+}
+
+// MsgWrapperBuilder used to build MsgWrapper
+type MsgWrapperBuilder struct {
+	wrapper MsgWrapper
+}
+
+func NewMsg() *MsgWrapperBuilder {
+	return &MsgWrapperBuilder{
+		wrapper: MsgWrapper{
+			Req:  newMessage(),
+			Res:  newMessage(),
+			Done: make(chan struct{}),
+		},
+	}
+}
+
+// WithReq set req header
+func (b *MsgWrapperBuilder) WithReqHeader(h *Header) *MsgWrapperBuilder {
+	b.wrapper.Req.Header = h
+	return b
+}
+
+func (b *MsgWrapperBuilder) WithReqBody(byt []byte) *MsgWrapperBuilder {
+	b.wrapper.Req.Body = byt
+	return b
+}
+
+func (b *MsgWrapperBuilder) WithReqCustom(key, value string) *MsgWrapperBuilder {
+	if b.wrapper.Req.Header.Custom == nil {
+		b.wrapper.Req.Header.Custom = make(map[string]string)
+	}
+	b.wrapper.Req.Header.Custom[key] = value
+	return b
+}
+
+// WithRes set res header
+func (b *MsgWrapperBuilder) WithResHeader(h *Header) *MsgWrapperBuilder {
+	b.wrapper.Res.Header = h
+	return b
+}
+
+func (b *MsgWrapperBuilder) WithResBody(byt []byte) *MsgWrapperBuilder {
+	b.wrapper.Res.Body = byt
+	return b
+}
+
+func (b *MsgWrapperBuilder) WithResCustom(key, value string) *MsgWrapperBuilder {
+	if b.wrapper.Res.Header.Custom == nil {
+		b.wrapper.Res.Header.Custom = make(map[string]string)
+	}
+	b.wrapper.Res.Header.Custom[key] = value
+	return b
+}
+
+// WithEntity set entity
+func (b *MsgWrapperBuilder) WithEntity(entity interface{}) *MsgWrapperBuilder {
+	b.wrapper.Entity = entity
+	return b
+}
+
+// Build build msg wrapper
+func (b *MsgWrapperBuilder) Build() *MsgWrapper {
+	return &b.wrapper
+}
+
+/*
 func GetMsg() *MsgWrapper {
 	return &MsgWrapper{
 		Req: &Message{
@@ -60,3 +133,4 @@ func PutMsg(msg *MsgWrapper) {
 	}
 	msgPool.Put(msg)
 }
+*/

@@ -39,7 +39,7 @@ message EntityAirshipModule {
 
 // -----------------  entity -----------------
 message EntityUserModule {
-  string GameID = 1; // account actor id
+  string ID = 1; // account actor id
   string OpenID = 2; // 3rd party open id
   string Token = 3;
 }

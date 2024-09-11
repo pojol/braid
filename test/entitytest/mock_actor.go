@@ -23,7 +23,7 @@ func NewEntity(p *core.CreateActorParm) core.IActor {
 
 func (a *mockUserActor) Init() {
 	a.Runtime.Init()
-	err := a.entity.Load()
+	err := a.entity.Load(context.TODO())
 	if err != nil {
 		panic(fmt.Errorf("load user actor err %v", err.Error()))
 	}
@@ -36,6 +36,7 @@ func (a *mockUserActor) Init() {
 				a.entity.Bag.ConsumeItem(1001, 5, "test", "")
 
 				// mark success
+				fmt.Println("entity_test consume item success")
 				m.Res.Header.Custom["code"] = "200"
 			}
 
@@ -45,7 +46,7 @@ func (a *mockUserActor) Init() {
 
 	// one minute try sync to cache
 	a.RegisterTimer(0, 1000*60, func() error {
-		a.entity.Sync()
+		a.entity.Sync(context.TODO())
 
 		return nil
 	}, nil)

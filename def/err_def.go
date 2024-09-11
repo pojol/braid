@@ -40,4 +40,7 @@ var (
 	ErrEntityLoadEntityLoadersEmpty = func(args ...interface{}) errcode.Code {
 		return errcode.Add(-14001, " [entity] loaders empty ", args...)
 	}
+	ErrEntityLoadDBColNotFound = func(args ...interface{}) errcode.Code {
+		return errcode.Add(-14002, " [entity] db col not found ", args...)
+	}
 )
