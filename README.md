@@ -1,6 +1,9 @@
 # braid
 
-[![image.png](https://i.postimg.cc/1ztqkfhZ/image.png)](https://postimg.cc/K16jLc89)
+https://goreportcard.com/badge/github.com/pojol/braid
+
+[![Go Report Card](https://goreportcard.com/badge/github.com/pojol/braid?style=flat-square)](https://goreportcard.com/report/github.com/pojol/braid)
+
 
 ### register event
 ```go
