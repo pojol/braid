@@ -66,7 +66,7 @@ func (ab *AddressBook) Register(ctx context.Context, ty, id string) error {
 	pipe.SAdd(ctx, fmt.Sprintf(def.RedisAddressbookTyField+"%s", ty), addrJSON)
 
 	// 更新节点记录
-	nodeKey := fmt.Sprintf("node:%s", ab.NodeID)
+	nodeKey := fmt.Sprintf("{node:%s}", ab.NodeID)
 	pipe.HIncrBy(ctx, nodeKey, fmt.Sprintf("actor:%s", ty), 1)
 	pipe.HIncrBy(ctx, nodeKey, "total_weight", 1)
 
@@ -113,7 +113,7 @@ func (ab *AddressBook) Unregister(ctx context.Context, id string) error {
 	pipe.SRem(ctx, fmt.Sprintf(def.RedisAddressbookTyField+"%s", info.ActorTy), addrJSON)
 
 	// 更新节点记录
-	nodeKey := fmt.Sprintf("node:%s", ab.NodeID)
+	nodeKey := fmt.Sprintf("{node:%s}", ab.NodeID)
 	pipe.HIncrBy(ctx, nodeKey, fmt.Sprintf("actor:%s", info.ActorTy), -1)
 	pipe.HIncrBy(ctx, nodeKey, "total_weight", -1)
 
@@ -205,7 +205,7 @@ func (ab *AddressBook) GetWildcardActor(ctx context.Context, actorType string) (
 		}
 
 		// get the weight of the node where the actor is located
-		nodeKey := fmt.Sprintf("node:%s", addr.Ip)
+		nodeKey := fmt.Sprintf("{node:%s}", addr.Ip)
 		nodeWeight, err := trdredis.HGet(ctx, nodeKey, "total_weight").Int()
 		if err != nil {
 			continue // skip this actor if unable to get node weight
