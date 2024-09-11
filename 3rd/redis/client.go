@@ -158,6 +158,14 @@ func SRandMember(ctx context.Context, key string) *redis.StringCmd {
 	return client.SRandMember(ctx, key)
 }
 
+func SRandMemberN(ctx context.Context, key string, count int64) *redis.StringSliceCmd {
+	span, err := doTracing(ctx, spanTag{"cmd", "SRandMemberN"}, spanTag{"key", key})
+	if err == nil {
+		defer span.End(ctx)
+	}
+	return client.SRandMemberN(ctx, key, count)
+}
+
 func SPop(ctx context.Context, key string) *redis.StringCmd {
 	span, err := doTracing(ctx, spanTag{"cmd", "SPop"}, spanTag{"key", key})
 	if err == nil {

@@ -1,4 +1,4 @@
-package elector
+package core
 
 type IElector interface {
 }

@@ -1,4 +1,4 @@
-package discover
+package core
 
 type IDiscover interface {
 }

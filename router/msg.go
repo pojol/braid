@@ -31,9 +31,8 @@ type MsgWrapperBuilder struct {
 func NewMsg() *MsgWrapperBuilder {
 	return &MsgWrapperBuilder{
 		wrapper: MsgWrapper{
-			Req:  newMessage(),
-			Res:  newMessage(),
-			Done: make(chan struct{}),
+			Req: newMessage(),
+			Res: newMessage(),
 		},
 	}
 }
