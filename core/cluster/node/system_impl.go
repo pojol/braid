@@ -62,7 +62,8 @@ func (sys *NormalSystem) Update() {
 func (sys *NormalSystem) Register(ctx context.Context, ty string, opts ...core.CreateActorOption) (core.IActor, error) {
 
 	createParm := &core.CreateActorParm{
-		Sys: sys,
+		Sys:     sys,
+		Options: make(map[string]interface{}),
 	}
 	for _, opt := range opts {
 		opt(createParm)

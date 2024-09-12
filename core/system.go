@@ -7,8 +7,9 @@ import (
 )
 
 type CreateActorParm struct {
-	ID  string
-	Sys ISystem
+	ID      string
+	Sys     ISystem
+	Options map[string]interface{}
 }
 
 type CreateActorOption func(*CreateActorParm)
@@ -16,6 +17,12 @@ type CreateActorOption func(*CreateActorParm)
 func CreateActorWithID(id string) CreateActorOption {
 	return func(p *CreateActorParm) {
 		p.ID = id
+	}
+}
+
+func CreateActorWithOption(key string, value interface{}) CreateActorOption {
+	return func(cap *CreateActorParm) {
+		cap.Options[key] = value
 	}
 }
 
