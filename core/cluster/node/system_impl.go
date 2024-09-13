@@ -115,34 +115,53 @@ func (sys *NormalSystem) Actors() []core.IActor {
 }
 
 func (sys *NormalSystem) Call(ctx context.Context, tar router.Target, msg *router.MsgWrapper) error {
-
-	// 设置消息头部信息
+	// Set message header information
 	msg.Req.Header.Event = tar.Ev
 	msg.Req.Header.TargetActorID = tar.ID
 	msg.Req.Header.TargetActorType = tar.Ty
+
+	var info core.AddressInfo
 	var err error
 
-	info := core.AddressInfo{ActorId: tar.ID, ActorTy: tar.Ty}
-
-	if /*tar.ID == def.SymbolAll || */ tar.ID == def.SymbolWildcard {
-
+	switch tar.ID {
+	case def.SymbolWildcard:
 		info, err = sys.addressbook.GetWildcardActor(ctx, tar.Ty)
-		if err != nil {
-			return err
+	case def.SymbolLocalFirst:
+		info, err = sys.findLocalOrWildcardActor(ctx, tar.Ty)
+	default:
+		// First, check if it's a local call
+		sys.RLock()
+		actorp, ok := sys.actoridmap[tar.ID]
+		sys.RUnlock()
+
+		if ok {
+			return sys.handleLocalCall(ctx, actorp, msg)
+		}
+
+		// If not local, get from addressbook
+		info, err = sys.addressbook.GetByID(ctx, tar.ID)
+	}
+
+	if err != nil {
+		return err
+	}
+
+	// At this point, we know it's a remote call
+	return sys.handleRemoteCall(ctx, info, msg)
+}
+
+func (sys *NormalSystem) findLocalOrWildcardActor(ctx context.Context, ty string) (core.AddressInfo, error) {
+	sys.RLock()
+	defer sys.RUnlock()
+
+	for id, actor := range sys.actoridmap {
+		if actor.Type() == ty {
+			return core.AddressInfo{ActorId: id, ActorTy: ty}, nil
 		}
 	}
 
-	// 检查是否为本地调用
-	sys.RLock()
-	actorp, ok := sys.actoridmap[info.ActorId]
-	sys.RUnlock()
-
-	if ok {
-		return sys.handleLocalCall(ctx, actorp, msg)
-	}
-
-	// 处理远程调用
-	return sys.handleRemoteCall(ctx, info.ActorId, msg)
+	// If not found locally, use GetWildcardActor for cluster-wide random search
+	return sys.addressbook.GetWildcardActor(ctx, ty)
 }
 
 func (sys *NormalSystem) handleLocalCall(ctx context.Context, actorp core.IActor, msg *router.MsgWrapper) error {
@@ -173,14 +192,9 @@ func (sys *NormalSystem) handleLocalCall(ctx context.Context, actorp core.IActor
 	}
 }
 
-func (sys *NormalSystem) handleRemoteCall(ctx context.Context, targetID string, msg *router.MsgWrapper) error {
-	addrinfo, err := sys.addressbook.GetByID(ctx, targetID)
-	if err != nil {
-		return err
-	}
-
+func (sys *NormalSystem) handleRemoteCall(ctx context.Context, addrinfo core.AddressInfo, msg *router.MsgWrapper) error {
 	res := &router.RouteRes{}
-	err = sys.client.CallWait(ctx,
+	err := sys.client.CallWait(ctx,
 		fmt.Sprintf("%s:%d", addrinfo.Ip, addrinfo.Port),
 		"/router.Acceptor/routing",
 		&router.RouteReq{Msg: msg.Req},
@@ -191,7 +205,6 @@ func (sys *NormalSystem) handleRemoteCall(ctx context.Context, targetID string, 
 	}
 
 	msg.Res = res.Msg
-
 	return nil
 }
 
