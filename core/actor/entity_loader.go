@@ -3,10 +3,12 @@ package actor
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"reflect"
 	"strings"
 
+	"github.com/gogo/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
 	"github.com/pojol/braid/3rd/mgo"
 	trhreids "github.com/pojol/braid/3rd/redis"
@@ -50,6 +52,7 @@ func BuildEntityLoader(dbName, dbCol string, wrapper core.IEntity) *EntityLoader
 				BlockName: blockName,
 				BlockType: field.Type,
 			})
+
 		}
 	}
 	return &EntityLoader{DBName: dbName, DBCol: dbCol, WrapperEntity: wrapper, Loaders: loaders}
@@ -69,25 +72,34 @@ func (loader *EntityLoader) tryLoad2DB(ctx context.Context) error {
 
 	for idx, load := range loader.Loaders {
 		if moduleData, ok := entityDoc[load.BlockName]; ok {
-			bsonData, err := bson.Marshal(moduleData)
-			if err != nil {
-				return err
-			}
-
 			protoMsg := reflect.New(load.BlockType.Elem()).Interface().(proto.Message)
-			if err := bson.Unmarshal(bsonData, protoMsg); err != nil {
-				return err
+
+			// 使用自定义的解码函数 jsonpb 解决null 值问题
+			if err := decodeWithDefault(moduleData, protoMsg); err != nil {
+				return fmt.Errorf("decode entity %v loader module %v err %v", loader.WrapperEntity.GetID(), load.BlockName, err.Error())
 			}
 
 			loader.Loaders[idx].Ins = protoMsg
 			loader.WrapperEntity.SetModule(load.BlockType, protoMsg)
-			if err != nil {
-				return err
-			}
 		}
 	}
 
 	return nil
+}
+
+// decodeWithDefault 解码 BSON 数据到 proto.Message，处理 null 值
+func decodeWithDefault(data interface{}, msg proto.Message) error {
+	// 首先，将 BSON 数据转换为 JSON
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		return err
+	}
+
+	// 使用 jsonpb 解码，它能更好地处理 protobuf 消息
+	unmarshaler := jsonpb.Unmarshaler{
+		AllowUnknownFields: true,
+	}
+	return unmarshaler.Unmarshal(bytes.NewReader(jsonData), msg)
 }
 
 func (loader *EntityLoader) Load(ctx context.Context) error {

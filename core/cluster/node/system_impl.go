@@ -121,13 +121,21 @@ func (sys *NormalSystem) Call(ctx context.Context, tar router.Target, msg *route
 	msg.Req.Header.TargetActorType = tar.Ty
 
 	var info core.AddressInfo
+	var actor core.IActor
 	var err error
 
 	switch tar.ID {
 	case def.SymbolWildcard:
 		info, err = sys.addressbook.GetWildcardActor(ctx, tar.Ty)
 	case def.SymbolLocalFirst:
-		info, err = sys.findLocalOrWildcardActor(ctx, tar.Ty)
+		actor, info, err = sys.findLocalOrWildcardActor(ctx, tar.Ty)
+		if err != nil {
+			return err
+		}
+		if actor != nil {
+			// Local call
+			return sys.handleLocalCall(ctx, actor, msg)
+		}
 	default:
 		// First, check if it's a local call
 		sys.RLock()
@@ -150,18 +158,20 @@ func (sys *NormalSystem) Call(ctx context.Context, tar router.Target, msg *route
 	return sys.handleRemoteCall(ctx, info, msg)
 }
 
-func (sys *NormalSystem) findLocalOrWildcardActor(ctx context.Context, ty string) (core.AddressInfo, error) {
+func (sys *NormalSystem) findLocalOrWildcardActor(ctx context.Context, ty string) (core.IActor, core.AddressInfo, error) {
 	sys.RLock()
 	defer sys.RUnlock()
 
 	for id, actor := range sys.actoridmap {
 		if actor.Type() == ty {
-			return core.AddressInfo{ActorId: id, ActorTy: ty}, nil
+			// 如果在本地找到了匹配类型的 actor，直接返回
+			return actor, core.AddressInfo{ActorId: id, ActorTy: ty}, nil
 		}
 	}
 
-	// If not found locally, use GetWildcardActor for cluster-wide random search
-	return sys.addressbook.GetWildcardActor(ctx, ty)
+	// 如果在本地没有找到，使用 GetWildcardActor 进行集群范围的随机搜索
+	info, err := sys.addressbook.GetWildcardActor(ctx, ty)
+	return nil, info, err
 }
 
 func (sys *NormalSystem) handleLocalCall(ctx context.Context, actorp core.IActor, msg *router.MsgWrapper) error {
