@@ -16,6 +16,8 @@ message Header {
 //    string OrgActorID = 5;
 //    string OrgActorType = 6;
 
+    string ID = 1;
+
     string TargetActorID = 7;
     string TargetActorType = 8;
 

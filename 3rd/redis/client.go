@@ -308,6 +308,70 @@ func CAD(ctx context.Context, key, field string) bool {
 	return ret
 }
 
+func XInfoGroups(ctx context.Context, key string) *redis.XInfoGroupsCmd {
+	span, err := doTracing(ctx, spanTag{"cmd", "XInfoGroups"}, spanTag{"key", key})
+	if err == nil {
+		defer span.End(ctx)
+	}
+	return client.XInfoGroups(ctx, key)
+}
+
+func XGroupCreate(ctx context.Context, key, group, start string) *redis.StatusCmd {
+	span, err := doTracing(ctx, spanTag{"cmd", "XGroupCreate"}, spanTag{"key", key})
+	if err == nil {
+		defer span.End(ctx)
+	}
+	return client.XGroupCreate(ctx, key, group, start)
+}
+
+func XGroupDelConsumer(ctx context.Context, key, group, consumer string) *redis.IntCmd {
+	span, err := doTracing(ctx, spanTag{"cmd", "XGroupDelConsumer"}, spanTag{"key", key})
+	if err == nil {
+		defer span.End(ctx)
+	}
+	return client.XGroupDelConsumer(ctx, key, group, consumer)
+}
+
+func XInfoConsumers(ctx context.Context, key, group string) *redis.XInfoConsumersCmd {
+	span, err := doTracing(ctx, spanTag{"cmd", "XInfoConsumers"}, spanTag{"key", key})
+	if err == nil {
+		defer span.End(ctx)
+	}
+	return client.XInfoConsumers(ctx, key, group)
+}
+
+func XReadGroup(ctx context.Context, a *redis.XReadGroupArgs) *redis.XStreamSliceCmd {
+	span, err := doTracing(ctx, spanTag{"cmd", "XReadGroup"}, spanTag{"key", a.Streams[0]})
+	if err == nil {
+		defer span.End(ctx)
+	}
+	return client.XReadGroup(ctx, a)
+}
+
+func XGroupDestroy(ctx context.Context, key, group string) *redis.IntCmd {
+	span, err := doTracing(ctx, spanTag{"cmd", "XGroupDestroy"}, spanTag{"key", key})
+	if err == nil {
+		defer span.End(ctx)
+	}
+	return client.XGroupDestroy(ctx, key, group)
+}
+
+func XLen(ctx context.Context, key string) *redis.IntCmd {
+	span, err := doTracing(ctx, spanTag{"cmd", "XLen"}, spanTag{"key", key})
+	if err == nil {
+		defer span.End(ctx)
+	}
+	return client.XLen(ctx, key)
+}
+
+func XDel(ctx context.Context, key, id string) *redis.IntCmd {
+	span, err := doTracing(ctx, spanTag{"cmd", "XDel"}, spanTag{"key", key})
+	if err == nil {
+		defer span.End(ctx)
+	}
+	return client.XDel(ctx, key, id)
+}
+
 func ScriptRun(ctx context.Context, script *redis.Script, keys []string, args ...any) (interface{}, error) {
 	span, err := doTracing(ctx, spanTag{"cmd", "ScriptRun"}, spanTag{"key", strings.Join(keys, ",")})
 	if err == nil {
