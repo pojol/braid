@@ -1,6 +1,7 @@
 package router
 
 import (
+	"github.com/google/uuid"
 	"github.com/pojol/braid/lib/warpwaitgroup"
 )
 
@@ -14,9 +15,10 @@ type MsgWrapper struct {
 }
 
 // NewMessage create new message
-func newMessage() *Message {
+func newMessage(uid string) *Message {
 	m := &Message{
 		Header: &Header{
+			ID:     uid,
 			Custom: make(map[string]string),
 		},
 	}
@@ -29,10 +31,11 @@ type MsgWrapperBuilder struct {
 }
 
 func NewMsg() *MsgWrapperBuilder {
+	uid := uuid.NewString()
 	return &MsgWrapperBuilder{
 		wrapper: MsgWrapper{
-			Req: newMessage(),
-			Res: newMessage(),
+			Req: newMessage(uid),
+			Res: newMessage(uid),
 		},
 	}
 }

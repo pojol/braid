@@ -90,16 +90,22 @@ func (c *Channel) addHandlers(queue *mpsc.Queue) {
 
 			pipe := thdredis.Pipeline()
 			recvmsg, ok := m.(*router.Message)
+			if !ok {
+				log.Warn("topic %v channel %v msg is not of type *router.Message", c.topic, c.channel)
+				continue
+			}
 
-			msg := router.NewMsg().WithReqHeader(&router.Header{Event: recvmsg.Header.Event}).WithReqBody(recvmsg.Body).Build()
+			msg := router.NewMsg().
+				WithReqHeader(&router.Header{ID: recvmsg.Header.ID, Event: recvmsg.Header.Event}).
+				WithReqBody(recvmsg.Body).Build()
 			queue.Push(msg)
 
 			pipe.XAck(context.TODO(), c.topic, c.channel, recvmsg.Header.Event)
-			pipe.XDel(context.TODO(), c.topic, m.ID())
+			pipe.XDel(context.TODO(), c.topic, recvmsg.Header.ID)
 
 			_, err := pipe.Exec(context.TODO())
 			if err != nil {
-				log.Warn("topic %v channel %v id %v pipeline failed: %v", c.topic, c.channel, m.ID(), err)
+				log.Warn("topic %v channel %v id %v pipeline failed: %v", c.topic, c.channel, recvmsg.Header.ID, err)
 			}
 		}
 	EXT:

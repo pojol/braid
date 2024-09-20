@@ -35,7 +35,7 @@ func newTopic(name string, mgr *Pubsub) *Topic {
 	if cnt == 0 {
 		id, err := thdredis.XAdd(ctx, &redis.XAddArgs{
 			Stream: rt.topic,
-			Values: []string{"msg", "init"},
+			Values: []string{"msg", "init", "event", ""},
 		}).Result()
 
 		if err != nil {
@@ -54,11 +54,15 @@ func (rt *Topic) Pub(ctx context.Context, msg *router.Message) error {
 		return fmt.Errorf("can't send empty msg to %v", rt.topic)
 	}
 
-	// 这里应该包装下
+	if msg.Header.ID == "" || msg.Header.Event == "" {
+		return fmt.Errorf("cannot send a message without an id or event")
+	}
 
+	// 这里应该包装下
 	_, err := thdredis.XAdd(ctx, &redis.XAddArgs{
 		Stream: rt.topic,
-		Values: []string{"msg", string(msg.Body)},
+		ID:     msg.Header.ID,
+		Values: []string{"msg", string(msg.Body), "event", msg.Header.Event},
 	}).Result()
 
 	return err
