@@ -223,10 +223,33 @@ func (sys *NormalSystem) handleRemoteCall(ctx context.Context, addrinfo core.Add
 }
 
 func (sys *NormalSystem) Send(ctx context.Context, tar router.Target, msg *router.MsgWrapper) error {
-	sys.RLock()
-	defer sys.RUnlock()
+	// Set message header information
+	msg.Req.Header.Event = tar.Ev
+	msg.Req.Header.TargetActorID = tar.ID
+	msg.Req.Header.TargetActorType = tar.Ty
 
-	return nil
+	// Check if it's a local actor
+	sys.RLock()
+	actor, isLocal := sys.actoridmap[tar.ID]
+	sys.RUnlock()
+
+	if isLocal {
+		// For local actors, use Received directly
+		go actor.Received(msg)
+		return nil
+	}
+
+	// For remote actors, get address info
+	info, err := sys.addressbook.GetByID(ctx, tar.ID)
+	if err != nil {
+		return err
+	}
+
+	return sys.client.Call(ctx,
+		fmt.Sprintf("%s:%d", info.Ip, info.Port),
+		"/router.Acceptor/routing",
+		&router.RouteReq{Msg: msg.Req},
+		nil) // We don't need the response for Send
 }
 
 func (sys *NormalSystem) Pub(ctx context.Context, topic string, msg *router.Message) error {
