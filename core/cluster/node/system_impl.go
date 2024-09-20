@@ -228,15 +228,13 @@ func (sys *NormalSystem) Send(ctx context.Context, tar router.Target, msg *route
 	msg.Req.Header.TargetActorID = tar.ID
 	msg.Req.Header.TargetActorType = tar.Ty
 
-	// Check if it's a local actor
 	sys.RLock()
 	actor, isLocal := sys.actoridmap[tar.ID]
 	sys.RUnlock()
 
 	if isLocal {
 		// For local actors, use Received directly
-		go actor.Received(msg)
-		return nil
+		return actor.Received(msg)
 	}
 
 	// For remote actors, get address info

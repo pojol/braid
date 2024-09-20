@@ -106,6 +106,11 @@ func (a *Runtime) SubscriptionEvent(topic string, channel string, succ func(), o
 }
 
 func (a *Runtime) Call(ctx context.Context, tar router.Target, msg *router.MsgWrapper) error {
+
+	if msg.Req.Header.OrgActorID == "" { // Only record the original sender
+		msg.Req.Header.OrgActorID = a.Id
+	}
+
 	return a.Sys.Call(ctx, tar, msg)
 }
 
