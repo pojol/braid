@@ -4,6 +4,6 @@ import "testing"
 
 func TestMessage(t *testing.T) {
 
-	NewMsg().WithReqHeader(&Header{Event: "111"}).Build()
+	NewMsgWrap().WithReqHeader(&Header{Event: "111"}).Build()
 
 }

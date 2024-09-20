@@ -9,6 +9,7 @@ import (
 	"github.com/pojol/braid/core/addressbook"
 	"github.com/pojol/braid/def"
 	"github.com/pojol/braid/lib/grpc"
+	"github.com/pojol/braid/lib/pubsub"
 	"github.com/pojol/braid/router"
 )
 
@@ -16,6 +17,7 @@ type NormalSystem struct {
 	addressbook *addressbook.AddressBook
 	actoridmap  map[string]core.IActor
 	client      *grpc.Client
+	ps          *pubsub.Pubsub
 
 	p SystemParm
 
@@ -37,6 +39,8 @@ func BuildSystemWithOption(opts ...SystemOption) core.ISystem {
 
 	// init grpc client
 	sys.client = grpc.BuildClientWithOption()
+
+	sys.ps = pubsub.BuildWithOption()
 
 	sys.addressbook = addressbook.New(core.AddressInfo{
 		Node:    p.NodeID,
@@ -225,8 +229,15 @@ func (sys *NormalSystem) Send(ctx context.Context, tar router.Target, msg *route
 	return nil
 }
 
-func (sys *NormalSystem) Pub(ctx context.Context, tar router.Target, msg *router.MsgWrapper) error {
+func (sys *NormalSystem) Pub(ctx context.Context, topic string, msg *router.Message) error {
+
+	sys.ps.GetTopic(topic).Pub(ctx, msg)
+
 	return nil
+}
+
+func (sys *NormalSystem) Sub(topic string, channel string, opts ...pubsub.TopicOption) (*pubsub.Channel, error) {
+	return sys.ps.GetOrCreateTopic(topic).Sub(context.TODO(), channel)
 }
 
 func (sys *NormalSystem) FindActor(ctx context.Context, id string) (core.IActor, error) {

@@ -102,7 +102,7 @@ func TestEntityLoad(t *testing.T) {
 	// load entity with db and sync to redis
 	sys := mockEntity(id)
 
-	msg := router.NewMsg().Build()
+	msg := router.NewMsgWrap().Build()
 	sys.Call(context.TODO(), router.Target{ID: id, Ty: ty, Ev: "entity_test"}, msg)
 
 	assert.Equal(t, msg.Res.Header.Custom["code"], "200")

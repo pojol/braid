@@ -1,5 +1,7 @@
 package pubsub
 
+import "time"
+
 const (
 	BraidPubsubTopic = "braid.pubsub.streams"
 )
@@ -29,5 +31,26 @@ type ChannelOption func(*ChannelParm)
 func WithReadMode(mode string) ChannelOption {
 	return func(p *ChannelParm) {
 		p.ReadMode = mode
+	}
+}
+
+type TopicOption func(*topicOptions)
+
+type SubSuccCallback func()
+
+type topicOptions struct {
+	ttl      time.Duration
+	callback SubSuccCallback
+}
+
+func WithTTL(ttl time.Duration) TopicOption {
+	return func(po *topicOptions) {
+		po.ttl = ttl
+	}
+}
+
+func WithSubSuccCallback(cb func()) TopicOption {
+	return func(po *topicOptions) {
+		po.callback = cb
 	}
 }

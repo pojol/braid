@@ -21,7 +21,7 @@ type Topic struct {
 	channelMap map[string]*Channel
 }
 
-func newTopic(name string, mgr *Pubsub) *Topic {
+func newTopic(name string, mgr *Pubsub, opts ...TopicOption) *Topic {
 
 	rt := &Topic{
 		ps:         mgr,
@@ -30,6 +30,11 @@ func newTopic(name string, mgr *Pubsub) *Topic {
 	}
 
 	ctx := context.TODO()
+
+	options := &topicOptions{}
+	for _, opt := range opts {
+		opt(options)
+	}
 
 	cnt, _ := thdredis.Exists(ctx, rt.topic).Result()
 	if cnt == 0 {
@@ -40,9 +45,18 @@ func newTopic(name string, mgr *Pubsub) *Topic {
 
 		if err != nil {
 			log.Warn("[braid.pubsub ]Topic %v init failed %v", rt.topic, err)
+		} else {
+
+			thdredis.XDel(ctx, rt.topic, id)
+			if options.ttl > 0 {
+				err = thdredis.Expire(ctx, rt.topic, options.ttl).Err()
+				if err != nil {
+					log.Warn("[braid.pubsub ]Failed to set TTL for topic %v: %v", rt.topic, err)
+				}
+			}
+
 		}
 
-		thdredis.XDel(ctx, rt.topic, id)
 	}
 
 	return rt
@@ -115,7 +129,7 @@ func (rt *Topic) getOrCreateChannel(ctx context.Context, name string, p ChannelP
 	//channel, ok := rt.channelMap[name]
 	//var err error
 	//if !ok {
-	channel, err := newChannel(ctx, rt.topic, name, rt, p)
+	channel, err := newChannel(ctx, rt.topic, name, p)
 	if err != nil {
 		return nil, err
 	}

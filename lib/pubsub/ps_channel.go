@@ -18,13 +18,12 @@ type Channel struct {
 	topic    string
 	channel  string // stream group
 	consumer string // group consumer
-	client   *redis.Client
 
 	exitFlag int32
 	msgCh    *unbounded.Unbounded
 }
 
-func newChannel(ctx context.Context, topic, channel string, rt *Topic, p ChannelParm) (*Channel, error) {
+func newChannel(ctx context.Context, topic, channel string, p ChannelParm) (*Channel, error) {
 
 	c := &Channel{
 		topic:    topic,
@@ -95,7 +94,7 @@ func (c *Channel) addHandlers(queue *mpsc.Queue) {
 				continue
 			}
 
-			msg := router.NewMsg().
+			msg := router.NewMsgWrap().
 				WithReqHeader(&router.Header{ID: recvmsg.Header.ID, Event: recvmsg.Header.Event}).
 				WithReqBody(recvmsg.Body).Build()
 			queue.Push(msg)

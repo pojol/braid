@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 
+	"github.com/pojol/braid/lib/pubsub"
 	"github.com/pojol/braid/lib/timewheel"
 	"github.com/pojol/braid/router"
 )
@@ -24,15 +25,22 @@ type IActor interface {
 	// 向 actor 的 mailbox 压入一条消息
 	Received(msg *router.MsgWrapper) error
 
-	// 为 actor 注册一个事件
+	// RegisterEvent registers an event handling chain for the actor
 	RegisterEvent(ev string, chain IChain) error
 
-	// 为 actor 注册一个定时函数（注：这边用到的时间都是毫秒
-	//  dueTime 延迟执行 0 为立即执行
-	//  interval 每次tick的间隔时间
-	//  f 回调函数
-	//  args 可以将 actor 实体传递给 timer 回调
+	// RegisterTimer registers a timer function for the actor (Note: all times used here are in milliseconds)
+	//  dueTime: delay before execution, 0 for immediate execution
+	//  interval: time between each tick
+	//  f: callback function
+	//  args: can be used to pass the actor entity to the timer callback
 	RegisterTimer(dueTime int64, interval int64, f func() error, args interface{}) *timewheel.Timer
+
+	// SubscriptionEvent subscribes to a message
+	//  If this is the first subscription to this topic, opts will take effect (you can set some options for the topic, such as ttl)
+	//  topic: A subject that contains a group of channels (e.g., if topic = offline messages, channel = actorId, then each actor can get its own offline messages in this topic)
+	//  channel: Represents different categories within a topic
+	//  succ: Callback function for successful subscription
+	SubscriptionEvent(topic string, channel string, succ func(), opts ...pubsub.TopicOption) error
 
 	// Actor 的主循环，它在独立的 goroutine 中运行
 	Update()

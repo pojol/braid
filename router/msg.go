@@ -30,7 +30,7 @@ type MsgWrapperBuilder struct {
 	wrapper MsgWrapper
 }
 
-func NewMsg() *MsgWrapperBuilder {
+func NewMsgWrap() *MsgWrapperBuilder {
 	uid := uuid.NewString()
 	return &MsgWrapperBuilder{
 		wrapper: MsgWrapper{

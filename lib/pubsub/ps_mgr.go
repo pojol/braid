@@ -29,18 +29,32 @@ func BuildWithOption(opts ...Option) *Pubsub {
 }
 
 func (nps *Pubsub) GetTopic(name string) *Topic {
-	var t *Topic
-
 	nps.RLock()
 	t, ok := nps.topicMap[name]
 	nps.RUnlock()
 	if ok {
 		return t
 	}
+	return nil
+}
 
+func (nps *Pubsub) CreateTopic(name string, opts ...TopicOption) *Topic {
 	nps.Lock()
-	t = newTopic(name, nps)
-	nps.Unlock()
+	defer nps.Unlock()
 
+	// Check again in case another goroutine created the topic
+	if t, ok := nps.topicMap[name]; ok {
+		return t
+	}
+
+	t := newTopic(name, nps, opts...)
+	nps.topicMap[name] = t
 	return t
+}
+
+func (nps *Pubsub) GetOrCreateTopic(name string, opts ...TopicOption) *Topic {
+	if t := nps.GetTopic(name); t != nil {
+		return t
+	}
+	return nps.CreateTopic(name, opts...)
 }

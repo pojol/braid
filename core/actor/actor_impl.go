@@ -10,6 +10,7 @@ import (
 	"github.com/pojol/braid/core"
 	"github.com/pojol/braid/def"
 	"github.com/pojol/braid/lib/mpsc"
+	"github.com/pojol/braid/lib/pubsub"
 	"github.com/pojol/braid/lib/timewheel"
 	"github.com/pojol/braid/router"
 )
@@ -80,6 +81,28 @@ func (a *Runtime) RegisterTimer(dueTime int64, interval int64, f func() error, a
 
 func (a *Runtime) RemoveTimer(t *timewheel.Timer) {
 	a.tw.RemoveTimer(t)
+}
+
+// SubscriptionEvent subscribes to a message
+//
+//	If this is the first subscription to this topic, opts will take effect (you can set some options for the topic, such as ttl)
+//	topic: A subject that contains a group of channels (e.g., if topic = offline messages, channel = actorId, then each actor can get its own offline messages in this topic)
+//	channel: Represents different categories within a topic
+//	succ: Callback function for successful subscription
+func (a *Runtime) SubscriptionEvent(topic string, channel string, succ func(), opts ...pubsub.TopicOption) error {
+
+	ch, err := a.Sys.Sub(topic, channel, opts...)
+	if err != nil {
+		return fmt.Errorf("failed to subscribe to topic %s: %w", topic, err)
+	}
+
+	ch.Arrived(a.q)
+
+	if succ != nil {
+		succ()
+	}
+
+	return nil
 }
 
 func (a *Runtime) Call(ctx context.Context, tar router.Target, msg *router.MsgWrapper) error {
