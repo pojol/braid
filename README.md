@@ -4,9 +4,9 @@
 [![image.png](https://i.postimg.cc/3xNDLTwR/image.png)](https://postimg.cc/ts0TT8WQ)
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/pojol/braid?style=flat-square)](https://goreportcard.com/report/github.com/pojol/braid)
+[![Demo](https://img.shields.io/badge/demo-braid--demo-brightgreen?style=flat-square)](https://github.com/pojol/braid-demo)
+[![Gitter](https://img.shields.io/gitter/room/braid/community?color=blue?style=flat-square)](https://app.gitter.im/#/room/#braid:gitter.im)
 
-
-### [Demo](https://github.com/pojol/braid-demo)
 
 ### Register event
 ```go
