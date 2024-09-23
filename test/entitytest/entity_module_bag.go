@@ -110,12 +110,12 @@ func (b *EntityBagModule) _checkTimeoutItem() {
 }
 
 // EnoughItemWithInsID - check if the item is enough with instance id (unique id), note: need to pass dictionary id
-func (b *EntityBagModule) EnoughItemWithInsID(id string, dictid, num int32) bool {
+func (b *EntityBagModule) EnoughItemWithInsID(id string, dictid string, num int32) bool {
 	return b.enough(false, &Item{ID: id, DictID: dictid, Num: num})
 }
 
 // EnoughItem - check if the item is enough with dictionary id
-func (b *EntityBagModule) EnoughItem(id, num int32) bool {
+func (b *EntityBagModule) EnoughItem(id string, num int32) bool {
 	return b.enough(true, &Item{DictID: id, Num: num})
 }
 
@@ -135,15 +135,16 @@ func (b *EntityBagModule) ProduceItem(item *Item, num uint32, reason, detail str
 }
 
 // ProduceItems - produce items
-//  items: items to produce
-//  reason: produce reason
-//  detail: produce detail
+//
+//	items: items to produce
+//	reason: produce reason
+//	detail: produce detail
 func (b *EntityBagModule) ProduceItems(items []*Item, reason, detail string) {
 
 }
 
 // ExistItem - get item num with dictionary id
-func (b *EntityBagModule) GetItemNum(id int32) int64 {
+func (b *EntityBagModule) GetItemNum(id string) int64 {
 	var num int64
 
 	if _, ok := b.Bag[id]; ok {
@@ -158,7 +159,7 @@ func (b *EntityBagModule) GetItemNum(id int32) int64 {
 }
 
 // ConsumeItem - consume item (must check enough before consume)
-func (b *EntityBagModule) ConsumeItem(id, num int32, reason, detail string) []*Item {
+func (b *EntityBagModule) ConsumeItem(id string, num int32, reason, detail string) []*Item {
 	refresh := []*Item{}
 
 	ritem, err := b.consume(true, &Item{DictID: id, Num: num}, num)

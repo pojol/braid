@@ -1,29 +1,34 @@
 syntax = "proto3";
 
 package entitytest;
+import "gogo/gogo.proto";
 
 message Item {
-  string ID = 1;  // item instance id （unique id）
-  int32 DictID = 2;  // dictionary id （config id）
-  int32 Num = 3; 
+  string ID = 1 [(gogoproto.moretags) = "bson:\"id\""];
+  string DictID = 2 [(gogoproto.moretags) = "bson:\"dict_id\""];  // dictionary id （config id）
+  int32 Num = 3 [(gogoproto.moretags) = "bson:\"num\""];
 }
 
 message ItemList {
-  repeated Item Items = 1;
+  repeated Item Items = 1 [(gogoproto.moretags) = "bson:\"items\""];
 }
 
 // -----------------  entity module -----------------\
+// -----------------  entity module -----------------\
 message EntityBagModule {
-  string ID = 1;  // actor id
-  map<int32, ItemList> Bag = 2;
+  string ID = 1 [(gogoproto.moretags) = "bson:\"id\""];
+  
+  // key: Dictionary ID of the item
+  // value: For a given dictionary ID, there may be multiple non-stackable item instances
+  map<string, ItemList> Bag = 2 [(gogoproto.moretags) = "bson:\"bag\""];
 }
 
 message EntityTimeInfoModule {
-  string ID = 1;  // actor id
+  string ID = 1 [(gogoproto.moretags) = "bson:\"id\""];
 
-  int64 LoginTime = 2;
-  int64 SyncTime = 3;
-  int64 CreateTime = 4;
+  int64 LoginTime = 2 [(gogoproto.moretags) = "bson:\"login_time\""];
+  int64 SyncTime = 3 [(gogoproto.moretags) = "bson:\"sync_time\""];
+  int64 CreateTime = 4 [(gogoproto.moretags) = "bson:\"create_time\""];
 }
 
 message AirshipProduction {
@@ -32,14 +37,17 @@ message AirshipProduction {
 }
 
 message EntityAirshipModule {
-  string ID = 1; // actor id
+  string ID = 1 [(gogoproto.moretags) = "bson:\"id\""];
 
   AirshipProduction Production = 2; // build queue
 }
 
 // -----------------  entity -----------------
 message EntityUserModule {
-  string ID = 1; // account actor id
-  string OpenID = 2; // 3rd party open id
-  string Token = 3;
+  string ID = 1 [(gogoproto.moretags) = "bson:\"id\""];
+
+  string OpenID = 2 [(gogoproto.moretags) = "bson:\"open_id\""];
+  string Token = 3 [(gogoproto.moretags) = "bson:\"token\""];
+  string CurChannel = 4 [(gogoproto.moretags) = "bson:\"cur_channel\""];
+  repeated string ChatChannels = 5 [(gogoproto.moretags) = "bson:\"chat_channels\""];
 }

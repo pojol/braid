@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/mitchellh/mapstructure"
 	"github.com/pojol/braid/3rd/mgo"
 	trhreids "github.com/pojol/braid/3rd/redis"
 	"github.com/pojol/braid/core"
@@ -71,21 +70,17 @@ func (loader *EntityLoader) tryLoad2DB(ctx context.Context) error {
 
 	for idx, load := range loader.Loaders {
 		if moduleData, ok := entityDoc[load.BlockName]; ok {
-
-			// 创建一个新的结构体实例
-			newStruct := reflect.New(load.BlockType.Elem()).Interface()
-
-			// 使用 mapstructure 包来解码 BSON 数据到结构体
-			err := mapstructure.Decode(moduleData, newStruct)
+			bsonData, err := bson.Marshal(moduleData)
 			if err != nil {
-				return fmt.Errorf("decode entity %v loader module %v err %v", loader.WrapperEntity.GetID(), load.BlockName, err.Error())
+				return err
+			}
+			protoMsg := reflect.New(load.BlockType.Elem()).Interface().(proto.Message)
+			if err := bson.Unmarshal(bsonData, protoMsg); err != nil {
+				return err
 			}
 
-			loader.Loaders[idx].Ins = newStruct
-			loader.WrapperEntity.SetModule(load.BlockType, newStruct)
-
-		} else {
-			log.Warn("Module %s not found in entityDoc\n", load.BlockName)
+			loader.Loaders[idx].Ins = protoMsg
+			loader.WrapperEntity.SetModule(load.BlockType, protoMsg)
 		}
 	}
 

@@ -33,8 +33,8 @@ func (a *mockUserActor) Init() {
 		return &actor.DefaultChain{
 			Handler: func(ctx context.Context, m *router.MsgWrapper) error {
 
-				if a.entity.Bag.EnoughItem(1001, 10) {
-					a.entity.Bag.ConsumeItem(1001, 5, "test", "")
+				if a.entity.Bag.EnoughItem("1001", 10) {
+					a.entity.Bag.ConsumeItem("1001", 5, "test", "")
 
 					// mark success
 					fmt.Println("entity_test consume item success")
