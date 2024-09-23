@@ -11,7 +11,7 @@
 ### Register event
 ```go
 
-actor.RegisterEvent("10001", func(sys core.Isystem, state *entity.User) *actor.DefaultChain {
+actor.RegisterEvent("10001", func(actorCtx context.Context) *actor.DefaultChain {
     
     // unpack msg middleware
     unpackcfg := &middleware.MsgUnpackCfg[proto.GetUserInfoReq]{}
@@ -69,7 +69,7 @@ actor.RegisterTimer(0, 1000, func(e *proto.ActivityEntity) error {
 //   messages returned to the actor
 // WithTTL sets the expiration time for this topic to 30 days
 err := a.SubscriptionEvent(events.EvChatMessageStore, a.Id, func() {
-    a.RegisterEvent(events.EvChatMessageStore, events.MakeChatStoreMessage(a.Sys, a.state))
+    a.RegisterEvent(events.EvChatMessageStore, events.MakeChatStoreMessage)
 }, pubsub.WithTTL(time.Hour*24*30))
 if err != nil {
     log.Warn("actor %v ty %v subscription event %v err %v", a.Id, a.Ty, events.EvChatMessageStore, err.Error())
