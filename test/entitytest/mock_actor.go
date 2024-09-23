@@ -29,19 +29,21 @@ func (a *mockUserActor) Init() {
 	}
 
 	// Implement events
-	a.RegisterEvent("entity_test", &actor.DefaultChain{
-		Handler: func(ctx context.Context, m *router.MsgWrapper) error {
+	a.RegisterEvent("entity_test", func(actorCtx context.Context) core.IChain {
+		return &actor.DefaultChain{
+			Handler: func(ctx context.Context, m *router.MsgWrapper) error {
 
-			if a.entity.Bag.EnoughItem(1001, 10) {
-				a.entity.Bag.ConsumeItem(1001, 5, "test", "")
+				if a.entity.Bag.EnoughItem(1001, 10) {
+					a.entity.Bag.ConsumeItem(1001, 5, "test", "")
 
-				// mark success
-				fmt.Println("entity_test consume item success")
-				m.Res.Header.Custom["code"] = "200"
-			}
+					// mark success
+					fmt.Println("entity_test consume item success")
+					m.Res.Header.Custom["code"] = "200"
+				}
 
-			return nil
-		},
+				return nil
+			},
+		}
 	})
 
 	// one minute try sync to cache

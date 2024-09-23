@@ -31,6 +31,8 @@ type Runtime struct {
 
 	tw       *timewheel.TimeWheel
 	lastTick time.Time
+
+	ctx context.Context
 }
 
 func (a *Runtime) Type() string {
@@ -47,6 +49,8 @@ func (a *Runtime) Init() {
 	a.closeCh = make(chan struct{})
 	a.chains = make(map[string]core.IChain)
 	a.recovery = defaultRecovery
+	a.ctx = context.Background()
+	a.SetContext(core.SystemKey{}, a.Sys)
 
 	a.tw = timewheel.New(10*time.Millisecond, 100) // 100个槽位，每个槽位10ms
 	a.lastTick = time.Now()
@@ -56,11 +60,15 @@ func defaultRecovery(r interface{}) {
 	fmt.Printf("Recovered from panic: %v\nStack trace:\n%s\n", r, debug.Stack())
 }
 
-func (a *Runtime) RegisterEvent(ev string, chain core.IChain) error {
+func (a *Runtime) SetContext(key, value interface{}) {
+	a.ctx = context.WithValue(a.ctx, key, value)
+}
+
+func (a *Runtime) RegisterEvent(ev string, chainFunc func(context.Context) core.IChain) error {
 	if _, exists := a.chains[ev]; exists {
 		return def.ErrActorRepeatRegisterEvent(ev)
 	}
-	a.chains[ev] = chain
+	a.chains[ev] = chainFunc(a.ctx)
 	return nil
 }
 
