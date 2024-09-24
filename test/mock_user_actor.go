@@ -1,4 +1,4 @@
-package entitytest
+package test
 
 import (
 	"context"
@@ -9,21 +9,21 @@ import (
 	"github.com/pojol/braid/router"
 )
 
-type mockUserActor struct {
+type MockUserActor struct {
 	*actor.Runtime
-	entity *EntityWapper
+	State *EntityWapper
 }
 
-func NewEntity(p *core.CreateActorParm) core.IActor {
-	return &mockUserActor{
-		Runtime: &actor.Runtime{Id: p.ID, Ty: "mockUserActor"},
-		entity:  NewEntityWapper(p.ID),
+func NewUserActor(p *core.CreateActorParm) core.IActor {
+	return &MockUserActor{
+		Runtime: &actor.Runtime{Id: p.ID, Ty: "MockUserActor"},
+		State:   NewEntityWapper(p.ID),
 	}
 }
 
-func (a *mockUserActor) Init() {
+func (a *MockUserActor) Init() {
 	a.Runtime.Init()
-	err := a.entity.Load(context.TODO())
+	err := a.State.Load(context.TODO())
 	if err != nil {
 		panic(fmt.Errorf("load user actor err %v", err.Error()))
 	}
@@ -33,8 +33,8 @@ func (a *mockUserActor) Init() {
 		return &actor.DefaultChain{
 			Handler: func(ctx context.Context, m *router.MsgWrapper) error {
 
-				if a.entity.Bag.EnoughItem("1001", 10) {
-					a.entity.Bag.ConsumeItem("1001", 5, "test", "")
+				if a.State.Bag.EnoughItem("1001", 10) {
+					a.State.Bag.ConsumeItem("1001", 5, "test", "")
 
 					// mark success
 					fmt.Println("entity_test consume item success")
@@ -48,7 +48,7 @@ func (a *mockUserActor) Init() {
 
 	// one minute try sync to cache
 	a.RegisterTimer(0, 1000*60, func() error {
-		a.entity.Sync(context.TODO())
+		a.State.Sync(context.TODO())
 
 		return nil
 	}, nil)

@@ -1,4 +1,4 @@
-package callbenchmark
+package test
 
 import (
 	"context"
@@ -9,11 +9,17 @@ import (
 	"github.com/pojol/braid/router"
 )
 
-type mockEntityActor struct {
+type MockClacActor struct {
 	*actor.Runtime
 }
 
-func (a *mockEntityActor) Init() {
+func NewClacActor(p *core.CreateActorParm) core.IActor {
+	return &MockClacActor{
+		Runtime: &actor.Runtime{Id: p.ID, Ty: "MockClacActor"},
+	}
+}
+
+func (a *MockClacActor) Init() {
 	a.Runtime.Init()
 
 	a.RegisterEvent("print", func(actorCtx context.Context) core.IChain {

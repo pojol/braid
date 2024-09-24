@@ -10,8 +10,9 @@ import (
 )
 
 type ProcessNode struct {
-	P   core.NodeParm
-	Sys core.ISystem
+	P           core.NodeParm
+	Sys         core.ISystem
+	ActorLoader core.IActorLoader
 }
 
 func New() *ProcessNode {
@@ -33,6 +34,10 @@ func (pn *ProcessNode) Init(opts ...core.NodeOption) error {
 	}
 
 	return nil
+}
+
+func (pn *ProcessNode) Loader() core.IActorLoader {
+	return pn.ActorLoader
 }
 
 func (pn *ProcessNode) Update() {

@@ -65,22 +65,14 @@ func setupBenchmark() {
 		}
 
 		sys := node.BuildSystemWithOption(
-			node.SystemActorConstructor(
-				[]node.ActorConstructor{
-					{Type: def.MockActorEntity, Constructor: func(p *core.CreateActorParm) core.IActor {
-						return &mockEntityActor{
-							&actor.Runtime{Ty: def.MockActorEntity, Sys: p.Sys},
-						}
-					}},
-				},
-			),
 			node.SystemService("service_"+strconv.Itoa(i), "node_"+strconv.Itoa(i)),
 			node.SystemWithAcceptor(port),
 		)
 
 		node := &test.ProcessNode{
-			P:   core.NodeParm{ID: strconv.Itoa(i)},
-			Sys: sys,
+			P:           core.NodeParm{ID: strconv.Itoa(i)},
+			Sys:         sys,
+			ActorLoader: actor.BuildDefaultActorLoader(sys, test.BuildActorFactory()),
 		}
 
 		for k := 0; k < JumpNum; k++ {
@@ -94,7 +86,7 @@ func setupBenchmark() {
 					actorjump2arr = append(actorjump2arr, aid)
 				}
 
-				sys.Register(context.TODO(), def.MockActorEntity, core.CreateActorWithID(aid))
+				node.Loader().Pick("MockClacActor").WithID(aid).Register()
 			}
 		}
 

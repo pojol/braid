@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package entitytest;
+package test;
 import "gogo/gogo.proto";
 
 message Item {

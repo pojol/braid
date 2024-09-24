@@ -12,6 +12,7 @@ type INode interface {
 	WaitClose()
 
 	ID() string
+	Loader() IActorLoader
 	System() ISystem
 }
 

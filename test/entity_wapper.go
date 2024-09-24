@@ -1,4 +1,4 @@
-package entitytest
+package test
 
 import (
 	"context"

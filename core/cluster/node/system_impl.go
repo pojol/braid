@@ -63,49 +63,38 @@ func (sys *NormalSystem) Update() {
 	}
 }
 
-func (sys *NormalSystem) Register(ctx context.Context, ty string, opts ...core.CreateActorOption) (core.IActor, error) {
+func (sys *NormalSystem) Register(builder *core.ActorLoaderBuilder) (core.IActor, error) {
 
-	createParm := &core.CreateActorParm{
-		Sys:     sys,
-		Options: make(map[string]interface{}),
-	}
-	for _, opt := range opts {
-		opt(createParm)
-	}
-
-	if createParm.ID == "" || ty == "" {
+	if builder.ID == "" || builder.ActorTy == "" {
 		return nil, def.ErrSystemParm()
 	}
 
-	// 检查 actor 是否已存在
 	sys.Lock()
-	if _, ok := sys.actoridmap[createParm.ID]; ok {
+	if _, ok := sys.actoridmap[builder.ID]; ok {
 		sys.Unlock()
-		return nil, def.ErrSystemRepeatRegistActor(ty, createParm.ID)
+		return nil, def.ErrSystemRepeatRegistActor(builder.ActorTy, builder.ID)
 	}
 	sys.Unlock()
 
-	var creator ActorConstructor
-	for _, c := range sys.p.Constructors {
-		if c.Type == ty {
-			creator = c
-			break
+	if builder.ActorConstructor.RegisteraionType == core.ActorRegisteraionType_GloballyUnique {
+		_, err := sys.addressbook.GetByID(context.Background(), builder.ID)
+		if err == nil {
+			return nil, fmt.Errorf("global actor %v is register", builder.ActorTy)
 		}
 	}
 
-	if creator.Type != ty {
-		return nil, def.ErrSystemCantFindCreateActorStrategy(ty)
+	// Register first, then build
+	err := sys.addressbook.Register(context.TODO(), builder.ActorTy, builder.ID)
+	if err != nil {
+		return nil, err
 	}
 
-	// 创建 actor
-	actor := creator.Constructor(createParm)
+	// Instantiate actor
+	actor := builder.Constructor(&builder.CreateActorParm)
 
-	// 注册 actor
 	sys.Lock()
-	sys.actoridmap[createParm.ID] = actor
+	sys.actoridmap[builder.ID] = actor
 	sys.Unlock()
-
-	sys.addressbook.Register(ctx, ty, createParm.ID)
 
 	return actor, nil
 }
@@ -168,12 +157,11 @@ func (sys *NormalSystem) findLocalOrWildcardActor(ctx context.Context, ty string
 
 	for id, actor := range sys.actoridmap {
 		if actor.Type() == ty {
-			// 如果在本地找到了匹配类型的 actor，直接返回
 			return actor, core.AddressInfo{ActorId: id, ActorTy: ty}, nil
 		}
 	}
 
-	// 如果在本地没有找到，使用 GetWildcardActor 进行集群范围的随机搜索
+	// If not found locally, use GetWildcardActor to perform a random search across the cluster
 	info, err := sys.addressbook.GetWildcardActor(ctx, ty)
 	return nil, info, err
 }
@@ -184,16 +172,16 @@ func (sys *NormalSystem) handleLocalCall(ctx context.Context, actorp core.IActor
 		msg.Done = make(chan struct{})
 		ready := make(chan struct{})
 		go func() {
-			<-ready // 等待 Received 执行完毕
+			<-ready // Wait for Received to complete
 			msg.Wg.Wait()
 			close(msg.Done)
 		}()
 
 		if err := actorp.Received(msg); err != nil {
-			close(ready) // 确保在错误情况下也关闭 ready 通道
+			close(ready) // Ensure the ready channel is closed even in case of an error
 			return err
 		}
-		close(ready) // 通知 goroutine Received 已执行完毕
+		close(ready) // Notify the goroutine that Received has completed
 
 		select {
 		case <-msg.Done:

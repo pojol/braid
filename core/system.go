@@ -9,28 +9,33 @@ import (
 
 type CreateActorParm struct {
 	ID      string
-	Sys     ISystem
+	ActorTy string
 	Options map[string]interface{}
 }
 
-type CreateActorOption func(*CreateActorParm)
-
-func CreateActorWithID(id string) CreateActorOption {
-	return func(p *CreateActorParm) {
-		p.ID = id
-	}
+func (p *ActorLoaderBuilder) WithID(id string) *ActorLoaderBuilder {
+	p.ID = id
+	return p
 }
 
-func CreateActorWithOption(key string, value interface{}) CreateActorOption {
-	return func(cap *CreateActorParm) {
-		cap.Options[key] = value
-	}
+func (p *ActorLoaderBuilder) WithType(ty string) *ActorLoaderBuilder {
+	p.ActorTy = ty
+	return p
+}
+
+func (p *ActorLoaderBuilder) WithOpt(key string, value interface{}) *ActorLoaderBuilder {
+	p.Options[key] = value
+	return p
+}
+
+func (p *ActorLoaderBuilder) Register() {
+	p.ISystem.Register(p)
 }
 
 type CreateFunc func(p *CreateActorParm) IActor
 
 type ISystem interface {
-	Register(ctx context.Context, ty string, opts ...CreateActorOption) (IActor, error)
+	Register(*ActorLoaderBuilder) (IActor, error)
 	Actors() []IActor
 
 	FindActor(ctx context.Context, id string) (IActor, error)

@@ -10,7 +10,8 @@ import (
 )
 
 type process struct {
-	p core.NodeParm
+	p           core.NodeParm
+	ActorLoader core.IActorLoader
 }
 
 var pcs *process
@@ -42,6 +43,10 @@ func (pn *process) ID() string {
 
 func (pn *process) System() core.ISystem {
 	return pn.p.Sys
+}
+
+func (pn *process) Loader() core.IActorLoader {
+	return pn.ActorLoader
 }
 
 func (pn *process) Init(opts ...core.NodeOption) error {

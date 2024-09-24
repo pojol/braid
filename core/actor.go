@@ -12,6 +12,8 @@ type IChain interface {
 	Execute(context.Context, *router.MsgWrapper) error
 }
 
+// Users can define custom keys to pass required structures into the context
+
 // StateKey is a custom type for the context key
 type StateKey struct{}
 
@@ -49,10 +51,11 @@ func GetSystem(ctx context.Context) ISystem {
 	return ctx.Value(SystemKey{}).(ISystem)
 }
 
-/*
-IActor 对线程（协程）的抽象，在Node(进程)中，是由1～N个actor执行具体的业务逻辑
-  - 每一个actor对象代表一个逻辑计算单元，由mailbox去和外部进行交互
-*/
+// IActor is an abstraction of threads (goroutines). In a Node (process),
+// 1 to N actors execute specific business logic.
+//
+// Each actor object represents a logical computation unit that interacts
+// with the outside world through a mailbox.
 type IActor interface {
 	Init()
 
@@ -97,4 +100,41 @@ type IActor interface {
 	SetContext(key, value interface{})
 
 	Exit()
+}
+
+// ActorLoaderBuilder used to build ActorLoader
+type ActorLoaderBuilder struct {
+	CreateActorParm
+	ISystem
+	ActorConstructor
+}
+
+type IActorLoader interface {
+
+	// Pick selects an actor from the factory and provides a builder
+	Pick(string) *ActorLoaderBuilder
+}
+
+const (
+	ActorRegisteraionType_GloballyUnique = "GloballyUnique"
+	ActorRegisteraionType_Static         = "Static"
+
+	// Except for dynamic nodes, other nodes need to be manually registered to the current node.
+	// Dynamic nodes will be registered by dynamicRegisterActor,
+	// which will analyze the weights of nodes in Redis to perform load-balanced registration.
+	ActorRegisteraionType_Dynamic = "Dynamic"
+)
+
+type ActorConstructor struct {
+	// Weight occupied by the actor, weight algorithm reference: 2c4g (pod = 2 * 4 * 1000)
+	Weight int
+	// Constructor function
+	Constructor CreateFunc
+
+	// Registration types (globally unique, random node, must be current node)
+	RegisteraionType string
+}
+
+type IActorFactory interface {
+	Get(ty string) *ActorConstructor
 }
