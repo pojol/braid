@@ -43,18 +43,16 @@ actor.RegisterEvent("10001", func(actorCtx context.Context) *actor.DefaultChain 
 
 // 0 execute immediately without waiting
 // 1000 execute every 1000 milliseconds
-actor.RegisterTimer(0, 1000, func(e *proto.ActivityEntity) error {
+actor.RegisterTimer(0, 1000, func(actorCtx context.Context) error {
 
-    if e.State == Init {
+    state := GetState(actorCtx).(*xxState)
+
+    if state.State == Init {
         // todo & state transitions
-        e.State = Running
+        state.State = Running
     } else if e.State == Running {
-
-    } else if e.State == Closing {
-
-    } else if e.State == Closed {
-
-    }
+        // todo ...
+    } 
 
     return nil
 })
