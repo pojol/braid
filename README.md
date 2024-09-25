@@ -8,13 +8,38 @@
 [![Gitter](https://img.shields.io/gitter/room/braid/community?color=blue?style=flat-square)](https://app.gitter.im/#/room/#braid:gitter.im)
 
 
-### Register event
+### Sample
+
+1. 注册 actor
+```go
+// factory  e.g. test/mockdata/actor_factory
+factory.bind("MockClacActor", 
+    core.ActorRegisteraionType_DynamicRandom,  // 动态注册 actor
+    20,             // actor 的权重
+    50000,          // actor 在集群中的构建数量上限
+    NewClacActor,   // actor 的构造函数
+)
+```
+
+2. 构建 actor
 ```go
 
-actor.RegisterEvent("10001", func(actorCtx context.Context) *actor.DefaultChain {
+// 构建一个 ActorDynamicRegister 类型的 actor 到本节点中
+sys.Loader().Builder(def.ActorDynamicRegister).WithID("nodeid-register").RegisterLocally()
+
+// 或通过 dynamic 的方式将 MockClacActor 类型的 actor 注册到集群（通过负载均衡
+sys.Loader().Builder("MockClacActor").WithID("001").RegisterDynamically()
+```
+
+3. 为 actor 绑定实现逻辑
+```go
+
+// 绑定消息处理
+clacActor.RegisterEvent("ev_clac", func(actorCtx context.Context) *actor.DefaultChain {
     
-    // unpack msg middleware
-    unpackcfg := &middleware.MsgUnpackCfg[proto.GetUserInfoReq]{}
+    // 使用中间件
+    unpackcfg := &middleware.MsgUnpackCfg[proto.xxx]{}
+    sys := core.GetSystem(actorCtx)
 
     return &actor.DefaultChain{
         Before: []Base.MiddlewareHandler{
@@ -22,47 +47,31 @@ actor.RegisterEvent("10001", func(actorCtx context.Context) *actor.DefaultChain 
         },
         Handler: func(ctx context.Context, msg *router.MsgWrapper) error {
 
-            realmsg, ok := unpackcfg.Msg.(*proto.GetUserInfoReq)
-            fmt.Println("recv msg GetUserInfoReq", realmsg)
-
+            realmsg, ok := unpackcfg.Msg.(*proto.xxx)
             // todo ...
+
+            // 向下传递消息
+            sys.Call(...)
 
             return nil
         }
-        After: []workerthread.MiddlewareHandler {
-            // Check if the entity is dirty, and if so, synchronize it to the cache
-            middleware.TryUpdateUserEntity(),
-        },
     }
 })
-```
 
-### Register timer
-> Both the handler in the timer and the chain handler in the event run in the same goroutine.
-```go
+// 绑定定时处理函数
+clacActor.RegisterTimer(0, 1000, func(actorCtx context.Context) error {
 
-// 0 execute immediately without waiting
-// 1000 execute every 1000 milliseconds
-actor.RegisterTimer(0, 1000, func(e *proto.ActivityEntity) error {
+    state := core.GetState(actorCtx).(*xxxState)
 
-    if e.State == Init {
+    if state.State == Init {
         // todo & state transitions
-        e.State = Running
-    } else if e.State == Running {
-
-    } else if e.State == Closing {
-
-    } else if e.State == Closed {
+        state.State = Running
+    } else if state.State == Running {
 
     }
 
     return nil
 })
-
-```
-
-### Subscription event
-```go
 
 // Define a message with topic events.EvChatMessageStore and channel a.Id (self)
 // func is the callback for successful subscription, registering a handler function for
@@ -72,31 +81,10 @@ err := a.SubscriptionEvent(events.EvChatMessageStore, a.Id, func() {
     a.RegisterEvent(events.EvChatMessageStore, events.MakeChatStoreMessage)
 }, pubsub.WithTTL(time.Hour*24*30))
 if err != nil {
-    log.Warn("actor %v ty %v subscription event %v err %v", a.Id, a.Ty, events.EvChatMessageStore, err.Error())
+    log.Warn("actor %v ty %v subscription event %v err %v", a.Id, a.Ty, ev, err.Error())
 }
 ```
 
-### Call
-* Sync blocking
-```go
-// Send a mock_test event to actor_1, blocking and waiting
-system.Call(ctx, router.Target{ID: "actor_1", Ty: "mock_actor", Ev: "mock_test"}, nil)
-```
-
-* Asyn call
-```go
-// Send a mock_test event to any actor of type mock_actor
-//  async call, and continue execution directly
-system.Send(ctx, router.Target{ID:def.SymbolWildcard, Ty: "mock_actor",Ev: "mock_test"}, nil)
-```
-
-* Pub
-```go
-// Publish a ps_mock_test event to mock_actor_1
-//    which will be stored in the redis stream queue first
-//    waiting for ps_mock_test to consume
-system.Pub(ctx, "topic", "channel", msg)
-```
 
 ---
 
