@@ -5,8 +5,7 @@
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/pojol/braid?style=flat-square)](https://goreportcard.com/report/github.com/pojol/braid)
 [![Demo](https://img.shields.io/badge/demo-braid--demo-brightgreen?style=flat-square)](https://github.com/pojol/braid-demo)
-[![Gitter](https://img.shields.io/gitter/room/braid/community?color=blue?style=flat-square)](https://app.gitter.im/#/room/#braid:gitter.im)
-
+[![Matrix](https://img.shields.io/badge/chat-%23braid%3Amatrix.org-blue)](https://matrix.to/#/#braid-world:matrix.org)
 
 ### Sample
 
@@ -14,7 +13,7 @@
 ```go
 // factory  e.g. test/mockdata/actor_factory
 factory.bind("MockClacActor", 
-    core.ActorRegisteraionType_DynamicRandom,  // 动态注册 actor
+    false,          // 是否节点唯一
     20,             // actor 的权重
     50000,          // actor 在集群中的构建数量上限
     NewClacActor,   // actor 的构造函数
@@ -24,7 +23,7 @@ factory.bind("MockClacActor",
 2. 构建 actor
 ```go
 
-// 构建一个 ActorDynamicRegister 类型的 actor 到本节点中
+// 注册一个 ActorDynamicRegister 类型的 actor 到本节点中
 sys.Loader().Builder(def.ActorDynamicRegister).WithID("nodeid-register").RegisterLocally()
 
 // 或通过 dynamic 的方式将 MockClacActor 类型的 actor 注册到集群（通过负载均衡
@@ -73,12 +72,16 @@ clacActor.RegisterTimer(0, 1000, func(actorCtx context.Context) error {
     return nil
 })
 
-// Define a message with topic events.EvChatMessageStore and channel a.Id (self)
-// func is the callback for successful subscription, registering a handler function for
-//   messages returned to the actor
-// WithTTL sets the expiration time for this topic to 30 days
-a.SubscriptionEvent(events.EvChatMessageStore, a.Id, func() {
+// 监听消息（离线时别人发来的聊天信息）
+//  topic: 离线聊天消息
+//  channel: actor自身
+//  succ: 成功订阅后的回调
+//  ttl: 消息在缓存中保存的时间
+clacActor.SubscriptionEvent(events.EvChatMessageStore, a.Id, func() {
+
+    // 监听成功后，为消息绑定处理函数
     a.RegisterEvent(events.EvChatMessageStore, events.MakeChatStoreMessage)
+    
 }, pubsub.WithTTL(time.Hour*24*30))
 ```
 
