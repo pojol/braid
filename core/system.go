@@ -28,11 +28,13 @@ func (p *ActorLoaderBuilder) WithOpt(key string, value interface{}) *ActorLoader
 	return p
 }
 
+// RegisterLocally registers the actor to the current node
 func (p *ActorLoaderBuilder) RegisterLocally() (IActor, error) {
 	return p.ISystem.Register(p)
 }
 
-func (p *ActorLoaderBuilder) RegisterDynamically(ctx context.Context) error {
+// RegisterDynamically registers the actor dynamically to the cluster (by selecting an appropriate node through load balancing)
+func (p *ActorLoaderBuilder) RegisterDynamically() error {
 	return p.IActorLoader.Pick(p)
 }
 
@@ -44,10 +46,12 @@ type ISystem interface {
 
 	FindActor(ctx context.Context, id string) (IActor, error)
 
-	// 同步调用语义（实际实现是异步的，每个调用都是在独立的goroutine中）
+	// Call sends an event to another actor
+	// Synchronous call semantics (actual implementation is asynchronous, each call is in a separate goroutine)
 	Call(ctx context.Context, tar router.Target, msg *router.MsgWrapper) error
 
-	// 异步调用语义，不阻塞当前的goroutine，用于耗时较长的rpc调用
+	// Send sends an event to another actor
+	// Asynchronous call semantics, does not block the current goroutine, used for long-running RPC calls
 	Send(ctx context.Context, tar router.Target, msg *router.MsgWrapper) error
 
 	// Pub semantics for pubsub, used to publish messages to an actor's message cache queue
@@ -57,6 +61,7 @@ type ISystem interface {
 	//  opts can be used to set initial values on first listen, such as setting the TTL for messages in this topic
 	Sub(topic string, channel string, opts ...pubsub.TopicOption) (*pubsub.Channel, error)
 
+	// Loader returns the actor loader
 	Loader() IActorLoader
 
 	Update()

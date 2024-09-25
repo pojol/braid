@@ -53,7 +53,7 @@ func TestActorLoader(t *testing.T) {
 	node.Init()
 	node.Update()
 
-	err = sys.Loader().Builder("MockClacActor").WithID("001").RegisterDynamically(context.Background())
+	err = sys.Loader().Builder("MockClacActor").WithID("001").RegisterDynamically()
 	assert.Equal(t, err, nil)
 
 	//node.WaitClose()

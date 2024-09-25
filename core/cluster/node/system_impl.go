@@ -89,7 +89,7 @@ func (sys *NormalSystem) Register(builder *core.ActorLoaderBuilder) (core.IActor
 	if builder.GlobalQuantityLimit != 0 {
 
 		// 检查当前节点是否已经存在
-		if builder.ActorConstructor.RegisteraionType == core.ActorRegisteraionType_DynamicUnique {
+		if builder.ActorConstructor.NodeUnique {
 
 		}
 
