@@ -77,12 +77,9 @@ clacActor.RegisterTimer(0, 1000, func(actorCtx context.Context) error {
 // func is the callback for successful subscription, registering a handler function for
 //   messages returned to the actor
 // WithTTL sets the expiration time for this topic to 30 days
-err := a.SubscriptionEvent(events.EvChatMessageStore, a.Id, func() {
+a.SubscriptionEvent(events.EvChatMessageStore, a.Id, func() {
     a.RegisterEvent(events.EvChatMessageStore, events.MakeChatStoreMessage)
 }, pubsub.WithTTL(time.Hour*24*30))
-if err != nil {
-    log.Warn("actor %v ty %v subscription event %v err %v", a.Id, a.Ty, ev, err.Error())
-}
 ```
 
 
