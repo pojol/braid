@@ -1,4 +1,4 @@
-package test
+package mockdata
 
 import (
 	"github.com/pojol/braid/actors"

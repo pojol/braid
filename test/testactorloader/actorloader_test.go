@@ -1,4 +1,4 @@
-package actorloader
+package testactorloader
 
 import (
 	"context"
@@ -12,7 +12,7 @@ import (
 	"github.com/pojol/braid/core/cluster/node"
 	"github.com/pojol/braid/def"
 	"github.com/pojol/braid/lib/log"
-	"github.com/pojol/braid/test"
+	"github.com/pojol/braid/test/mockdata"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -35,9 +35,9 @@ func TestActorLoader(t *testing.T) {
 
 	redis.FlushAll(context.TODO()) // clean cache
 
-	sys := node.BuildSystemWithOption(test.BuildActorFactory())
+	sys := node.BuildSystemWithOption(mockdata.BuildActorFactory())
 
-	node := &test.ProcessNode{
+	node := &mockdata.ProcessNode{
 		P:   core.NodeParm{ID: "test-actor-loader-1"},
 		Sys: sys,
 	}

@@ -1,4 +1,4 @@
-package callbenchmark
+package benchmarkcall
 
 import (
 	"context"
@@ -14,7 +14,7 @@ import (
 	"github.com/pojol/braid/core/cluster/node"
 	"github.com/pojol/braid/def"
 	"github.com/pojol/braid/router"
-	"github.com/pojol/braid/test"
+	"github.com/pojol/braid/test/mockdata"
 	"golang.org/x/exp/rand"
 )
 
@@ -31,7 +31,7 @@ import (
 // 16节点	16w个actor	4跳
 
 var (
-	nodes         []*test.ProcessNode
+	nodes         []*mockdata.ProcessNode
 	actorjump1arr []string
 	actorjump2arr []string
 	initOnce      sync.Once
@@ -64,12 +64,12 @@ func setupBenchmark() {
 		}
 
 		sys := node.BuildSystemWithOption(
-			test.BuildActorFactory(),
+			mockdata.BuildActorFactory(),
 			node.SystemService("service_"+strconv.Itoa(i), "node_"+strconv.Itoa(i)),
 			node.SystemWithAcceptor(port),
 		)
 
-		node := &test.ProcessNode{
+		node := &mockdata.ProcessNode{
 			P:   core.NodeParm{ID: strconv.Itoa(i)},
 			Sys: sys,
 		}
