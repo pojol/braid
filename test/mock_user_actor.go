@@ -14,7 +14,7 @@ type MockUserActor struct {
 	State *EntityWapper
 }
 
-func NewUserActor(p *core.CreateActorParm) core.IActor {
+func NewUserActor(p *core.ActorLoaderBuilder) core.IActor {
 	return &MockUserActor{
 		Runtime: &actor.Runtime{Id: p.ID, Ty: "MockUserActor"},
 		State:   NewEntityWapper(p.ID),

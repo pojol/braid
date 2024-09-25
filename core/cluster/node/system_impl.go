@@ -6,9 +6,11 @@ import (
 	"sync"
 
 	"github.com/pojol/braid/core"
+	"github.com/pojol/braid/core/actor"
 	"github.com/pojol/braid/core/addressbook"
 	"github.com/pojol/braid/def"
 	"github.com/pojol/braid/lib/grpc"
+	"github.com/pojol/braid/lib/log"
 	"github.com/pojol/braid/lib/pubsub"
 	"github.com/pojol/braid/router"
 )
@@ -19,15 +21,18 @@ type NormalSystem struct {
 	client      *grpc.Client
 	ps          *pubsub.Pubsub
 
-	p SystemParm
+	p      SystemParm
+	loader core.IActorLoader
 
 	sync.RWMutex
 }
 
-func BuildSystemWithOption(opts ...SystemOption) core.ISystem {
+func BuildSystemWithOption(factory core.IActorFactory, opts ...SystemOption) core.ISystem {
 
 	p := SystemParm{
-		Ip: "127.0.0.1",
+		Ip:          "127.0.0.1",
+		ServiceName: "undefined",
+		NodeID:      "undefined",
 	}
 	for _, opt := range opts {
 		opt(&p)
@@ -39,6 +44,7 @@ func BuildSystemWithOption(opts ...SystemOption) core.ISystem {
 
 	// init grpc client
 	sys.client = grpc.BuildClientWithOption()
+	sys.loader = actor.BuildDefaultActorLoader(sys, factory)
 
 	sys.ps = pubsub.BuildWithOption()
 
@@ -63,6 +69,10 @@ func (sys *NormalSystem) Update() {
 	}
 }
 
+func (sys *NormalSystem) Loader() core.IActorLoader {
+	return sys.loader
+}
+
 func (sys *NormalSystem) Register(builder *core.ActorLoaderBuilder) (core.IActor, error) {
 
 	if builder.ID == "" || builder.ActorTy == "" {
@@ -76,11 +86,14 @@ func (sys *NormalSystem) Register(builder *core.ActorLoaderBuilder) (core.IActor
 	}
 	sys.Unlock()
 
-	if builder.ActorConstructor.RegisteraionType == core.ActorRegisteraionType_GloballyUnique {
-		_, err := sys.addressbook.GetByID(context.Background(), builder.ID)
-		if err == nil {
-			return nil, fmt.Errorf("global actor %v is register", builder.ActorTy)
+	if builder.GlobalQuantityLimit != 0 {
+
+		// 检查当前节点是否已经存在
+		if builder.ActorConstructor.RegisteraionType == core.ActorRegisteraionType_DynamicUnique {
+
 		}
+
+		// 检查注册数是否已经超出限制
 	}
 
 	// Register first, then build
@@ -90,12 +103,13 @@ func (sys *NormalSystem) Register(builder *core.ActorLoaderBuilder) (core.IActor
 	}
 
 	// Instantiate actor
-	actor := builder.Constructor(&builder.CreateActorParm)
+	actor := builder.Constructor(builder)
 
 	sys.Lock()
 	sys.actoridmap[builder.ID] = actor
 	sys.Unlock()
 
+	log.Info("node %v [system] register %v succ, cur weight %v", sys.addressbook.NodeID, builder.ActorTy, 0)
 	return actor, nil
 }
 
@@ -120,6 +134,13 @@ func (sys *NormalSystem) Call(ctx context.Context, tar router.Target, msg *route
 	switch tar.ID {
 	case def.SymbolWildcard:
 		info, err = sys.addressbook.GetWildcardActor(ctx, tar.Ty)
+		// Check if the wildcard actor is local
+		sys.RLock()
+		actor, ok := sys.actoridmap[info.ActorId]
+		sys.RUnlock()
+		if ok {
+			return sys.handleLocalCall(ctx, actor, msg)
+		}
 	case def.SymbolLocalFirst:
 		actor, info, err = sys.findLocalOrWildcardActor(ctx, tar.Ty)
 		if err != nil {

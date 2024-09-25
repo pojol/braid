@@ -107,22 +107,32 @@ type ActorLoaderBuilder struct {
 	CreateActorParm
 	ISystem
 	ActorConstructor
+	IActorLoader
 }
 
 type IActorLoader interface {
 
-	// Pick selects an actor from the factory and provides a builder
-	Pick(string) *ActorLoaderBuilder
+	// Builder selects an actor from the factory and provides a builder
+	Builder(string) *ActorLoaderBuilder
+
+	// Pick selects an appropriate node for the actor builder to register
+	Pick(*ActorLoaderBuilder) error
 }
 
 const (
-	ActorRegisteraionType_GloballyUnique = "GloballyUnique"
-	ActorRegisteraionType_Static         = "Static"
+	// Register the actor to the current node
+	//  Note: It is still subject to the GlobalQuantityLimit restriction. If a limit is set and the number of registrations
+	//  on other nodes has already exceeded this limit, the current registration will be skipped
+	ActorRegisteraionType_Static = "Static"
 
-	// Except for dynamic nodes, other nodes need to be manually registered to the current node.
-	// Dynamic nodes will be registered by dynamicRegisterActor,
-	// which will analyze the weights of nodes in Redis to perform load-balanced registration.
-	ActorRegisteraionType_Dynamic = "Dynamic"
+	// The registration of dynamic nodes is executed through the `pick` function of the actor loader,
+	// which analyzes the weight information of nodes in the cluster and the distribution of actors of the same type,
+	// to select an appropriate node for registration
+
+	// Dynamic and node-unique registration type
+	ActorRegisteraionType_DynamicUnique = "DynamicUnique"
+	// Dynamic and random node registration type
+	ActorRegisteraionType_DynamicRandom = "DynamicRandom"
 )
 
 type ActorConstructor struct {
@@ -133,6 +143,9 @@ type ActorConstructor struct {
 
 	// Registration types (globally unique, random node, must be current node)
 	RegisteraionType string
+
+	// Global quantity limit for the current actor type that can be registered
+	GlobalQuantityLimit int
 }
 
 type IActorFactory interface {

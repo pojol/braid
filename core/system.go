@@ -28,11 +28,15 @@ func (p *ActorLoaderBuilder) WithOpt(key string, value interface{}) *ActorLoader
 	return p
 }
 
-func (p *ActorLoaderBuilder) Register() {
-	p.ISystem.Register(p)
+func (p *ActorLoaderBuilder) RegisterLocally() (IActor, error) {
+	return p.ISystem.Register(p)
 }
 
-type CreateFunc func(p *CreateActorParm) IActor
+func (p *ActorLoaderBuilder) RegisterDynamically(ctx context.Context) error {
+	return p.IActorLoader.Pick(p)
+}
+
+type CreateFunc func(p *ActorLoaderBuilder) IActor
 
 type ISystem interface {
 	Register(*ActorLoaderBuilder) (IActor, error)
@@ -52,6 +56,8 @@ type ISystem interface {
 	// Sub listens to messages in a channel within a specific topic
 	//  opts can be used to set initial values on first listen, such as setting the TTL for messages in this topic
 	Sub(topic string, channel string, opts ...pubsub.TopicOption) (*pubsub.Channel, error)
+
+	Loader() IActorLoader
 
 	Update()
 	Exit()

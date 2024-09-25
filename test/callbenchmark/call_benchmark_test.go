@@ -11,7 +11,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/pojol/braid/3rd/redis"
 	"github.com/pojol/braid/core"
-	"github.com/pojol/braid/core/actor"
 	"github.com/pojol/braid/core/cluster/node"
 	"github.com/pojol/braid/def"
 	"github.com/pojol/braid/router"
@@ -65,14 +64,14 @@ func setupBenchmark() {
 		}
 
 		sys := node.BuildSystemWithOption(
+			test.BuildActorFactory(),
 			node.SystemService("service_"+strconv.Itoa(i), "node_"+strconv.Itoa(i)),
 			node.SystemWithAcceptor(port),
 		)
 
 		node := &test.ProcessNode{
-			P:           core.NodeParm{ID: strconv.Itoa(i)},
-			Sys:         sys,
-			ActorLoader: actor.BuildDefaultActorLoader(sys, test.BuildActorFactory()),
+			P:   core.NodeParm{ID: strconv.Itoa(i)},
+			Sys: sys,
 		}
 
 		for k := 0; k < JumpNum; k++ {
@@ -86,7 +85,7 @@ func setupBenchmark() {
 					actorjump2arr = append(actorjump2arr, aid)
 				}
 
-				node.Loader().Pick("MockClacActor").WithID(aid).Register()
+				sys.Loader().Builder("MockClacActor").WithID(aid).RegisterLocally()
 			}
 		}
 

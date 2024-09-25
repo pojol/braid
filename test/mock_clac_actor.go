@@ -13,7 +13,7 @@ type MockClacActor struct {
 	*actor.Runtime
 }
 
-func NewClacActor(p *core.CreateActorParm) core.IActor {
+func NewClacActor(p *core.ActorLoaderBuilder) core.IActor {
 	return &MockClacActor{
 		Runtime: &actor.Runtime{Id: p.ID, Ty: "MockClacActor"},
 	}

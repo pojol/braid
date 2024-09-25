@@ -10,6 +10,7 @@ import (
 	"github.com/pojol/braid/core"
 	"github.com/pojol/braid/def"
 	"github.com/pojol/braid/lib/dismutex"
+	"github.com/pojol/braid/lib/log"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -55,6 +56,7 @@ func (ab *AddressBook) Register(ctx context.Context, ty, id string) error {
 
 	// serialize address info to json
 	addrJSON, _ := json.Marshal(core.AddressInfo{
+		Node:    ab.NodeID,
 		ActorId: id,
 		ActorTy: ty,
 		Ip:      ab.Ip,
@@ -201,13 +203,15 @@ func (ab *AddressBook) GetWildcardActor(ctx context.Context, actorType string) (
 	for _, addrJSON := range addrJSONs {
 		var addr core.AddressInfo
 		if err := json.Unmarshal([]byte(addrJSON), &addr); err != nil {
+			log.Warn("addressbook unmarshal actor type %v json err %v", actorType, err.Error())
 			continue // continue to next address
 		}
 
 		// get the weight of the node where the actor is located
-		nodeKey := fmt.Sprintf("{node:%s}", addr.Ip)
+		nodeKey := fmt.Sprintf("{node:%s}", addr.Node)
 		nodeWeight, err := trdredis.HGet(ctx, nodeKey, "total_weight").Int()
 		if err != nil {
+			fmt.Println("skip this actor if unable to get node weight")
 			continue // skip this actor if unable to get node weight
 		}
 

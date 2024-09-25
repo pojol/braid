@@ -59,11 +59,12 @@ func mockEntity2DB(id string) {
 
 func mockEntity(id string) core.ISystem {
 	sys := node.BuildSystemWithOption(
+		test.BuildActorFactory(),
 		node.SystemService("service_1", "node_1"),
 	)
 
 	loader := actor.BuildDefaultActorLoader(sys, test.BuildActorFactory())
-	loader.Pick("MockUserActor").WithID(id).Register()
+	loader.Builder("MockUserActor").WithID(id).RegisterLocally()
 
 	for _, a := range sys.Actors() {
 		a.Init()
