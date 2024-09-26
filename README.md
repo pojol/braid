@@ -7,14 +7,38 @@
 [![Demo](https://img.shields.io/badge/demo-braid--demo-brightgreen?style=flat-square)](https://github.com/pojol/braid-demo)
 [![Matrix](https://img.shields.io/badge/chat-%23braid%3Amatrix.org-blue)](https://matrix.to/#/#braid-world:matrix.org)
 
+### Sample
 
-### Register event
+1. 注册 actor
+```go
+// factory  e.g. test/mockdata/actor_factory
+factory.bind("MockClacActor", 
+    false,          // 是否节点唯一
+    20,             // actor 的权重
+    50000,          // actor 在集群中的构建数量上限
+    NewClacActor,   // actor 的构造函数
+)
+```
+
+2. 构建 actor
 ```go
 
-actor.RegisterEvent("10001", func(actorCtx context.Context) *actor.DefaultChain {
+// 注册一个 ActorDynamicRegister 类型的 actor 到本节点中
+sys.Loader().Builder(def.ActorDynamicRegister).WithID("nodeid-register").RegisterLocally()
+
+// 或通过 dynamic 的方式将 MockClacActor 类型的 actor 注册到集群（通过负载均衡
+sys.Loader().Builder("MockClacActor").WithID("001").RegisterDynamically()
+```
+
+3. 为 actor 绑定实现逻辑
+```go
+
+// 绑定消息处理
+clacActor.RegisterEvent("ev_clac", func(actorCtx context.Context) *actor.DefaultChain {
     
-    // unpack msg middleware
-    unpackcfg := &middleware.MsgUnpackCfg[proto.GetUserInfoReq]{}
+    // 使用中间件
+    unpackcfg := &middleware.MsgUnpackCfg[proto.xxx]{}
+    sys := core.GetSystem(actorCtx)
 
     return &actor.DefaultChain{
         Before: []Base.MiddlewareHandler{
@@ -22,79 +46,45 @@ actor.RegisterEvent("10001", func(actorCtx context.Context) *actor.DefaultChain 
         },
         Handler: func(ctx context.Context, msg *router.MsgWrapper) error {
 
-            realmsg, ok := unpackcfg.Msg.(*proto.GetUserInfoReq)
-            fmt.Println("recv msg GetUserInfoReq", realmsg)
-
+            realmsg, ok := unpackcfg.Msg.(*proto.xxx)
             // todo ...
+
+            // 向下传递消息
+            sys.Call(...)
 
             return nil
         }
-        After: []workerthread.MiddlewareHandler {
-            // Check if the entity is dirty, and if so, synchronize it to the cache
-            middleware.TryUpdateUserEntity(),
-        },
     }
 })
-```
 
-### Register timer
-> Both the handler in the timer and the chain handler in the event run in the same goroutine.
-```go
+// 绑定定时处理函数
+clacActor.RegisterTimer(0, 1000, func(actorCtx context.Context) error {
 
-// 0 execute immediately without waiting
-// 1000 execute every 1000 milliseconds
-actor.RegisterTimer(0, 1000, func(actorCtx context.Context) error {
-
-    state := GetState(actorCtx).(*xxState)
+    state := core.GetState(actorCtx).(*xxxState)
 
     if state.State == Init {
         // todo & state transitions
         state.State = Running
-    } else if e.State == Running {
-        // todo ...
-    } 
+    } else if state.State == Running {
+
+    }
 
     return nil
 })
 
-```
+// 监听消息（离线时别人发来的聊天信息）
+//  topic: 离线聊天消息
+//  channel: actor自身
+//  succ: 成功订阅后的回调
+//  ttl: 消息在缓存中保存的时间
+clacActor.SubscriptionEvent(events.EvChatMessageStore, a.Id, func() {
 
-### Subscription event
-```go
-
-// Define a message with topic events.EvChatMessageStore and channel a.Id (self)
-// func is the callback for successful subscription, registering a handler function for
-//   messages returned to the actor
-// WithTTL sets the expiration time for this topic to 30 days
-err := a.SubscriptionEvent(events.EvChatMessageStore, a.Id, func() {
+    // 监听成功后，为消息绑定处理函数
     a.RegisterEvent(events.EvChatMessageStore, events.MakeChatStoreMessage)
+    
 }, pubsub.WithTTL(time.Hour*24*30))
-if err != nil {
-    log.Warn("actor %v ty %v subscription event %v err %v", a.Id, a.Ty, events.EvChatMessageStore, err.Error())
-}
 ```
 
-### Call
-* Sync blocking
-```go
-// Send a mock_test event to actor_1, blocking and waiting
-system.Call(ctx, router.Target{ID: "actor_1", Ty: "mock_actor", Ev: "mock_test"}, nil)
-```
-
-* Asyn call
-```go
-// Send a mock_test event to any actor of type mock_actor
-//  async call, and continue execution directly
-system.Send(ctx, router.Target{ID:def.SymbolWildcard, Ty: "mock_actor",Ev: "mock_test"}, nil)
-```
-
-* Pub
-```go
-// Publish a ps_mock_test event to mock_actor_1
-//    which will be stored in the redis stream queue first
-//    waiting for ps_mock_test to consume
-system.Pub(ctx, "topic", "channel", msg)
-```
 
 ---
 

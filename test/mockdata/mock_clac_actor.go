@@ -1,7 +1,8 @@
-package callbenchmark
+package mockdata
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/pojol/braid/core"
 	"github.com/pojol/braid/core/actor"
@@ -9,12 +10,20 @@ import (
 	"github.com/pojol/braid/router"
 )
 
-type mockEntityActor struct {
+type MockClacActor struct {
 	*actor.Runtime
 }
 
-func (a *mockEntityActor) Init() {
+func NewClacActor(p *core.ActorLoaderBuilder) core.IActor {
+	return &MockClacActor{
+		Runtime: &actor.Runtime{Id: p.ID, Ty: "MockClacActor"},
+	}
+}
+
+func (a *MockClacActor) Init() {
 	a.Runtime.Init()
+
+	fmt.Println("init mock clac actor !")
 
 	a.RegisterEvent("print", func(actorCtx context.Context) core.IChain {
 		return &actor.DefaultChain{

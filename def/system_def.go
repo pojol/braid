@@ -1,23 +1,35 @@
 package def
 
 const (
-	// 通配符表示路由到任意一个该类型的 actor
+	// Wildcard symbol represents routing to any actor of this type
 	SymbolWildcard = "?"
 
-	// 表示路由到一组 actor
-	// - 注 这个符号只能用于 send 接口（异步调用
+	// Represents routing to a group of actors
+	// - Note: This symbol can only be used with the send interface (asynchronous call)
 	SymbolGroup = "#"
 
-	// 表示路由到所有 该类型的 actor
-	// - 注 这个符号只能用于 send 接口（异步调用
+	// Represents routing to all actors of this type
+	// - Note: This symbol can only be used with the send interface (asynchronous call)
 	SymbolAll = "*"
 
-	// 表示随机路由到一个该类型的 actor，但优先选择本节点上的
-	// 如果本节点上没有该类型的 actor，则随机选择其他节点上的
+	// Represents random routing to an actor of this type, but prioritizes actors on the current node
+	// If there are no actors of this type on the current node, it randomly selects from other nodes
 	SymbolLocalFirst = "~"
 )
 
+// 内置的 actors
 const (
-	RedisAddressbookIDField = "braid.addressbook.id"
-	RedisAddressbookTyField = "braid.addressbook.ty."
+	ActorDynamicPicker   = "braid.actor_dynamic_picker"
+	ActorDynamicRegister = "braid.actor_dynamic_register"
+)
+
+const (
+	EvDynamicPick     = "braid.event_dynamic_pick"
+	EvDynamicRegister = "braid.event_dynamic_register"
+)
+
+const (
+	RedisAddressbookIDField    = "braid.addressbook.id"
+	RedisAddressbookTyField    = "braid.addressbook.ty."
+	RedisAddressbookNodesField = "braid.addressbook.nodes"
 )

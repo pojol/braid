@@ -1,4 +1,4 @@
-package entitytest
+package mockdata
 
 import (
 	"context"

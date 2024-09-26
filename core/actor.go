@@ -12,6 +12,8 @@ type IChain interface {
 	Execute(context.Context, *router.MsgWrapper) error
 }
 
+// Users can define custom keys to pass required structures into the context
+
 // StateKey is a custom type for the context key
 type StateKey struct{}
 
@@ -49,17 +51,18 @@ func GetSystem(ctx context.Context) ISystem {
 	return ctx.Value(SystemKey{}).(ISystem)
 }
 
-/*
-IActor 对线程（协程）的抽象，在Node(进程)中，是由1～N个actor执行具体的业务逻辑
-  - 每一个actor对象代表一个逻辑计算单元，由mailbox去和外部进行交互
-*/
+// IActor is an abstraction of threads (goroutines). In a Node (process),
+// 1 to N actors execute specific business logic.
+//
+// Each actor object represents a logical computation unit that interacts
+// with the outside world through a mailbox.
 type IActor interface {
 	Init()
 
 	ID() string
 	Type() string
 
-	// 向 actor 的 mailbox 压入一条消息
+	// Received pushes a message into the actor's mailbox
 	Received(msg *router.MsgWrapper) error
 
 	// RegisterEvent registers an event handling chain for the actor
@@ -79,10 +82,10 @@ type IActor interface {
 	//  succ: Callback function for successful subscription
 	SubscriptionEvent(topic string, channel string, succ func(), opts ...pubsub.TopicOption) error
 
-	// Actor 的主循环，它在独立的 goroutine 中运行
+	// Update is the main loop of the Actor, running in a separate goroutine
 	Update()
 
-	// Call 发送一个事件给另外一个 actor
+	// Call sends an event to another actor
 	Call(ctx context.Context, tar router.Target, msg *router.MsgWrapper) error
 
 	// SetContext returns a new context with the given state.
@@ -97,4 +100,39 @@ type IActor interface {
 	SetContext(key, value interface{})
 
 	Exit()
+}
+
+// ActorLoaderBuilder used to build ActorLoader
+type ActorLoaderBuilder struct {
+	CreateActorParm
+	ISystem
+	ActorConstructor
+	IActorLoader
+}
+
+type IActorLoader interface {
+
+	// Builder selects an actor from the factory and provides a builder
+	Builder(string) *ActorLoaderBuilder
+
+	// Pick selects an appropriate node for the actor builder to register
+	Pick(*ActorLoaderBuilder) error
+}
+
+type ActorConstructor struct {
+	// Weight occupied by the actor, weight algorithm reference: 2c4g (pod = 2 * 4 * 1000)
+	Weight int
+
+	// Constructor function
+	Constructor CreateFunc
+
+	// NodeUnique indicates whether this actor is unique within the current node
+	NodeUnique bool
+
+	// Global quantity limit for the current actor type that can be registered
+	GlobalQuantityLimit int
+}
+
+type IActorFactory interface {
+	Get(ty string) *ActorConstructor
 }

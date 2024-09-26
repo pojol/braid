@@ -1,4 +1,4 @@
-package callbenchmark
+package benchmarkcall
 
 import (
 	"context"
@@ -11,11 +11,10 @@ import (
 	"github.com/google/uuid"
 	"github.com/pojol/braid/3rd/redis"
 	"github.com/pojol/braid/core"
-	"github.com/pojol/braid/core/actor"
 	"github.com/pojol/braid/core/cluster/node"
 	"github.com/pojol/braid/def"
 	"github.com/pojol/braid/router"
-	"github.com/pojol/braid/test"
+	"github.com/pojol/braid/test/mockdata"
 	"golang.org/x/exp/rand"
 )
 
@@ -32,7 +31,7 @@ import (
 // 16节点	16w个actor	4跳
 
 var (
-	nodes         []*test.ProcessNode
+	nodes         []*mockdata.ProcessNode
 	actorjump1arr []string
 	actorjump2arr []string
 	initOnce      sync.Once
@@ -65,20 +64,12 @@ func setupBenchmark() {
 		}
 
 		sys := node.BuildSystemWithOption(
-			node.SystemActorConstructor(
-				[]node.ActorConstructor{
-					{Type: def.MockActorEntity, Constructor: func(p *core.CreateActorParm) core.IActor {
-						return &mockEntityActor{
-							&actor.Runtime{Ty: def.MockActorEntity, Sys: p.Sys},
-						}
-					}},
-				},
-			),
+			mockdata.BuildActorFactory(),
 			node.SystemService("service_"+strconv.Itoa(i), "node_"+strconv.Itoa(i)),
 			node.SystemWithAcceptor(port),
 		)
 
-		node := &test.ProcessNode{
+		node := &mockdata.ProcessNode{
 			P:   core.NodeParm{ID: strconv.Itoa(i)},
 			Sys: sys,
 		}
@@ -94,7 +85,7 @@ func setupBenchmark() {
 					actorjump2arr = append(actorjump2arr, aid)
 				}
 
-				sys.Register(context.TODO(), def.MockActorEntity, core.CreateActorWithID(aid))
+				sys.Loader().Builder("MockClacActor").WithID(aid).RegisterLocally()
 			}
 		}
 

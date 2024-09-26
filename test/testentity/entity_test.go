@@ -1,4 +1,4 @@
-package entitytest
+package testentity
 
 import (
 	"context"
@@ -13,6 +13,7 @@ import (
 	"github.com/pojol/braid/core/cluster/node"
 	"github.com/pojol/braid/lib/log"
 	"github.com/pojol/braid/router"
+	"github.com/pojol/braid/test/mockdata"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -26,25 +27,25 @@ func TestMain(m *testing.M) {
 }
 
 func mockEntity2DB(id string) {
-	warp1 := NewEntityWapper(id)
-	warp1.Airship = &EntityAirshipModule{
+	warp1 := mockdata.NewEntityWapper(id)
+	warp1.Airship = &mockdata.EntityAirshipModule{
 		ID: id,
 	}
-	warp1.Bag = &EntityBagModule{
+	warp1.Bag = &mockdata.EntityBagModule{
 		ID:  id,
-		Bag: make(map[string]*ItemList),
+		Bag: make(map[string]*mockdata.ItemList),
 	}
-	warp1.TimeInfo = &EntityTimeInfoModule{
+	warp1.TimeInfo = &mockdata.EntityTimeInfoModule{
 		ID:         id,
 		CreateTime: time.Now().Unix(),
 	}
-	warp1.User = &EntityUserModule{
+	warp1.User = &mockdata.EntityUserModule{
 		ID:    id,
 		Token: "111",
 	}
 
-	warp1.Bag.Bag["1001"] = &ItemList{
-		Items: []*Item{
+	warp1.Bag.Bag["1001"] = &mockdata.ItemList{
+		Items: []*mockdata.Item{
 			{
 				ID:     "1001",
 				Num:    10,
@@ -58,20 +59,12 @@ func mockEntity2DB(id string) {
 
 func mockEntity(id string) core.ISystem {
 	sys := node.BuildSystemWithOption(
-		node.SystemActorConstructor(
-			[]node.ActorConstructor{
-				{Type: "mockUserActor", Constructor: func(p *core.CreateActorParm) core.IActor {
-					return &mockUserActor{
-						Runtime: &actor.Runtime{Ty: "mockUserActor", Sys: p.Sys},
-						entity:  NewEntityWapper(p.ID),
-					}
-				}},
-			},
-		),
+		mockdata.BuildActorFactory(),
 		node.SystemService("service_1", "node_1"),
 	)
 
-	sys.Register(context.TODO(), "mockUserActor", core.CreateActorWithID(id))
+	loader := actor.BuildDefaultActorLoader(sys, mockdata.BuildActorFactory())
+	loader.Builder("MockUserActor").WithID(id).RegisterLocally()
 
 	for _, a := range sys.Actors() {
 		a.Init()
@@ -109,11 +102,11 @@ func TestEntityLoad(t *testing.T) {
 	a, e := sys.FindActor(context.TODO(), id)
 	assert.NoError(t, e, nil)
 
-	userActor := a.(*mockUserActor)
-	assert.Equal(t, userActor.entity.IsDirty(), true)
+	userActor := a.(*mockdata.MockUserActor)
+	assert.Equal(t, userActor.State.IsDirty(), true)
 
-	userActor.entity.Sync(context.TODO())
-	assert.Equal(t, userActor.entity.IsDirty(), false)
+	userActor.State.Sync(context.TODO())
+	assert.Equal(t, userActor.State.IsDirty(), false)
 
 	time.Sleep(time.Second * 2)
 
@@ -136,14 +129,14 @@ func TestEntityDB(t *testing.T) {
 
 	mockactorid := "test.actor.1"
 
-	warp1 := NewEntityWapper(mockactorid)
-	warp1.Airship = &EntityAirshipModule{ID: mockactorid}
-	warp1.Bag = &EntityBagModule{ID: mockactorid, Bag: make(map[string]*ItemList)}
-	warp1.TimeInfo = &EntityTimeInfoModule{ID: mockactorid, CreateTime: time.Now().Unix()}
-	warp1.User = &EntityUserModule{ID: mockactorid, Token: "111"}
+	warp1 := mockdata.NewEntityWapper(mockactorid)
+	warp1.Airship = &mockdata.EntityAirshipModule{ID: mockactorid}
+	warp1.Bag = &mockdata.EntityBagModule{ID: mockactorid, Bag: make(map[string]*mockdata.ItemList)}
+	warp1.TimeInfo = &mockdata.EntityTimeInfoModule{ID: mockactorid, CreateTime: time.Now().Unix()}
+	warp1.User = &mockdata.EntityUserModule{ID: mockactorid, Token: "111"}
 
-	warp1.Bag.Bag["1001"] = &ItemList{
-		Items: []*Item{
+	warp1.Bag.Bag["1001"] = &mockdata.ItemList{
+		Items: []*mockdata.Item{
 			{
 				ID:     "1001",
 				Num:    10,
@@ -154,7 +147,7 @@ func TestEntityDB(t *testing.T) {
 
 	mgo.Collection("braid-test", "entity_test").InsertOne(context.TODO(), warp1)
 
-	warp2 := NewEntityWapper(mockactorid)
+	warp2 := mockdata.NewEntityWapper(mockactorid)
 	err := warp2.Load(context.TODO())
 	assert.NoError(t, err)
 	assert.Equal(t, warp1.Airship.ID, warp2.Airship.ID)

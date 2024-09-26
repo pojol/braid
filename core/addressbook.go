@@ -11,10 +11,19 @@ type AddressInfo struct {
 	Port    int    `json:"port"`
 }
 
+type NodeInfo struct {
+	NodeID string
+	Ip     string
+	Port   int
+	Weight int
+}
+
 type IAddressBook interface {
 	Register(context.Context, string, string) error // 将 actor 注册到 address book；
 	Unregister(context.Context, string) error
 
 	GetByID(context.Context, string) (AddressInfo, error)
 	GetByType(context.Context, string) ([]AddressInfo, error)
+
+	GetLowWeightNodeForActor(ctx context.Context, actorType string) (AddressInfo, error)
 }
