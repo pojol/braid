@@ -29,6 +29,7 @@ const (
 )
 
 const (
-	RedisAddressbookIDField = "braid.addressbook.id"
-	RedisAddressbookTyField = "braid.addressbook.ty."
+	RedisAddressbookIDField    = "braid.addressbook.id"
+	RedisAddressbookTyField    = "braid.addressbook.ty."
+	RedisAddressbookNodesField = "braid.addressbook.nodes"
 )

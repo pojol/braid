@@ -2,6 +2,7 @@ package mockdata
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/pojol/braid/core"
 	"github.com/pojol/braid/core/actor"
@@ -21,6 +22,8 @@ func NewClacActor(p *core.ActorLoaderBuilder) core.IActor {
 
 func (a *MockClacActor) Init() {
 	a.Runtime.Init()
+
+	fmt.Println("init mock clac actor !")
 
 	a.RegisterEvent("print", func(actorCtx context.Context) core.IChain {
 		return &actor.DefaultChain{

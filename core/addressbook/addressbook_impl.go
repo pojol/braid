@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sort"
+	"strconv"
 	"sync"
 
 	trdredis "github.com/pojol/braid/3rd/redis"
@@ -31,6 +33,10 @@ func New(info core.AddressInfo) *AddressBook {
 		Ip:     info.Ip,
 		Port:   info.Port,
 	}
+}
+
+func makeNodeKey(nodid string) string {
+	return fmt.Sprintf("{node:%s}", nodid)
 }
 
 func (ab *AddressBook) Register(ctx context.Context, ty, id string) error {
@@ -62,15 +68,25 @@ func (ab *AddressBook) Register(ctx context.Context, ty, id string) error {
 		Ip:      ab.Ip,
 		Port:    ab.Port},
 	)
+
+	// serialize node info to json (without ActorId and ActorTy)
+	nodeInfoJSON, _ := json.Marshal(core.AddressInfo{
+		Node: ab.NodeID,
+		Ip:   ab.Ip,
+		Port: ab.Port},
+	)
+
 	// execute multiple redis operations using pipeline
 	pipe := trdredis.Pipeline()
 	pipe.HSet(ctx, def.RedisAddressbookIDField, id, addrJSON)
 	pipe.SAdd(ctx, fmt.Sprintf(def.RedisAddressbookTyField+"%s", ty), addrJSON)
 
+	// Add node info to a separate set
+	pipe.SAdd(ctx, def.RedisAddressbookNodesField, nodeInfoJSON)
+
 	// 更新节点记录
-	nodeKey := fmt.Sprintf("{node:%s}", ab.NodeID)
-	pipe.HIncrBy(ctx, nodeKey, fmt.Sprintf("actor:%s", ty), 1)
-	pipe.HIncrBy(ctx, nodeKey, "total_weight", 1)
+	pipe.HIncrBy(ctx, makeNodeKey(ab.NodeID), fmt.Sprintf("actor:%s", ty), 1)
+	pipe.HIncrBy(ctx, makeNodeKey(ab.NodeID), "total_weight", 1)
 
 	_, err = pipe.Exec(ctx)
 
@@ -115,9 +131,8 @@ func (ab *AddressBook) Unregister(ctx context.Context, id string) error {
 	pipe.SRem(ctx, fmt.Sprintf(def.RedisAddressbookTyField+"%s", info.ActorTy), addrJSON)
 
 	// 更新节点记录
-	nodeKey := fmt.Sprintf("{node:%s}", ab.NodeID)
-	pipe.HIncrBy(ctx, nodeKey, fmt.Sprintf("actor:%s", info.ActorTy), -1)
-	pipe.HIncrBy(ctx, nodeKey, "total_weight", -1)
+	pipe.HIncrBy(ctx, makeNodeKey(ab.NodeID), fmt.Sprintf("actor:%s", info.ActorTy), -1)
+	pipe.HIncrBy(ctx, makeNodeKey(ab.NodeID), "total_weight", -1)
 
 	_, err = pipe.Exec(ctx)
 	if err == nil {
@@ -177,7 +192,10 @@ func (ab *AddressBook) GetByType(ctx context.Context, actorType string) ([]core.
 	return addresses, nil
 }
 
-const PickLimit = 10
+const (
+	PickLimit          = 10
+	LowWeightNodeLimit = 10 // Number of low weight nodes to consider
+)
 
 // GetWildcardActor retrieves a random actor address of the specified actorType
 func (ab *AddressBook) GetWildcardActor(ctx context.Context, actorType string) (core.AddressInfo, error) {
@@ -208,8 +226,7 @@ func (ab *AddressBook) GetWildcardActor(ctx context.Context, actorType string) (
 		}
 
 		// get the weight of the node where the actor is located
-		nodeKey := fmt.Sprintf("{node:%s}", addr.Node)
-		nodeWeight, err := trdredis.HGet(ctx, nodeKey, "total_weight").Int()
+		nodeWeight, err := trdredis.HGet(ctx, makeNodeKey(addr.Node), "total_weight").Int()
 		if err != nil {
 			fmt.Println("skip this actor if unable to get node weight")
 			continue // skip this actor if unable to get node weight
@@ -226,4 +243,104 @@ func (ab *AddressBook) GetWildcardActor(ctx context.Context, actorType string) (
 	}
 
 	return lowestWeightAddr, nil
+}
+
+// GetLowWeightNodeForActor retrieves a low-weight node address with fewer actors of the specified type
+func (ab *AddressBook) GetLowWeightNodeForActor(ctx context.Context, actorType string) (core.AddressInfo, error) {
+	// Use a distributed lock to ensure consistency
+	mu := &dismutex.Mutex{Token: fmt.Sprintf("low_weight_node:%s", actorType)}
+	err := mu.Lock(ctx, "[addressbook.GetLowWeightNodeForActor]")
+	if err != nil {
+		return core.AddressInfo{}, fmt.Errorf("GetLowWeightNodeForActor get distributed mutex err %v", err.Error())
+	}
+	defer mu.Unlock(ctx)
+
+	// Get all node infos from the set
+	nodeInfoJSONs, err := trdredis.SMembers(ctx, def.RedisAddressbookNodesField).Result()
+	if err != nil {
+		return core.AddressInfo{}, fmt.Errorf("GetLowWeightNodeForActor SMembers err %v", err)
+	}
+
+	if len(nodeInfoJSONs) == 0 {
+		return core.AddressInfo{}, fmt.Errorf("no nodes found")
+	}
+
+	type weightedNode struct {
+		addr       core.AddressInfo
+		weight     int
+		actorCount int
+	}
+
+	var weightedNodes []weightedNode
+	pipe := trdredis.Pipeline()
+
+	// Prepare pipeline commands
+	for _, nodeInfoJSON := range nodeInfoJSONs {
+		var nodeInfo core.AddressInfo
+		if err := json.Unmarshal([]byte(nodeInfoJSON), &nodeInfo); err != nil {
+			log.Warn("unable to unmarshal node info: %v", err)
+			continue
+		}
+		pipe.HMGet(ctx, makeNodeKey(nodeInfo.Node), "total_weight", fmt.Sprintf("actor:%s", actorType))
+	}
+
+	// Execute pipeline
+	cmders, err := pipe.Exec(ctx)
+	if err != nil {
+		return core.AddressInfo{}, fmt.Errorf("pipeline execution failed: %v", err)
+	}
+
+	// Process results
+	for i, cmder := range cmders {
+		result, err := cmder.(*redis.SliceCmd).Result()
+		if err != nil {
+			log.Warn("unable to get node info: %v", err)
+			continue
+		}
+
+		weight, _ := strconv.Atoi(result[0].(string))
+		actorCount, _ := strconv.Atoi(result[1].(string))
+
+		var nodeInfo core.AddressInfo
+		json.Unmarshal([]byte(nodeInfoJSONs[i]), &nodeInfo)
+
+		weightedNodes = append(weightedNodes, weightedNode{
+			addr:       nodeInfo,
+			weight:     weight,
+			actorCount: actorCount,
+		})
+	}
+
+	// Sort nodes by weight
+	sort.Slice(weightedNodes, func(i, j int) bool {
+		return weightedNodes[i].weight < weightedNodes[j].weight
+	})
+
+	// Select the lowest weight nodes
+	lowWeightNodes := weightedNodes
+	if len(weightedNodes) > LowWeightNodeLimit {
+		lowWeightNodes = weightedNodes[:LowWeightNodeLimit]
+	}
+
+	// Find the node with the lowest actor count among the low weight nodes
+	var selectedAddr core.AddressInfo
+	lowestActorCount := int(^uint(0) >> 1) // Max int value
+
+	for _, node := range lowWeightNodes {
+		if node.actorCount < lowestActorCount {
+			lowestActorCount = node.actorCount
+			selectedAddr = node.addr
+		}
+	}
+
+	// If the weight of the current actor type is greater than the available weight of the selected node, return a failure
+	// if actorTypeWeight > selectedAddr.availableWeight {
+	//	 return core.AddressInfo{}, fmt.Errorf("no node with sufficient capacity found for actor type %s", actorType)
+	// }
+
+	if selectedAddr.Node == "" {
+		return core.AddressInfo{}, fmt.Errorf("no suitable node found for actor type %s", actorType)
+	}
+
+	return selectedAddr, nil
 }
