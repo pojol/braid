@@ -64,6 +64,8 @@ type ISystem interface {
 	// Loader returns the actor loader
 	Loader() IActorLoader
 
+	AddressBook() IAddressBook
+
 	Update()
 	Exit()
 }

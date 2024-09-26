@@ -37,6 +37,12 @@ func WithServiceInfo(ip string, port int) NodeOption {
 	}
 }
 
+func WithNodeID(id string) NodeOption {
+	return func(np *NodeParm) {
+		np.ID = id
+	}
+}
+
 func WithSystem(sys ISystem) NodeOption {
 	return func(p *NodeParm) {
 		p.Sys = sys

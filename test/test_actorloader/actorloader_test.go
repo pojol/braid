@@ -35,7 +35,7 @@ func TestActorLoader(t *testing.T) {
 
 	redis.FlushAll(context.TODO()) // clean cache
 
-	sys := node.BuildSystemWithOption(mockdata.BuildActorFactory())
+	sys := node.BuildSystemWithOption("test-actor-loader-1", mockdata.BuildActorFactory())
 
 	node := &mockdata.ProcessNode{
 		P:   core.NodeParm{ID: "test-actor-loader-1"},

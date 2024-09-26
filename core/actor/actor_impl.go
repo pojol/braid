@@ -125,7 +125,6 @@ func (a *Runtime) Call(ctx context.Context, tar router.Target, msg *router.MsgWr
 func (a *Runtime) Received(msg *router.MsgWrapper) error {
 
 	msg.Wg.Add(1)
-
 	if atomic.LoadInt32(&a.closed) == 0 { // 并不是所有的actor都需要处理退出信号
 		a.q.Push(msg)
 	}

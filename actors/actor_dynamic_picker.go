@@ -2,6 +2,7 @@ package actors
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/pojol/braid/core"
 	"github.com/pojol/braid/core/actor"
@@ -11,7 +12,6 @@ import (
 
 type dynamicPickerActor struct {
 	*actor.Runtime
-	core.IAddressBook
 }
 
 type addressbookTy struct{}
@@ -24,8 +24,6 @@ func NewDynamicPickerActor(p *core.ActorLoaderBuilder) core.IActor {
 
 func (a *dynamicPickerActor) Init() {
 	a.Runtime.Init()
-	a.SetContext(addressbookTy{}, a.IAddressBook)
-
 	a.RegisterEvent(def.EvDynamicPick, MakeDynamicPick)
 }
 
@@ -35,20 +33,19 @@ func MakeDynamicPick(actorCtx context.Context) core.IChain {
 		Handler: func(ctx context.Context, mw *router.MsgWrapper) error {
 
 			sys := core.GetSystem(actorCtx)
-			addressbook := actorCtx.Value(addressbookTy{}).(core.IAddressBook)
 
 			actor_ty := mw.Req.Header.Custom["actor_ty"]
+			fmt.Println("recv pick event", actor_ty)
 
 			// Select a node with low weight and relatively fewer registered actors of this type
-			nodeaddr, err := addressbook.GetLowWeightNodeForActor(ctx, actor_ty)
+			nodeaddr, err := sys.AddressBook().GetLowWeightNodeForActor(ctx, actor_ty)
 			if err != nil {
 				return err
 			}
 
 			// dispatcher to picker node
-			sys.Call(ctx, router.Target{ID: nodeaddr.Node + "-" + "register", Ty: def.ActorDynamicRegister, Ev: def.EvDynamicRegister}, mw)
-
-			return nil
+			fmt.Println("dynamic picker", actor_ty, "=>", nodeaddr.Node+"_"+"register")
+			return sys.Call(ctx, router.Target{ID: nodeaddr.Node + "_" + "register", Ty: def.ActorDynamicRegister, Ev: def.EvDynamicRegister}, mw)
 		},
 	}
 }

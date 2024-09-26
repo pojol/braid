@@ -298,8 +298,20 @@ func (ab *AddressBook) GetLowWeightNodeForActor(ctx context.Context, actorType s
 			continue
 		}
 
-		weight, _ := strconv.Atoi(result[0].(string))
-		actorCount, _ := strconv.Atoi(result[1].(string))
+		if len(result) < 2 {
+			log.Warn("unexpected result length: %d", len(result))
+			continue
+		}
+
+		weight := 0
+		if weightStr, ok := result[0].(string); ok {
+			weight, _ = strconv.Atoi(weightStr)
+		}
+
+		actorCount := 0
+		if countStr, ok := result[1].(string); ok {
+			actorCount, _ = strconv.Atoi(countStr)
+		}
 
 		var nodeInfo core.AddressInfo
 		json.Unmarshal([]byte(nodeInfoJSONs[i]), &nodeInfo)

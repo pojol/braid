@@ -27,12 +27,11 @@ type NormalSystem struct {
 	sync.RWMutex
 }
 
-func BuildSystemWithOption(factory core.IActorFactory, opts ...SystemOption) core.ISystem {
+func BuildSystemWithOption(nodid string, factory core.IActorFactory, opts ...SystemOption) core.ISystem {
 
 	p := SystemParm{
-		Ip:          "127.0.0.1",
-		ServiceName: "undefined",
-		NodeID:      "undefined",
+		Ip:     "127.0.0.1",
+		NodeID: nodid,
 	}
 	for _, opt := range opts {
 		opt(&p)
@@ -49,10 +48,9 @@ func BuildSystemWithOption(factory core.IActorFactory, opts ...SystemOption) cor
 	sys.ps = pubsub.BuildWithOption()
 
 	sys.addressbook = addressbook.New(core.AddressInfo{
-		Node:    p.NodeID,
-		Service: p.ServiceName,
-		Ip:      p.Ip,
-		Port:    p.Port,
+		Node: p.NodeID,
+		Ip:   p.Ip,
+		Port: p.Port,
 	})
 	sys.p = p
 
@@ -71,6 +69,10 @@ func (sys *NormalSystem) Update() {
 
 func (sys *NormalSystem) Loader() core.IActorLoader {
 	return sys.loader
+}
+
+func (sys *NormalSystem) AddressBook() core.IAddressBook {
+	return sys.addressbook
 }
 
 func (sys *NormalSystem) Register(builder *core.ActorLoaderBuilder) (core.IActor, error) {

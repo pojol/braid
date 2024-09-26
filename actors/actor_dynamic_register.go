@@ -2,6 +2,7 @@ package actors
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/pojol/braid/core"
 	"github.com/pojol/braid/core/actor"
@@ -27,7 +28,7 @@ func (a *dynamicRegisterActor) Init() {
 	a.Runtime.Init()
 	a.SetContext(loadKey{}, a.loader)
 
-	a.RegisterEvent(def.EvDynamicPick, MakeDynamicRegister)
+	a.RegisterEvent(def.EvDynamicRegister, MakeDynamicRegister)
 }
 
 func MakeDynamicRegister(actorCtx context.Context) core.IChain {
@@ -40,6 +41,8 @@ func MakeDynamicRegister(actorCtx context.Context) core.IChain {
 			actor_ty := mw.Req.Header.Custom["actor_ty"]
 			actor_id := mw.Req.Header.Custom["actor_id"]
 
+			fmt.Println("recv dynamic register", actor_ty, actor_id)
+
 			builder := loader.Builder(actor_ty)
 			builder.WithID(actor_id)
 
@@ -47,6 +50,7 @@ func MakeDynamicRegister(actorCtx context.Context) core.IChain {
 				builder.WithOpt(k, v)
 			}
 
+			fmt.Println("dynamic register", actor_id)
 			actor, err := builder.RegisterLocally()
 			if err != nil {
 				return err

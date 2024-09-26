@@ -64,8 +64,8 @@ func setupBenchmark() {
 		}
 
 		sys := node.BuildSystemWithOption(
+			"node_"+strconv.Itoa(i),
 			mockdata.BuildActorFactory(),
-			node.SystemService("service_"+strconv.Itoa(i), "node_"+strconv.Itoa(i)),
 			node.SystemWithAcceptor(port),
 		)
 
