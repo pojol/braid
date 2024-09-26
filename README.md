@@ -9,34 +9,34 @@
 
 ### Sample
 
-1. 注册 actor
+1. register actor
 ```go
 // factory  e.g. test/mockdata/actor_factory
 factory.bind("MockClacActor", 
-    false,          // 是否节点唯一
-    20,             // actor 的权重
-    50000,          // actor 在集群中的构建数量上限
-    NewClacActor,   // actor 的构造函数
+    false,          // whether the node is unique
+    20,             // weight of the actor
+    50000,          // maximum number of actors to be built in the cluster
+    NewClacActor,   // constructor function for the actor
 )
 ```
 
-2. 构建 actor
+2. builder actor
 ```go
 
-// 注册一个 ActorDynamicRegister 类型的 actor 到本节点中
+// register ActorDynamicRegister type actor to the local node
 sys.Loader().Builder(def.ActorDynamicRegister).WithID("nodeid-register").RegisterLocally()
 
-// 或通过 dynamic 的方式将 MockClacActor 类型的 actor 注册到集群（通过负载均衡
+// Or register a MockClacActor type actor to the cluster dynamically (via load balancing)
 sys.Loader().Builder("MockClacActor").WithID("001").RegisterDynamically()
 ```
 
-3. 为 actor 绑定实现逻辑
+3. Implement logic for the actor
 ```go
 
-// 绑定消息处理
+// Bind message handler
 clacActor.RegisterEvent("ev_clac", func(actorCtx context.Context) *actor.DefaultChain {
     
-    // 使用中间件
+    // use middleware
     unpackcfg := &middleware.MsgUnpackCfg[proto.xxx]{}
     sys := core.GetSystem(actorCtx)
 
@@ -49,7 +49,7 @@ clacActor.RegisterEvent("ev_clac", func(actorCtx context.Context) *actor.Default
             realmsg, ok := unpackcfg.Msg.(*proto.xxx)
             // todo ...
 
-            // 向下传递消息
+            // Pass the message downstream
             sys.Call(...)
 
             return nil
@@ -57,7 +57,7 @@ clacActor.RegisterEvent("ev_clac", func(actorCtx context.Context) *actor.Default
     }
 })
 
-// 绑定定时处理函数
+// Register a periodic processing function
 clacActor.RegisterTimer(0, 1000, func(actorCtx context.Context) error {
 
     state := core.GetState(actorCtx).(*xxxState)
@@ -72,14 +72,14 @@ clacActor.RegisterTimer(0, 1000, func(actorCtx context.Context) error {
     return nil
 })
 
-// 监听消息（离线时别人发来的聊天信息）
-//  topic: 离线聊天消息
-//  channel: actor自身
-//  succ: 成功订阅后的回调
-//  ttl: 消息在缓存中保存的时间
+// Subscribe to messages (chat messages sent by others when offline)
+//  topic: Offline chat messages
+//  channel: The actor itself
+//  succ: Callback after successful subscription
+//  ttl: Time-to-live for messages in the cache
 clacActor.SubscriptionEvent(events.EvChatMessageStore, a.Id, func() {
 
-    // 监听成功后，为消息绑定处理函数
+    // After successful subscription, bind a handler function for the message
     a.RegisterEvent(events.EvChatMessageStore, events.MakeChatStoreMessage)
     
 }, pubsub.WithTTL(time.Hour*24*30))
