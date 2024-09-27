@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/pojol/braid/lib/span"
 	"github.com/pojol/braid/lib/tracer"
 	"github.com/redis/go-redis/v9"
 )
@@ -30,15 +29,5 @@ type spanTag struct {
 }
 
 func doTracing(ctx context.Context, args ...spanTag) (ispan tracer.ISpan, err error) {
-	err = fmt.Errorf("tracer not init")
-	if defaultClientConfig.trc != nil {
-		ispan, err = defaultClientConfig.trc.GetSpan(span.RedisSpan)
-		if err == nil {
-			ispan.Begin(ctx)
-			for _, v := range args {
-				ispan.SetTag(v.key, v.value)
-			}
-		}
-	}
-	return
+	return nil, fmt.Errorf("nil")
 }

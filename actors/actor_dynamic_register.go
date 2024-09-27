@@ -2,7 +2,6 @@ package actors
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/pojol/braid/core"
 	"github.com/pojol/braid/core/actor"
@@ -24,8 +23,8 @@ func NewDynamicRegisterActor(p *core.ActorLoaderBuilder) core.IActor {
 	}
 }
 
-func (a *dynamicRegisterActor) Init() {
-	a.Runtime.Init()
+func (a *dynamicRegisterActor) Init(ctx context.Context) {
+	a.Runtime.Init(ctx)
 	a.SetContext(loadKey{}, a.loader)
 
 	a.RegisterEvent(def.EvDynamicRegister, MakeDynamicRegister)
@@ -34,14 +33,12 @@ func (a *dynamicRegisterActor) Init() {
 func MakeDynamicRegister(actorCtx context.Context) core.IChain {
 	return &actor.DefaultChain{
 
-		Handler: func(ctx context.Context, mw *router.MsgWrapper) error {
+		Handler: func(mw *router.MsgWrapper) error {
 
 			loader := actorCtx.Value(loadKey{}).(core.IActorLoader)
 
 			actor_ty := mw.Req.Header.Custom["actor_ty"]
 			actor_id := mw.Req.Header.Custom["actor_id"]
-
-			fmt.Println("recv dynamic register", actor_ty, actor_id)
 
 			builder := loader.Builder(actor_ty)
 			builder.WithID(actor_id)
@@ -50,13 +47,14 @@ func MakeDynamicRegister(actorCtx context.Context) core.IChain {
 				builder.WithOpt(k, v)
 			}
 
-			fmt.Println("dynamic register", actor_id)
 			actor, err := builder.RegisterLocally()
 			if err != nil {
 				return err
 			}
 
-			actor.Init()
+			mw.Req.Header.PrevActorType = def.ActorDynamicRegister
+
+			actor.Init(mw.Ctx)
 			go actor.Update()
 
 			return nil

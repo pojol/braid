@@ -34,6 +34,8 @@ func (p *ActorLoaderBuilder) RegisterLocally() (IActor, error) {
 }
 
 // RegisterDynamically registers the actor dynamically to the cluster (by selecting an appropriate node through load balancing)
+//
+//	Note: This method is asynchronous
 func (p *ActorLoaderBuilder) RegisterDynamically() error {
 	return p.IActorLoader.Pick(p)
 }
@@ -48,14 +50,14 @@ type ISystem interface {
 
 	// Call sends an event to another actor
 	// Synchronous call semantics (actual implementation is asynchronous, each call is in a separate goroutine)
-	Call(ctx context.Context, tar router.Target, msg *router.MsgWrapper) error
+	Call(tar router.Target, msg *router.MsgWrapper) error
 
 	// Send sends an event to another actor
 	// Asynchronous call semantics, does not block the current goroutine, used for long-running RPC calls
-	Send(ctx context.Context, tar router.Target, msg *router.MsgWrapper) error
+	Send(tar router.Target, msg *router.MsgWrapper) error
 
 	// Pub semantics for pubsub, used to publish messages to an actor's message cache queue
-	Pub(ctx context.Context, topic string, msg *router.Message) error
+	Pub(topic string, msg *router.Message) error
 
 	// Sub listens to messages in a channel within a specific topic
 	//  opts can be used to set initial values on first listen, such as setting the TTL for messages in this topic

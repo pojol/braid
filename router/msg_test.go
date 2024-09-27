@@ -1,9 +1,12 @@
 package router
 
-import "testing"
+import (
+	"context"
+	"testing"
+)
 
 func TestMessage(t *testing.T) {
 
-	NewMsgWrap().WithReqHeader(&Header{Event: "111"}).Build()
+	NewMsgWrap(context.TODO()).WithReqHeader(&Header{Event: "111"}).Build()
 
 }

@@ -1,14 +1,16 @@
 package router
 
 import (
+	"context"
+
 	"github.com/google/uuid"
 	"github.com/pojol/braid/lib/warpwaitgroup"
 )
 
 type MsgWrapper struct {
-	Req    *Message // The proto-defined Message
-	Res    *Message
-	Entity interface{} // player, guild, social, chat ... object
+	Req *Message // The proto-defined Message
+	Res *Message
+	Ctx context.Context
 
 	Wg   warpwaitgroup.WrapWaitGroup
 	Done chan struct{} // Used for synchronization
@@ -30,10 +32,11 @@ type MsgWrapperBuilder struct {
 	wrapper MsgWrapper
 }
 
-func NewMsgWrap() *MsgWrapperBuilder {
+func NewMsgWrap(ctx context.Context) *MsgWrapperBuilder {
 	uid := uuid.NewString()
 	return &MsgWrapperBuilder{
 		wrapper: MsgWrapper{
+			Ctx: ctx,
 			Req: newMessage(uid),
 			Res: newMessage(uid),
 		},
@@ -75,12 +78,6 @@ func (b *MsgWrapperBuilder) WithResCustom(key, value string) *MsgWrapperBuilder 
 		b.wrapper.Res.Header.Custom = make(map[string]string)
 	}
 	b.wrapper.Res.Header.Custom[key] = value
-	return b
-}
-
-// WithEntity set entity
-func (b *MsgWrapperBuilder) WithEntity(entity interface{}) *MsgWrapperBuilder {
-	b.wrapper.Entity = entity
 	return b
 }
 

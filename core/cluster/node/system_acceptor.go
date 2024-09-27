@@ -81,8 +81,8 @@ func acceptorExit() {
 // acceptor routing
 func (s *listen) Routing(ctx context.Context, msg *router.RouteReq) (*router.RouteRes, error) {
 	res := &router.RouteRes{}
-
 	warpper := &router.MsgWrapper{
+		Ctx: ctx,
 		Req: msg.Msg,
 		Res: &router.Message{
 			Header: &router.Header{
@@ -91,7 +91,9 @@ func (s *listen) Routing(ctx context.Context, msg *router.RouteReq) (*router.Rou
 		},
 	}
 
-	err := s.sys.Call(ctx, router.Target{
+	warpper.Req.Header.PrevActorType = "GrpcAcceptor"
+
+	err := s.sys.Call(router.Target{
 		ID: msg.Msg.Header.TargetActorID,
 		Ty: msg.Msg.Header.TargetActorType,
 		Ev: msg.Msg.Header.Event,
