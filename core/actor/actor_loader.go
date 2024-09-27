@@ -29,7 +29,6 @@ func (al *DefaultActorLoader) Pick(builder *core.ActorLoaderBuilder) error {
 	customOptions["actor_id"] = builder.ID
 	customOptions["actor_ty"] = builder.ActorTy
 
-	fmt.Println("send pick event", builder.ID, builder.ActorTy)
 	return al.sys.Call(context.TODO(), router.Target{
 		ID: def.SymbolWildcard,
 		Ty: def.ActorDynamicPicker,
