@@ -1,6 +1,7 @@
 package node
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/signal"
@@ -47,7 +48,7 @@ func (pn *process) System() core.ISystem {
 func (pn *process) Init(opts ...core.NodeOption) error {
 
 	for _, a := range pn.p.Sys.Actors() {
-		a.Init()
+		a.Init(context.TODO())
 	}
 
 	return nil

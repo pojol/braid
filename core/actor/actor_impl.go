@@ -16,8 +16,7 @@ import (
 )
 
 type RecoveryFunc func(interface{})
-type MiddlewareHandler func(context.Context, *router.MsgWrapper) error
-type EventHandler func(context.Context, *router.MsgWrapper) error
+type EventHandler func(*router.MsgWrapper) error
 
 type Runtime struct {
 	Id       string
@@ -43,14 +42,16 @@ func (a *Runtime) ID() string {
 	return a.Id
 }
 
-func (a *Runtime) Init() {
+func (a *Runtime) Init(ctx context.Context) {
 	a.q = mpsc.New()
 	atomic.StoreInt32(&a.closed, 0) // 初始化closed状态为0（未关闭）
 	a.closeCh = make(chan struct{})
 	a.chains = make(map[string]core.IChain)
 	a.recovery = defaultRecovery
 	a.ctx = context.Background()
+
 	a.SetContext(core.SystemKey{}, a.Sys)
+	a.SetContext(core.ActorKey{}, a)
 
 	a.tw = timewheel.New(10*time.Millisecond, 100) // 100个槽位，每个槽位10ms
 	a.lastTick = time.Now()
@@ -113,13 +114,17 @@ func (a *Runtime) SubscriptionEvent(topic string, channel string, succ func(), o
 	return nil
 }
 
-func (a *Runtime) Call(ctx context.Context, tar router.Target, msg *router.MsgWrapper) error {
+func (a *Runtime) Call(tar router.Target, msg *router.MsgWrapper) error {
 
 	if msg.Req.Header.OrgActorID == "" { // Only record the original sender
 		msg.Req.Header.OrgActorID = a.Id
+		msg.Req.Header.OrgActorType = a.Ty
 	}
 
-	return a.Sys.Call(ctx, tar, msg)
+	// Updated to the latest value on each call
+	msg.Req.Header.PrevActorType = a.Ty
+
+	return a.Sys.Call(tar, msg)
 }
 
 func (a *Runtime) Received(msg *router.MsgWrapper) error {
@@ -167,9 +172,8 @@ func (a *Runtime) Update() {
 					msg.Wg.Done()
 				}()
 
-				ctx := context.Background()
 				if chain, ok := a.chains[msg.Req.Header.Event]; ok {
-					err := chain.Execute(ctx, msg)
+					err := chain.Execute(msg)
 					if err != nil {
 						fmt.Printf("actor %v execute %v chain err %v\n", a.Id, msg.Req.Header.Event, err)
 					}

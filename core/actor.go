@@ -9,7 +9,7 @@ import (
 )
 
 type IChain interface {
-	Execute(context.Context, *router.MsgWrapper) error
+	Execute(*router.MsgWrapper) error
 }
 
 // Users can define custom keys to pass required structures into the context
@@ -19,6 +19,8 @@ type StateKey struct{}
 
 // SystemKey is a custom type for the context key
 type SystemKey struct{}
+
+type ActorKey struct{}
 
 // GetState retrieves the state from the given context.
 // If no state was set in the context, it returns nil.
@@ -51,13 +53,20 @@ func GetSystem(ctx context.Context) ISystem {
 	return ctx.Value(SystemKey{}).(ISystem)
 }
 
+func GetActor(ctx context.Context) IActor {
+	if ctx == nil {
+		return nil
+	}
+	return ctx.Value(ActorKey{}).(IActor)
+}
+
 // IActor is an abstraction of threads (goroutines). In a Node (process),
 // 1 to N actors execute specific business logic.
 //
 // Each actor object represents a logical computation unit that interacts
 // with the outside world through a mailbox.
 type IActor interface {
-	Init()
+	Init(ctx context.Context)
 
 	ID() string
 	Type() string
@@ -86,7 +95,7 @@ type IActor interface {
 	Update()
 
 	// Call sends an event to another actor
-	Call(ctx context.Context, tar router.Target, msg *router.MsgWrapper) error
+	Call(tar router.Target, msg *router.MsgWrapper) error
 
 	// SetContext returns a new context with the given state.
 	// It allows you to embed any state information into the context for later retrieval.

@@ -9,6 +9,8 @@ service Acceptor {
 message Header {
     string ID = 1;
     string OrgActorID = 2;
+    string OrgActorType = 3;
+    string PrevActorType = 4;
 
     string TargetActorID = 7;
     string TargetActorType = 8;

@@ -1,11 +1,13 @@
 package tracer
 
+import "context"
+
 // SpanFactory span 工厂
 type SpanFactory func(interface{}) (ISpan, error)
 
 // ISpan span interface
 type ISpan interface {
-	Begin(ctx interface{})
+	Begin(ctx interface{}) context.Context
 	SetTag(key string, val interface{})
 	GetID() string
 	End(ctx interface{})

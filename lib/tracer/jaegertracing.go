@@ -111,10 +111,6 @@ type jaegerTracing struct {
 	factory map[string]SpanFactory
 }
 
-func (jt *jaegerTracing) Run() {
-
-}
-
 func (jt *jaegerTracing) GetSpan(strategy string) (ISpan, error) {
 
 	spanfactory, ok := jt.factory[strategy]

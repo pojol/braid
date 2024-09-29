@@ -6,6 +6,7 @@ import (
 
 	"github.com/pojol/braid/core"
 	"github.com/pojol/braid/def"
+	"github.com/pojol/braid/lib/log"
 	"github.com/pojol/braid/router"
 )
 
@@ -29,14 +30,21 @@ func (al *DefaultActorLoader) Pick(builder *core.ActorLoaderBuilder) error {
 	customOptions["actor_id"] = builder.ID
 	customOptions["actor_ty"] = builder.ActorTy
 
-	return al.sys.Call(context.TODO(), router.Target{
-		ID: def.SymbolWildcard,
-		Ty: def.ActorDynamicPicker,
-		Ev: def.EvDynamicPick},
-		router.NewMsgWrap().WithReqHeader(&router.Header{
-			Custom: customOptions,
-		}).Build(),
-	)
+	go func() {
+		err := al.sys.Call(router.Target{
+			ID: def.SymbolWildcard,
+			Ty: def.ActorDynamicPicker,
+			Ev: def.EvDynamicPick},
+			router.NewMsgWrap(context.TODO()).WithReqHeader(&router.Header{
+				Custom: customOptions,
+			}).Build(),
+		)
+		if err != nil {
+			log.Warn("[braid.actorLoader] call synamic picker err %v", err.Error())
+		}
+	}()
+
+	return nil
 }
 
 // Builder selects an actor from the factory and provides a builder

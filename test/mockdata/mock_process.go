@@ -1,6 +1,7 @@
 package mockdata
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/signal"
@@ -29,7 +30,7 @@ func (pn *ProcessNode) System() core.ISystem {
 func (pn *ProcessNode) Init(opts ...core.NodeOption) error {
 
 	for _, a := range pn.Sys.Actors() {
-		a.Init()
+		a.Init(context.TODO())
 	}
 
 	return nil

@@ -20,20 +20,20 @@ func NewClacActor(p *core.ActorLoaderBuilder) core.IActor {
 	}
 }
 
-func (a *MockClacActor) Init() {
-	a.Runtime.Init()
+func (a *MockClacActor) Init(ctx context.Context) {
+	a.Runtime.Init(ctx)
 
 	fmt.Println("init mock clac actor !")
 
 	a.RegisterEvent("print", func(actorCtx context.Context) core.IChain {
 		return &actor.DefaultChain{
-			Handler: func(ctx context.Context, m *router.MsgWrapper) error {
+			Handler: func(m *router.MsgWrapper) error {
 
-				a.Call(ctx, router.Target{
+				a.Call(router.Target{
 					ID: "mockentity",
 					Ty: def.MockActorEntity,
 					Ev: "print",
-				}, &router.MsgWrapper{Req: &router.Message{Header: &router.Header{}}})
+				}, &router.MsgWrapper{Ctx: context.TODO(), Req: &router.Message{Header: &router.Header{}}})
 
 				return nil
 			},

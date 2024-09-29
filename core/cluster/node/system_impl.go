@@ -12,6 +12,7 @@ import (
 	"github.com/pojol/braid/lib/grpc"
 	"github.com/pojol/braid/lib/log"
 	"github.com/pojol/braid/lib/pubsub"
+	"github.com/pojol/braid/lib/span"
 	"github.com/pojol/braid/router"
 )
 
@@ -20,9 +21,8 @@ type NormalSystem struct {
 	actoridmap  map[string]core.IActor
 	client      *grpc.Client
 	ps          *pubsub.Pubsub
-
-	p      SystemParm
-	loader core.IActorLoader
+	p           SystemParm
+	loader      core.IActorLoader
 
 	sync.RWMutex
 }
@@ -123,7 +123,7 @@ func (sys *NormalSystem) Actors() []core.IActor {
 	return actors
 }
 
-func (sys *NormalSystem) Call(ctx context.Context, tar router.Target, msg *router.MsgWrapper) error {
+func (sys *NormalSystem) Call(tar router.Target, msg *router.MsgWrapper) error {
 	// Set message header information
 	msg.Req.Header.Event = tar.Ev
 	msg.Req.Header.TargetActorID = tar.ID
@@ -133,24 +133,38 @@ func (sys *NormalSystem) Call(ctx context.Context, tar router.Target, msg *route
 	var actor core.IActor
 	var err error
 
+	if sys.p.Tracer != nil {
+		span, err := sys.p.Tracer.GetSpan(span.SystemCall)
+		if err == nil {
+			msg.Ctx = span.Begin(msg.Ctx)
+			fmt.Println(msg.Req.Header.PrevActorType, "=>", tar.Ty)
+
+			span.SetTag("actor", tar.Ty)
+			span.SetTag("event", tar.Ev)
+			span.SetTag("id", tar.ID)
+
+			defer span.End(msg.Ctx)
+		}
+	}
+
 	switch tar.ID {
 	case def.SymbolWildcard:
-		info, err = sys.addressbook.GetWildcardActor(ctx, tar.Ty)
+		info, err = sys.addressbook.GetWildcardActor(msg.Ctx, tar.Ty)
 		// Check if the wildcard actor is local
 		sys.RLock()
 		actor, ok := sys.actoridmap[info.ActorId]
 		sys.RUnlock()
 		if ok {
-			return sys.handleLocalCall(ctx, actor, msg)
+			return sys.handleLocalCall(actor, msg)
 		}
 	case def.SymbolLocalFirst:
-		actor, info, err = sys.findLocalOrWildcardActor(ctx, tar.Ty)
+		actor, info, err = sys.findLocalOrWildcardActor(msg.Ctx, tar.Ty)
 		if err != nil {
 			return err
 		}
 		if actor != nil {
 			// Local call
-			return sys.handleLocalCall(ctx, actor, msg)
+			return sys.handleLocalCall(actor, msg)
 		}
 	default:
 		// First, check if it's a local call
@@ -159,11 +173,11 @@ func (sys *NormalSystem) Call(ctx context.Context, tar router.Target, msg *route
 		sys.RUnlock()
 
 		if ok {
-			return sys.handleLocalCall(ctx, actorp, msg)
+			return sys.handleLocalCall(actorp, msg)
 		}
 
 		// If not local, get from addressbook
-		info, err = sys.addressbook.GetByID(ctx, tar.ID)
+		info, err = sys.addressbook.GetByID(msg.Ctx, tar.ID)
 	}
 
 	if err != nil {
@@ -171,7 +185,7 @@ func (sys *NormalSystem) Call(ctx context.Context, tar router.Target, msg *route
 	}
 
 	// At this point, we know it's a remote call
-	return sys.handleRemoteCall(ctx, info, msg)
+	return sys.handleRemoteCall(msg.Ctx, info, msg)
 }
 
 func (sys *NormalSystem) findLocalOrWildcardActor(ctx context.Context, ty string) (core.IActor, core.AddressInfo, error) {
@@ -189,7 +203,7 @@ func (sys *NormalSystem) findLocalOrWildcardActor(ctx context.Context, ty string
 	return nil, info, err
 }
 
-func (sys *NormalSystem) handleLocalCall(ctx context.Context, actorp core.IActor, msg *router.MsgWrapper) error {
+func (sys *NormalSystem) handleLocalCall(actorp core.IActor, msg *router.MsgWrapper) error {
 	root := msg.Wg.Count() == 0
 	if root {
 		msg.Done = make(chan struct{})
@@ -209,7 +223,7 @@ func (sys *NormalSystem) handleLocalCall(ctx context.Context, actorp core.IActor
 		select {
 		case <-msg.Done:
 			return nil
-		case <-ctx.Done():
+		case <-msg.Ctx.Done():
 			return fmt.Errorf("actor %v message %v processing timed out", msg.Req.Header.TargetActorID, msg.Req.Header.Event)
 		}
 	} else {
@@ -233,7 +247,7 @@ func (sys *NormalSystem) handleRemoteCall(ctx context.Context, addrinfo core.Add
 	return nil
 }
 
-func (sys *NormalSystem) Send(ctx context.Context, tar router.Target, msg *router.MsgWrapper) error {
+func (sys *NormalSystem) Send(tar router.Target, msg *router.MsgWrapper) error {
 	// Set message header information
 	msg.Req.Header.Event = tar.Ev
 	msg.Req.Header.TargetActorID = tar.ID
@@ -249,21 +263,21 @@ func (sys *NormalSystem) Send(ctx context.Context, tar router.Target, msg *route
 	}
 
 	// For remote actors, get address info
-	info, err := sys.addressbook.GetByID(ctx, tar.ID)
+	info, err := sys.addressbook.GetByID(msg.Ctx, tar.ID)
 	if err != nil {
 		return err
 	}
 
-	return sys.client.Call(ctx,
+	return sys.client.Call(msg.Ctx,
 		fmt.Sprintf("%s:%d", info.Ip, info.Port),
 		"/router.Acceptor/routing",
 		&router.RouteReq{Msg: msg.Req},
 		nil) // We don't need the response for Send
 }
 
-func (sys *NormalSystem) Pub(ctx context.Context, topic string, msg *router.Message) error {
+func (sys *NormalSystem) Pub(topic string, msg *router.Message) error {
 
-	sys.ps.GetTopic(topic).Pub(ctx, msg)
+	sys.ps.GetTopic(topic).Pub(context.TODO(), msg)
 
 	return nil
 }
