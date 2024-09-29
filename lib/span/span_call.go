@@ -3,7 +3,6 @@ package span
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"github.com/opentracing/opentracing-go"
 	"github.com/pojol/braid/lib/tracer"
@@ -19,12 +18,13 @@ const (
 type SystemCallTracer struct {
 	span    opentracing.Span
 	tracing opentracing.Tracer
+	parm    SpanParm
 
 	starting bool
 }
 
 // CreateCallSpan
-func CreateCallSpan() tracer.SpanFactory {
+func CreateCallSpan(opts ...SpanOption) tracer.SpanFactory {
 	return func(tracing interface{}) (tracer.ISpan, error) {
 
 		t, ok := tracing.(opentracing.Tracer)
@@ -32,8 +32,15 @@ func CreateCallSpan() tracer.SpanFactory {
 			return nil, errors.New("")
 		}
 
+		parm := &SpanParm{nodeID: "unknown"}
+
+		for _, v := range opts {
+			v(parm)
+		}
+
 		et := &SystemCallTracer{
 			tracing: t,
+			parm:    *parm,
 		}
 
 		return et, nil
@@ -50,14 +57,14 @@ func (t *SystemCallTracer) Begin(ctx interface{}) context.Context {
 
 	parentSpan := opentracing.SpanFromContext(mthonctx)
 	if parentSpan != nil {
-		fmt.Println("have parent")
 		t.span = t.tracing.StartSpan("System.call", opentracing.ChildOf(parentSpan.Context()))
 	} else {
-		fmt.Println("no parent")
 		t.span = t.tracing.StartSpan("System.call.root")
 	}
 
 	t.starting = true
+
+	t.SetTag("node", t.parm.nodeID)
 
 	// Create a new context with the span and return it
 	return opentracing.ContextWithSpan(mthonctx, t.span)
