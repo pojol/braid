@@ -5,7 +5,8 @@
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/pojol/braid?style=flat-square)](https://goreportcard.com/report/github.com/pojol/braid)
 [![Demo](https://img.shields.io/badge/demo-braid--demo-brightgreen?style=flat-square)](https://github.com/pojol/braid-demo)
-[![Matrix](https://img.shields.io/badge/chat-%23braid%3Amatrix.org-blue)](https://matrix.to/#/#braid-world:matrix.org)
+[![Discord](https://img.shields.io/discord/1210543471593791488?color=7289da&label=Discord&logo=discord&style=flat-square)](https://discord.gg/yXJgTrkWxT)
+
 
 ### Sample
 
