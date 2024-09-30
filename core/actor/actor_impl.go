@@ -9,6 +9,7 @@ import (
 
 	"github.com/pojol/braid/core"
 	"github.com/pojol/braid/def"
+	"github.com/pojol/braid/lib/log"
 	"github.com/pojol/braid/lib/mpsc"
 	"github.com/pojol/braid/lib/pubsub"
 	"github.com/pojol/braid/lib/timewheel"
@@ -19,14 +20,15 @@ type RecoveryFunc func(interface{})
 type EventHandler func(*router.MsgWrapper) error
 
 type Runtime struct {
-	Id       string
-	Ty       string
-	Sys      core.ISystem
-	q        *mpsc.Queue
-	closed   int32
-	closeCh  chan struct{}
-	chains   map[string]core.IChain
-	recovery RecoveryFunc
+	Id         string
+	Ty         string
+	Sys        core.ISystem
+	q          *mpsc.Queue
+	closed     int32
+	closeCh    chan struct{}
+	shutdownCh chan struct{}
+	chains     map[string]core.IChain
+	recovery   RecoveryFunc
 
 	tw       *timewheel.TimeWheel
 	lastTick time.Time
@@ -46,6 +48,7 @@ func (a *Runtime) Init(ctx context.Context) {
 	a.q = mpsc.New()
 	atomic.StoreInt32(&a.closed, 0) // 初始化closed状态为0（未关闭）
 	a.closeCh = make(chan struct{})
+	a.shutdownCh = make(chan struct{})
 	a.chains = make(map[string]core.IChain)
 	a.recovery = defaultRecovery
 	a.ctx = context.Background()
@@ -142,7 +145,9 @@ func (a *Runtime) Update() {
 		for !a.q.Empty() {
 			time.Sleep(10 * time.Millisecond)
 		}
-		close(a.closeCh)
+		if atomic.CompareAndSwapInt32(&a.closed, 1, 2) {
+			close(a.closeCh)
+		}
 	}
 
 	for {
@@ -183,18 +188,28 @@ func (a *Runtime) Update() {
 			}()
 
 			if msg.Req.Header.Event == "exit" {
-				atomic.StoreInt32(&a.closed, 1) // 设置closed状态为1（关闭中）
-				go checkClose()
+				if atomic.CompareAndSwapInt32(&a.closed, 0, 1) {
+					go checkClose()
+				}
 				return
 			}
+
+		case <-a.shutdownCh:
+			if atomic.CompareAndSwapInt32(&a.closed, 0, 1) {
+				go checkClose()
+			}
+
 		case <-a.closeCh:
-			atomic.StoreInt32(&a.closed, 2) // 设置closed状态为2（已关闭）
-			fmt.Println(a.Id, "Actor is now closed")
+			atomic.StoreInt32(&a.closed, 2)
 			return
 		}
 	}
 }
 
 func (a *Runtime) Exit() {
+	close(a.shutdownCh) // 发送关闭信号
+	<-a.closeCh         // 等待所有消息处理完毕
+
 	a.tw.Shutdown()
+	log.Info("[braid.actor] %s has exited", a.Id)
 }
