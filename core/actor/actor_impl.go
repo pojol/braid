@@ -4,25 +4,93 @@ import (
 	"context"
 	"fmt"
 	"runtime/debug"
+	"sync"
 	"sync/atomic"
 	"time"
 
 	"github.com/pojol/braid/core"
 	"github.com/pojol/braid/def"
+	"github.com/pojol/braid/lib/log"
 	"github.com/pojol/braid/lib/mpsc"
 	"github.com/pojol/braid/lib/pubsub"
 	"github.com/pojol/braid/lib/timewheel"
 	"github.com/pojol/braid/router"
 )
 
+// Future represents an asynchronous operation
+type Future struct {
+	result    *router.MsgWrapper
+	err       error
+	done      chan struct{}
+	callbacks []func(msg *router.MsgWrapper)
+	mutex     sync.Mutex
+}
+
+func NewFuture() *Future {
+	return &Future{
+		done: make(chan struct{}),
+	}
+}
+
+func (f *Future) Then(callback func(msg *router.MsgWrapper)) core.IFuture {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if f.IsCompleted() {
+		go callback(f.result)
+		return NewFuture()
+	}
+
+	newFuture := NewFuture()
+	f.callbacks = append(f.callbacks, func(msg *router.MsgWrapper) {
+		callback(msg)
+		newFuture.Complete(msg)
+	})
+
+	return newFuture
+}
+
+func (f *Future) Complete(result *router.MsgWrapper) {
+	f.mutex.Lock()
+	defer f.mutex.Unlock()
+
+	if f.IsCompleted() {
+		return // 已经完成
+	}
+
+	f.result = result
+	close(f.done)
+
+	for _, callback := range f.callbacks {
+		go callback(f.result)
+	}
+	f.callbacks = nil
+}
+
+func (f *Future) IsCompleted() bool {
+	select {
+	case <-f.done:
+		return true
+	default:
+		return false
+	}
+}
+
+type reenterMessage struct {
+	action EventHandler
+	msg    interface{}
+}
+
 type RecoveryFunc func(interface{})
 type EventHandler func(*router.MsgWrapper) error
 
 type Runtime struct {
-	Id       string
-	Ty       string
-	Sys      core.ISystem
-	q        *mpsc.Queue
+	Id           string
+	Ty           string
+	Sys          core.ISystem
+	q            *mpsc.Queue
+	reenterQueue *mpsc.Queue
+
 	closed   int32
 	closeCh  chan struct{}
 	chains   map[string]core.IChain
@@ -44,6 +112,7 @@ func (a *Runtime) ID() string {
 
 func (a *Runtime) Init(ctx context.Context) {
 	a.q = mpsc.New()
+	a.reenterQueue = mpsc.New()
 	atomic.StoreInt32(&a.closed, 0) // 初始化closed状态为0（未关闭）
 	a.closeCh = make(chan struct{})
 	a.chains = make(map[string]core.IChain)
@@ -137,9 +206,89 @@ func (a *Runtime) Received(msg *router.MsgWrapper) error {
 	return nil
 }
 
+func (a *Runtime) ReenterCall(ctx context.Context, tar router.Target, msg *router.MsgWrapper) core.IFuture {
+	future := NewFuture()
+
+	// 准备消息头
+	if msg.Req.Header.OrgActorID == "" {
+		msg.Req.Header.OrgActorID = a.Id
+		msg.Req.Header.OrgActorType = a.Ty
+	}
+	msg.Req.Header.PrevActorType = a.Ty
+
+	// 创建一个带有取消功能的新 context
+	ctxWithCancel, cancel := context.WithCancel(ctx)
+
+	// 创建一个 channel 来通知调用完成
+	done := make(chan struct{})
+
+	go func() {
+		defer cancel()
+
+		// 执行异步调用
+		err := a.Sys.Call(tar, msg)
+		if err != nil {
+			future.Complete(msg)
+			return
+		}
+
+		// 等待消息处理完成或上下文取消
+		select {
+		case <-ctxWithCancel.Done():
+			msg.Err = ctxWithCancel.Err()
+		case <-msg.Done:
+			// 消息处理完成
+		}
+
+		future.Complete(msg)
+	}()
+
+	// 创建一个新的 Future 用于重入
+	reenterFuture := NewFuture()
+
+	future.Then(func(ret *router.MsgWrapper) {
+		reenterMsg := &reenterMessage{
+			action: func(mw *router.MsgWrapper) error {
+				defer func() {
+					if r := recover(); r != nil {
+						log.Error("panic in ReenterCall: %v", r)
+						msg.Err = fmt.Errorf("panic in ReenterCall: %v", r)
+						reenterFuture.Complete(msg)
+					}
+				}()
+
+				if mw.Err != nil {
+					reenterFuture.Complete(msg)
+					return mw.Err
+				}
+
+				reenterFuture.Complete(mw)
+				return nil
+			},
+			msg: ret,
+		}
+		a.reenterQueue.Push(reenterMsg)
+	})
+
+	// 监听 context 取消
+	go func() {
+		select {
+		case <-ctx.Done():
+			cancel()
+			if !future.IsCompleted() {
+				future.Complete(msg)
+			}
+		case <-done:
+			// 调用已完成，不需要做任何事
+		}
+	}()
+
+	return reenterFuture
+}
+
 func (a *Runtime) Update() {
 	checkClose := func() {
-		for !a.q.Empty() {
+		for !a.q.Empty() || !a.reenterQueue.Empty() {
 			time.Sleep(10 * time.Millisecond)
 		}
 		close(a.closeCh)
@@ -186,6 +335,11 @@ func (a *Runtime) Update() {
 				atomic.StoreInt32(&a.closed, 1) // 设置closed状态为1（关闭中）
 				go checkClose()
 				return
+			}
+		case <-a.reenterQueue.C:
+			reenterMsgInterface := a.reenterQueue.Pop()
+			if reenterMsg, ok := reenterMsgInterface.(*reenterMessage); ok {
+				reenterMsg.action(reenterMsg.msg.(*router.MsgWrapper))
 			}
 		case <-a.closeCh:
 			atomic.StoreInt32(&a.closed, 2) // 设置closed状态为2（已关闭）

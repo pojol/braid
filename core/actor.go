@@ -60,6 +60,13 @@ func GetActor(ctx context.Context) IActor {
 	return ctx.Value(ActorKey{}).(IActor)
 }
 
+type IFuture interface {
+	Complete(*router.MsgWrapper)
+	IsCompleted() bool
+
+	Then(func(*router.MsgWrapper)) IFuture
+}
+
 // IActor is an abstraction of threads (goroutines). In a Node (process),
 // 1 to N actors execute specific business logic.
 //
@@ -96,6 +103,8 @@ type IActor interface {
 
 	// Call sends an event to another actor
 	Call(tar router.Target, msg *router.MsgWrapper) error
+
+	ReenterCall(ctx context.Context, tar router.Target, msg *router.MsgWrapper) IFuture
 
 	// SetContext returns a new context with the given state.
 	// It allows you to embed any state information into the context for later retrieval.
