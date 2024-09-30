@@ -90,11 +90,11 @@ type Runtime struct {
 	Sys          core.ISystem
 	q            *mpsc.Queue
 	reenterQueue *mpsc.Queue
-
-	closed   int32
-	closeCh  chan struct{}
-	chains   map[string]core.IChain
-	recovery RecoveryFunc
+	closed       int32
+	closeCh      chan struct{}
+	shutdownCh   chan struct{}
+	chains       map[string]core.IChain
+	recovery     RecoveryFunc
 
 	tw       *timewheel.TimeWheel
 	lastTick time.Time
@@ -115,6 +115,7 @@ func (a *Runtime) Init(ctx context.Context) {
 	a.reenterQueue = mpsc.New()
 	atomic.StoreInt32(&a.closed, 0) // 初始化closed状态为0（未关闭）
 	a.closeCh = make(chan struct{})
+	a.shutdownCh = make(chan struct{})
 	a.chains = make(map[string]core.IChain)
 	a.recovery = defaultRecovery
 	a.ctx = context.Background()
@@ -291,7 +292,9 @@ func (a *Runtime) Update() {
 		for !a.q.Empty() || !a.reenterQueue.Empty() {
 			time.Sleep(10 * time.Millisecond)
 		}
-		close(a.closeCh)
+		if atomic.CompareAndSwapInt32(&a.closed, 1, 2) {
+			close(a.closeCh)
+		}
 	}
 
 	for {
@@ -332,8 +335,9 @@ func (a *Runtime) Update() {
 			}()
 
 			if msg.Req.Header.Event == "exit" {
-				atomic.StoreInt32(&a.closed, 1) // 设置closed状态为1（关闭中）
-				go checkClose()
+				if atomic.CompareAndSwapInt32(&a.closed, 0, 1) {
+					go checkClose()
+				}
 				return
 			}
 		case <-a.reenterQueue.C:
@@ -341,14 +345,22 @@ func (a *Runtime) Update() {
 			if reenterMsg, ok := reenterMsgInterface.(*reenterMessage); ok {
 				reenterMsg.action(reenterMsg.msg.(*router.MsgWrapper))
 			}
+		case <-a.shutdownCh:
+			if atomic.CompareAndSwapInt32(&a.closed, 0, 1) {
+				go checkClose()
+			}
+
 		case <-a.closeCh:
-			atomic.StoreInt32(&a.closed, 2) // 设置closed状态为2（已关闭）
-			fmt.Println(a.Id, "Actor is now closed")
+			atomic.StoreInt32(&a.closed, 2)
 			return
 		}
 	}
 }
 
 func (a *Runtime) Exit() {
+	close(a.shutdownCh) // 发送关闭信号
+	<-a.closeCh         // 等待所有消息处理完毕
+
 	a.tw.Shutdown()
+	log.Info("[braid.actor] %s has exited", a.Id)
 }

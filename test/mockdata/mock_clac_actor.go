@@ -14,9 +14,9 @@ type MockClacActor struct {
 	*actor.Runtime
 }
 
-func NewClacActor(p *core.ActorLoaderBuilder) core.IActor {
+func NewClacActor(p core.IActorBuilder) core.IActor {
 	return &MockClacActor{
-		Runtime: &actor.Runtime{Id: p.ID, Ty: "MockClacActor", Sys: p.ISystem},
+		Runtime: &actor.Runtime{Id: p.GetType(), Ty: "MockClacActor", Sys: p.GetSystem()},
 	}
 }
 

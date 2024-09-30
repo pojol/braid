@@ -3,6 +3,7 @@ package testreentercall
 import (
 	"context"
 	"os"
+	"sync"
 	"testing"
 	"time"
 
@@ -38,9 +39,9 @@ func TestReenterCall(t *testing.T) {
 
 	// build
 	var err error
-	_, err = sys.Loader().Builder("MockClacActor").WithID("clac-1").RegisterLocally()
+	_, err = sys.Loader("MockClacActor").WithID("clac-1").Build()
 	assert.Equal(t, err, nil)
-	_, err = sys.Loader().Builder("MockClacActor").WithID("clac-2").RegisterLocally()
+	_, err = sys.Loader("MockClacActor").WithID("clac-2").Build()
 	assert.Equal(t, err, nil)
 
 	node.Init()
@@ -53,5 +54,7 @@ func TestReenterCall(t *testing.T) {
 
 	time.Sleep(time.Second * 2)
 
-	sys.Exit()
+	wg := sync.WaitGroup{}
+	sys.Exit(&wg)
+	wg.Wait()
 }

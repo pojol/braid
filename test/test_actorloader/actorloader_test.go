@@ -44,16 +44,16 @@ func TestActorLoader(t *testing.T) {
 
 	var err error
 
-	_, err = sys.Loader().Builder(def.ActorDynamicPicker).WithID("nodeid-picker").RegisterLocally()
+	_, err = sys.Loader(def.ActorDynamicPicker).WithID("nodeid-picker").Build()
 	assert.Equal(t, err, nil)
 
-	_, err = sys.Loader().Builder(def.ActorDynamicRegister).WithID("nodeid-register").RegisterLocally()
+	_, err = sys.Loader(def.ActorDynamicRegister).WithID("nodeid-register").Build()
 	assert.Equal(t, err, nil)
 
 	node.Init()
 	node.Update()
 
-	err = sys.Loader().Builder("MockClacActor").WithID("001").RegisterDynamically()
+	_, err = sys.Loader("MockClacActor").WithID("001").WithPicker().Build()
 	assert.Equal(t, err, nil)
 
 	//node.WaitClose()

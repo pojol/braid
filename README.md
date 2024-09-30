@@ -23,12 +23,8 @@ factory.bind("MockClacActor",
 
 2. builder actor
 ```go
-
-// register ActorDynamicRegister type actor to the local node
-sys.Loader().Builder(def.ActorDynamicRegister).WithID("nodeid-register").RegisterLocally()
-
-// Or register a MockClacActor type actor to the cluster dynamically (via load balancing)
-sys.Loader().Builder("MockClacActor").WithID("001").RegisterDynamically()
+// Register a MockClacActor type actor to the cluster dynamically (via load balancing)
+sys.Loader("MockClacActor").WithID("001").WithPicker().Build()
 ```
 
 3. Implement logic for the actor

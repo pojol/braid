@@ -29,7 +29,9 @@ const (
 )
 
 const (
-	RedisAddressbookIDField    = "braid.addressbook.id"
-	RedisAddressbookTyField    = "braid.addressbook.ty."
+	RedisAddressbookIDField = "braid.addressbook.id"
+	// set
+	RedisAddressbookTyField = "braid.addressbook.ty."
+	// hash
 	RedisAddressbookNodesField = "braid.addressbook.nodes"
 )
