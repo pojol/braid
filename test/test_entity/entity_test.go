@@ -64,7 +64,7 @@ func mockEntity(id string) core.ISystem {
 	)
 
 	loader := actor.BuildDefaultActorLoader(sys, mockdata.BuildActorFactory())
-	loader.Builder("MockUserActor").WithID(id).RegisterLocally()
+	loader.Builder("MockUserActor").WithID(id).Build()
 
 	for _, a := range sys.Actors() {
 		a.Init(context.TODO())

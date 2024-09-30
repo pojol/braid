@@ -85,7 +85,7 @@ func setupBenchmark() {
 					actorjump2arr = append(actorjump2arr, aid)
 				}
 
-				sys.Loader().Builder("MockClacActor").WithID(aid).RegisterLocally()
+				sys.Loader("MockClacActor").WithID(aid).Build()
 			}
 		}
 
@@ -103,8 +103,9 @@ func TestMain(m *testing.M) {
 	setupBenchmark()
 	m.Run()
 	// 清理资源
+	wg := sync.WaitGroup{}
 	for _, node := range nodes {
-		node.System().Exit()
+		node.System().Exit(&wg)
 	}
 }
 

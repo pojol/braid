@@ -6,6 +6,7 @@ import (
 	"net"
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
+	"github.com/pojol/braid/lib/log"
 	"google.golang.org/grpc"
 )
 
@@ -62,7 +63,7 @@ func (s *Server) Init() error {
 		return fmt.Errorf("%v [GRPC] server check error %v [%v]", "", "tcp", s.parm.ListenAddr)
 	}
 
-	fmt.Printf("[GRPC] server listen: [tcp] %v\n", s.parm.ListenAddr)
+	log.Info("[barid.grpc] server listen: [tcp] %v", s.parm.ListenAddr)
 	s.listen = rpcListen
 
 	return nil
@@ -80,10 +81,10 @@ func (s *Server) Run() {
 	s.parm.Handler(s.rpc)
 
 	go func() {
-		fmt.Println("[GRPC] server serving ...")
+		log.Info("[braid.grpc] server serving ...")
 
 		if err := s.rpc.Serve(s.listen); err != nil {
-			fmt.Printf("[GRPC] server serving err %s", err.Error())
+			log.Info("[braid.grpc] exit %v", err.Error())
 		}
 	}()
 
@@ -91,7 +92,8 @@ func (s *Server) Run() {
 
 // Close 退出处理
 func (s *Server) Close() {
-	fmt.Printf("grpc-server closed")
+	log.Info("[braid.grpc] %v closed", s.parm.ListenAddr)
+
 	if s.parm.GracefulStop {
 		s.rpc.GracefulStop()
 	} else {
