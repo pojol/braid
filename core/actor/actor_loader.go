@@ -6,6 +6,7 @@ import (
 
 	"github.com/pojol/braid/core"
 	"github.com/pojol/braid/def"
+	"github.com/pojol/braid/lib/log"
 	"github.com/pojol/braid/router"
 )
 
@@ -18,37 +19,45 @@ func BuildDefaultActorLoader(sys core.ISystem, factory core.IActorFactory) core.
 	return &DefaultActorLoader{sys: sys, factory: factory}
 }
 
-func (al *DefaultActorLoader) Pick(builder *core.ActorLoaderBuilder) error {
+func (al *DefaultActorLoader) Pick(builder core.IActorBuilder) error {
 
 	customOptions := make(map[string]string)
 
-	for key, value := range builder.Options {
+	for key, value := range builder.GetOptions() {
 		customOptions[key] = fmt.Sprint(value)
 	}
 
-	customOptions["actor_id"] = builder.ID
-	customOptions["actor_ty"] = builder.ActorTy
+	customOptions["actor_id"] = builder.GetID()
+	customOptions["actor_ty"] = builder.GetType()
 
-	return al.sys.Call(context.TODO(), router.Target{
-		ID: def.SymbolWildcard,
-		Ty: def.ActorDynamicPicker,
-		Ev: def.EvDynamicPick},
-		router.NewMsgWrap().WithReqHeader(&router.Header{
-			Custom: customOptions,
-		}).Build(),
-	)
+	go func() {
+		err := al.sys.Call(router.Target{
+			ID: def.SymbolWildcard,
+			Ty: def.ActorDynamicPicker,
+			Ev: def.EvDynamicPick},
+			router.NewMsgWrap(context.TODO()).WithReqHeader(&router.Header{
+				Custom: customOptions,
+			}).Build(),
+		)
+		if err != nil {
+			log.Warn("[braid.actorLoader] call synamic picker err %v", err.Error())
+		}
+	}()
+
+	return nil
 }
 
 // Builder selects an actor from the factory and provides a builder
-func (al *DefaultActorLoader) Builder(ty string) *core.ActorLoaderBuilder {
+func (al *DefaultActorLoader) Builder(ty string) core.IActorBuilder {
 	ac := al.factory.Get(ty)
 	if ac == nil {
 		return nil
 	}
 
-	builder := &core.ActorLoaderBuilder{
-		CreateActorParm: core.CreateActorParm{
-			Options: make(map[string]interface{}),
+	builder := &ActorLoaderBuilder{
+		CreateActorParm: CreateActorParm{
+			GenerationMode: LocalGeneration, // Default to local option, can be modified using withpicker
+			Options:        make(map[string]interface{}),
 		},
 		ISystem:          al.sys,
 		ActorConstructor: *ac,

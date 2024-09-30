@@ -1,9 +1,11 @@
 package node
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 
 	"github.com/pojol/braid/core"
@@ -47,7 +49,7 @@ func (pn *process) System() core.ISystem {
 func (pn *process) Init(opts ...core.NodeOption) error {
 
 	for _, a := range pn.p.Sys.Actors() {
-		a.Init()
+		a.Init(context.TODO())
 	}
 
 	return nil
@@ -66,5 +68,16 @@ func (pn *process) WaitClose() {
 	ch := make(chan os.Signal, 1)
 	signal.Notify(ch, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
 	s := <-ch
-	fmt.Printf("signal %v\n", s)
+	fmt.Printf("Received signal %v, initiating graceful shutdown...\n", s)
+
+	// Create a WaitGroup
+	var wg sync.WaitGroup
+
+	// Call the system's shutdown method with the WaitGroup
+	pn.p.Sys.Exit(&wg)
+
+	// Wait for all actors to finish their cleanup
+	wg.Wait()
+
+	fmt.Println("All actors have shut down. Exiting process.")
 }

@@ -94,7 +94,7 @@ func (c *Channel) addHandlers(queue *mpsc.Queue) {
 				continue
 			}
 
-			msg := router.NewMsgWrap().
+			msg := router.NewMsgWrap(context.TODO()).
 				WithReqHeader(&router.Header{ID: recvmsg.Header.ID, Event: recvmsg.Header.Event}).
 				WithReqBody(recvmsg.Body).Build()
 			queue.Push(msg)

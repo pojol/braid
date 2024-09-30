@@ -64,10 +64,10 @@ func mockEntity(id string) core.ISystem {
 	)
 
 	loader := actor.BuildDefaultActorLoader(sys, mockdata.BuildActorFactory())
-	loader.Builder("MockUserActor").WithID(id).RegisterLocally()
+	loader.Builder("MockUserActor").WithID(id).Build()
 
 	for _, a := range sys.Actors() {
-		a.Init()
+		a.Init(context.TODO())
 		go a.Update()
 	}
 
@@ -95,8 +95,8 @@ func TestEntityLoad(t *testing.T) {
 	// load entity with db and sync to redis
 	sys := mockEntity(id)
 
-	msg := router.NewMsgWrap().Build()
-	sys.Call(context.TODO(), router.Target{ID: id, Ty: ty, Ev: "entity_test"}, msg)
+	msg := router.NewMsgWrap(context.TODO()).Build()
+	sys.Call(router.Target{ID: id, Ty: ty, Ev: "entity_test"}, msg)
 
 	assert.Equal(t, msg.Res.Header.Custom["code"], "200")
 	a, e := sys.FindActor(context.TODO(), id)

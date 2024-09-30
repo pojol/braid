@@ -82,7 +82,7 @@ func (ab *AddressBook) Register(ctx context.Context, ty, id string) error {
 	pipe.SAdd(ctx, fmt.Sprintf(def.RedisAddressbookTyField+"%s", ty), addrJSON)
 
 	// Add node info to a separate set
-	pipe.SAdd(ctx, def.RedisAddressbookNodesField, nodeInfoJSON)
+	pipe.HSet(ctx, def.RedisAddressbookNodesField, ab.NodeID, nodeInfoJSON)
 
 	// 更新节点记录
 	pipe.HIncrBy(ctx, makeNodeKey(ab.NodeID), fmt.Sprintf("actor:%s", ty), 1)
@@ -256,12 +256,12 @@ func (ab *AddressBook) GetLowWeightNodeForActor(ctx context.Context, actorType s
 	defer mu.Unlock(ctx)
 
 	// Get all node infos from the set
-	nodeInfoJSONs, err := trdredis.SMembers(ctx, def.RedisAddressbookNodesField).Result()
+	nodeInfoMap, err := trdredis.HGetAll(ctx, def.RedisAddressbookNodesField).Result()
 	if err != nil {
 		return core.AddressInfo{}, fmt.Errorf("GetLowWeightNodeForActor SMembers err %v", err)
 	}
 
-	if len(nodeInfoJSONs) == 0 {
+	if len(nodeInfoMap) == 0 {
 		return core.AddressInfo{}, fmt.Errorf("no nodes found")
 	}
 
@@ -274,14 +274,13 @@ func (ab *AddressBook) GetLowWeightNodeForActor(ctx context.Context, actorType s
 	var weightedNodes []weightedNode
 	pipe := trdredis.Pipeline()
 
-	// Prepare pipeline commands
-	for _, nodeInfoJSON := range nodeInfoJSONs {
+	for nodeID, nodeInfoJSON := range nodeInfoMap {
 		var nodeInfo core.AddressInfo
 		if err := json.Unmarshal([]byte(nodeInfoJSON), &nodeInfo); err != nil {
 			log.Warn("unable to unmarshal node info: %v", err)
 			continue
 		}
-		pipe.HMGet(ctx, makeNodeKey(nodeInfo.Node), "total_weight", fmt.Sprintf("actor:%s", actorType))
+		pipe.HMGet(ctx, makeNodeKey(nodeID), "total_weight", fmt.Sprintf("actor:%s", actorType))
 	}
 
 	// Execute pipeline
@@ -291,15 +290,22 @@ func (ab *AddressBook) GetLowWeightNodeForActor(ctx context.Context, actorType s
 	}
 
 	// Process results
-	for i, cmder := range cmders {
-		result, err := cmder.(*redis.SliceCmd).Result()
+	i := 0
+	for _, nodeInfoJSON := range nodeInfoMap {
+		if i >= len(cmders) {
+			break
+		}
+
+		result, err := cmders[i].(*redis.SliceCmd).Result()
 		if err != nil {
 			log.Warn("unable to get node info: %v", err)
+			i++
 			continue
 		}
 
 		if len(result) < 2 {
 			log.Warn("unexpected result length: %d", len(result))
+			i++
 			continue
 		}
 
@@ -314,13 +320,19 @@ func (ab *AddressBook) GetLowWeightNodeForActor(ctx context.Context, actorType s
 		}
 
 		var nodeInfo core.AddressInfo
-		json.Unmarshal([]byte(nodeInfoJSONs[i]), &nodeInfo)
+		if err := json.Unmarshal([]byte(nodeInfoJSON), &nodeInfo); err != nil {
+			log.Warn("unable to unmarshal node info: %v", err)
+			i++
+			continue
+		}
 
 		weightedNodes = append(weightedNodes, weightedNode{
 			addr:       nodeInfo,
 			weight:     weight,
 			actorCount: actorCount,
 		})
+
+		i++
 	}
 
 	// Sort nodes by weight
@@ -355,4 +367,58 @@ func (ab *AddressBook) GetLowWeightNodeForActor(ctx context.Context, actorType s
 	}
 
 	return selectedAddr, nil
+}
+
+func (ab *AddressBook) Clear(ctx context.Context) error {
+	mu := &dismutex.Mutex{Token: ab.NodeID}
+	err := mu.Lock(ctx, "[addressbook.register]")
+	if err != nil {
+		return fmt.Errorf("addressbook.register get distributed mutex err %v", err.Error())
+	}
+	defer mu.Unlock(ctx)
+
+	// 获取该节点的所有 actor 信息
+	nodeKey := makeNodeKey(ab.NodeID)
+	actorInfos, err := trdredis.HGetAll(ctx, nodeKey).Result()
+	if err != nil {
+		return fmt.Errorf("failed to get actor infos: %w", err)
+	}
+
+	pipe := trdredis.Pipeline()
+
+	// 删除该节点的所有 actor 信息
+	for actorType := range actorInfos {
+		if actorType == "total_weight" {
+			continue
+		}
+		actorTypeKey := fmt.Sprintf(def.RedisAddressbookTyField+"%s", actorType[6:]) // 去掉 "actor:" 前缀
+
+		// 获取该类型的所有 actor
+		actors, err := trdredis.SMembers(ctx, actorTypeKey).Result()
+		if err != nil {
+			return fmt.Errorf("failed to get actors of type %s: %w", actorType, err)
+		}
+
+		for _, actorJSON := range actors {
+			var actor core.AddressInfo
+			if err := json.Unmarshal([]byte(actorJSON), &actor); err != nil {
+				continue
+			}
+			if actor.Node == ab.NodeID {
+				pipe.SRem(ctx, actorTypeKey, actorJSON)
+				pipe.HDel(ctx, def.RedisAddressbookIDField, actor.ActorId)
+			}
+		}
+	}
+
+	pipe.Del(ctx, nodeKey)
+	pipe.HDel(ctx, def.RedisAddressbookNodesField, ab.NodeID)
+
+	// 执行 pipeline
+	_, err = pipe.Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to clear node data: %w", err)
+	}
+
+	return nil
 }

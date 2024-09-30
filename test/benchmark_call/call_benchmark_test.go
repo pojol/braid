@@ -85,7 +85,7 @@ func setupBenchmark() {
 					actorjump2arr = append(actorjump2arr, aid)
 				}
 
-				sys.Loader().Builder("MockClacActor").WithID(aid).RegisterLocally()
+				sys.Loader("MockClacActor").WithID(aid).Build()
 			}
 		}
 
@@ -103,8 +103,9 @@ func TestMain(m *testing.M) {
 	setupBenchmark()
 	m.Run()
 	// 清理资源
+	wg := sync.WaitGroup{}
 	for _, node := range nodes {
-		node.System().Exit()
+		node.System().Exit(&wg)
 	}
 }
 
@@ -115,13 +116,13 @@ func Benchmark2Node1wActor2Jump(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		randomIndex := rand.Intn(len(actorjump1arr))
 
-		nodes[0].System().Call(context.TODO(),
+		nodes[0].System().Call(
 			router.Target{
 				ID: actorjump1arr[randomIndex],
 				Ty: def.MockActorEntity,
 				Ev: "print",
 			},
-			&router.MsgWrapper{Req: &router.Message{Header: &router.Header{
+			&router.MsgWrapper{Ctx: context.TODO(), Req: &router.Message{Header: &router.Header{
 				Custom: map[string]string{
 					"next": actorjump2arr[randomIndex],
 				},

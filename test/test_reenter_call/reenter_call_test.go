@@ -1,17 +1,17 @@
-package testactorloader
+package testreentercall
 
 import (
 	"context"
 	"os"
+	"sync"
 	"testing"
 	"time"
 
-	"github.com/pojol/braid/3rd/mgo"
 	"github.com/pojol/braid/3rd/redis"
 	"github.com/pojol/braid/core"
 	"github.com/pojol/braid/core/cluster/node"
-	"github.com/pojol/braid/def"
 	"github.com/pojol/braid/lib/log"
+	"github.com/pojol/braid/router"
 	"github.com/pojol/braid/test/mockdata"
 	"github.com/stretchr/testify/assert"
 )
@@ -25,40 +25,36 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-func TestActorLoader(t *testing.T) {
+func TestReenterCall(t *testing.T) {
 	// use mock redis
 	redis.BuildClientWithOption(redis.WithAddr("redis://127.0.0.1:6379/0"))
-	mgo.Build(mgo.AppendConn(mgo.ConnInfo{
-		Name: "braid-test",
-		Addr: "mongodb://127.0.0.1:27017",
-	}))
-
 	redis.FlushAll(context.TODO()) // clean cache
 
-	sys := node.BuildSystemWithOption("test-actor-loader-1", mockdata.BuildActorFactory())
+	sys := node.BuildSystemWithOption("test-reenter-call-1", mockdata.BuildActorFactory())
 
 	node := &mockdata.ProcessNode{
-		P:   core.NodeParm{ID: "test-actor-loader-1"},
+		P:   core.NodeParm{ID: "st-reenter-call-1"},
 		Sys: sys,
 	}
 
+	// build
 	var err error
-
-	_, err = sys.Loader(def.ActorDynamicPicker).WithID("nodeid-picker").Build()
+	_, err = sys.Loader("MockClacActor").WithID("clac-1").Build()
 	assert.Equal(t, err, nil)
-
-	_, err = sys.Loader(def.ActorDynamicRegister).WithID("nodeid-register").Build()
+	_, err = sys.Loader("MockClacActor").WithID("clac-2").Build()
 	assert.Equal(t, err, nil)
 
 	node.Init()
 	node.Update()
 
-	_, err = sys.Loader("MockClacActor").WithID("001").WithPicker().Build()
+	time.Sleep(time.Second)
+
+	err = sys.Call(router.Target{ID: "clac-1", Ty: "MockClacActor", Ev: "mockreenter"}, router.NewMsgWrap(context.TODO()).Build())
 	assert.Equal(t, err, nil)
 
-	//node.WaitClose()
-	select {
-	case <-time.After(3 * time.Second):
-		// 3 seconds have passed
-	}
+	time.Sleep(time.Second * 2)
+
+	wg := sync.WaitGroup{}
+	sys.Exit(&wg)
+	wg.Wait()
 }
