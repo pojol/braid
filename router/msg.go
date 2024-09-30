@@ -11,6 +11,7 @@ type MsgWrapper struct {
 	Req *Message // The proto-defined Message
 	Res *Message
 	Ctx context.Context
+	Err error
 
 	Wg   warpwaitgroup.WrapWaitGroup
 	Done chan struct{} // Used for synchronization
