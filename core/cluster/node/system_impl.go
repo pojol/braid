@@ -67,51 +67,55 @@ func (sys *NormalSystem) Update() {
 	}
 }
 
-func (sys *NormalSystem) Loader() core.IActorLoader {
-	return sys.loader
+func (sys *NormalSystem) Loader(ty string) core.IActorBuilder {
+	return sys.loader.Builder(ty)
 }
 
 func (sys *NormalSystem) AddressBook() core.IAddressBook {
 	return sys.addressbook
 }
 
-func (sys *NormalSystem) Register(builder *core.ActorLoaderBuilder) (core.IActor, error) {
+func (sys *NormalSystem) Register(builder core.IActorBuilder) (core.IActor, error) {
 
-	if builder.ID == "" || builder.ActorTy == "" {
+	if builder.GetID() == "" || builder.GetType() == "" {
 		return nil, def.ErrSystemParm()
 	}
 
 	sys.Lock()
-	if _, ok := sys.actoridmap[builder.ID]; ok {
+	if _, ok := sys.actoridmap[builder.GetID()]; ok {
 		sys.Unlock()
-		return nil, def.ErrSystemRepeatRegistActor(builder.ActorTy, builder.ID)
+		return nil, def.ErrSystemRepeatRegistActor(builder.GetType(), builder.GetID())
 	}
 	sys.Unlock()
 
-	if builder.GlobalQuantityLimit != 0 {
+	if builder.GetGlobalQuantityLimit() != 0 {
 
 		// 检查当前节点是否已经存在
-		if builder.ActorConstructor.NodeUnique {
-
+		if builder.GetNodeUnique() {
+			for _, v := range sys.actoridmap {
+				if v.Type() == builder.GetType() {
+					return nil, fmt.Errorf("[barid.system] register unique type actor %v in %v", builder.GetType(), sys.p.NodeID)
+				}
+			}
 		}
 
 		// 检查注册数是否已经超出限制
 	}
 
 	// Register first, then build
-	err := sys.addressbook.Register(context.TODO(), builder.ActorTy, builder.ID)
+	err := sys.addressbook.Register(context.TODO(), builder.GetType(), builder.GetID())
 	if err != nil {
 		return nil, err
 	}
 
 	// Instantiate actor
-	actor := builder.Constructor(builder)
+	actor := builder.GetConstructor()(builder)
 
 	sys.Lock()
-	sys.actoridmap[builder.ID] = actor
+	sys.actoridmap[builder.GetID()] = actor
 	sys.Unlock()
 
-	log.Info("[braid.system] node %v register %v succ, cur weight %v", sys.addressbook.NodeID, builder.ActorTy, 0)
+	log.Info("[braid.system] node %v register %v succ, cur weight %v", sys.addressbook.NodeID, builder.GetType(), 0)
 	return actor, nil
 }
 
@@ -298,8 +302,24 @@ func (sys *NormalSystem) FindActor(ctx context.Context, id string) (core.IActor,
 	return nil, def.ErrSystemCantFindLocalActor(id)
 }
 
-func (sys *NormalSystem) Exit() {
+func (sys *NormalSystem) Exit(wait *sync.WaitGroup) {
 	if sys.p.Port != 0 {
+		wait.Add(1)
 		acceptorExit()
+		wait.Done()
+	}
+
+	for _, actor := range sys.actoridmap {
+		wait.Add(1)
+
+		go func(a core.IActor) {
+			defer wait.Done()
+			a.Exit()
+		}(actor)
+	}
+
+	err := sys.addressbook.Clear(context.TODO())
+	if err != nil {
+		log.Warn("[braid.addressbook] clear err %v", err.Error())
 	}
 }
