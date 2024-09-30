@@ -19,16 +19,16 @@ func BuildDefaultActorLoader(sys core.ISystem, factory core.IActorFactory) core.
 	return &DefaultActorLoader{sys: sys, factory: factory}
 }
 
-func (al *DefaultActorLoader) Pick(builder *core.ActorLoaderBuilder) error {
+func (al *DefaultActorLoader) Pick(builder core.IActorBuilder) error {
 
 	customOptions := make(map[string]string)
 
-	for key, value := range builder.Options {
+	for key, value := range builder.GetOptions() {
 		customOptions[key] = fmt.Sprint(value)
 	}
 
-	customOptions["actor_id"] = builder.ID
-	customOptions["actor_ty"] = builder.ActorTy
+	customOptions["actor_id"] = builder.GetID()
+	customOptions["actor_ty"] = builder.GetType()
 
 	go func() {
 		err := al.sys.Call(router.Target{
@@ -48,15 +48,16 @@ func (al *DefaultActorLoader) Pick(builder *core.ActorLoaderBuilder) error {
 }
 
 // Builder selects an actor from the factory and provides a builder
-func (al *DefaultActorLoader) Builder(ty string) *core.ActorLoaderBuilder {
+func (al *DefaultActorLoader) Builder(ty string) core.IActorBuilder {
 	ac := al.factory.Get(ty)
 	if ac == nil {
 		return nil
 	}
 
-	builder := &core.ActorLoaderBuilder{
-		CreateActorParm: core.CreateActorParm{
-			Options: make(map[string]interface{}),
+	builder := &ActorLoaderBuilder{
+		CreateActorParm: CreateActorParm{
+			GenerationMode: LocalGeneration, // Default to local option, can be modified using withpicker
+			Options:        make(map[string]interface{}),
 		},
 		ISystem:          al.sys,
 		ActorConstructor: *ac,

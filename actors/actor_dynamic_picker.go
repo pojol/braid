@@ -13,9 +13,9 @@ type dynamicPickerActor struct {
 	*actor.Runtime
 }
 
-func NewDynamicPickerActor(p *core.ActorLoaderBuilder) core.IActor {
+func NewDynamicPickerActor(p core.IActorBuilder) core.IActor {
 	return &dynamicPickerActor{
-		Runtime: &actor.Runtime{Id: p.ID, Ty: def.ActorDynamicPicker, Sys: p.ISystem},
+		Runtime: &actor.Runtime{Id: p.GetID(), Ty: def.ActorDynamicPicker, Sys: p.GetSystem()},
 	}
 }
 

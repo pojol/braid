@@ -16,10 +16,10 @@ type dynamicRegisterActor struct {
 
 type loadKey struct{}
 
-func NewDynamicRegisterActor(p *core.ActorLoaderBuilder) core.IActor {
+func NewDynamicRegisterActor(p core.IActorBuilder) core.IActor {
 	return &dynamicRegisterActor{
-		Runtime: &actor.Runtime{Id: p.ID, Ty: def.ActorDynamicRegister, Sys: p.ISystem},
-		loader:  p.IActorLoader,
+		Runtime: &actor.Runtime{Id: p.GetID(), Ty: def.ActorDynamicRegister, Sys: p.GetSystem()},
+		loader:  p.GetLoader(),
 	}
 }
 
@@ -47,7 +47,7 @@ func MakeDynamicRegister(actorCtx context.Context) core.IChain {
 				builder.WithOpt(k, v)
 			}
 
-			actor, err := builder.RegisterLocally()
+			actor, err := builder.Build()
 			if err != nil {
 				return err
 			}

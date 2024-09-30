@@ -111,21 +111,36 @@ type IActor interface {
 	Exit()
 }
 
-// ActorLoaderBuilder used to build ActorLoader
-type ActorLoaderBuilder struct {
-	CreateActorParm
-	ISystem
-	ActorConstructor
-	IActorLoader
-}
-
 type IActorLoader interface {
 
 	// Builder selects an actor from the factory and provides a builder
-	Builder(string) *ActorLoaderBuilder
+	Builder(string) IActorBuilder
 
 	// Pick selects an appropriate node for the actor builder to register
-	Pick(*ActorLoaderBuilder) error
+	Pick(IActorBuilder) error
+}
+
+type IActorBuilder interface {
+	GetID() string
+	GetType() string
+	GetGlobalQuantityLimit() int
+	GetNodeUnique() bool
+	GetOpt(key string) interface{}
+	GetOptions() map[string]interface{}
+
+	GetSystem() ISystem
+	GetLoader() IActorLoader
+	GetConstructor() CreateFunc
+
+	// ---
+
+	WithID(string) IActorBuilder
+	WithType(string) IActorBuilder
+	WithOpt(string, interface{}) IActorBuilder
+	WithPicker() IActorBuilder
+
+	// ---
+	Build() (IActor, error)
 }
 
 type ActorConstructor struct {
