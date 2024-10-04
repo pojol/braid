@@ -115,7 +115,7 @@ func (sys *NormalSystem) Register(builder core.IActorBuilder) (core.IActor, erro
 	sys.actoridmap[builder.GetID()] = actor
 	sys.Unlock()
 
-	log.InfoF("[braid.system] node %v register %v succ, cur weight %v", sys.addressbook.NodeID, builder.GetType(), 0)
+	log.InfoF("[braid.system] node %v register %v %v succ, cur weight %v", sys.addressbook.NodeID, builder.GetType(), builder.GetID(), 0)
 	return actor, nil
 }
 
