@@ -118,7 +118,7 @@ func InfoF(format string, v ...interface{}) {
 	sLog.Log(zapcore.InfoLevel, format, v...)
 }
 
-func Errorf(format string, v ...interface{}) {
+func ErrorF(format string, v ...interface{}) {
 	sLog.Log(zapcore.ErrorLevel, format, v...)
 }
 

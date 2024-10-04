@@ -252,7 +252,7 @@ func (a *Runtime) ReenterCall(ctx context.Context, tar router.Target, msg *route
 			action: func(mw *router.MsgWrapper) error {
 				defer func() {
 					if r := recover(); r != nil {
-						log.Error("panic in ReenterCall: %v", r)
+						log.ErrorF("panic in ReenterCall: %v", r)
 						msg.Err = fmt.Errorf("panic in ReenterCall: %v", r)
 						reenterFuture.Complete(msg)
 					}
