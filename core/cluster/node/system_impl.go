@@ -115,7 +115,7 @@ func (sys *NormalSystem) Register(builder core.IActorBuilder) (core.IActor, erro
 	sys.actoridmap[builder.GetID()] = actor
 	sys.Unlock()
 
-	log.Info("[braid.system] node %v register %v succ, cur weight %v", sys.addressbook.NodeID, builder.GetType(), 0)
+	log.InfoF("[braid.system] node %v register %v succ, cur weight %v", sys.addressbook.NodeID, builder.GetType(), 0)
 	return actor, nil
 }
 
@@ -320,6 +320,6 @@ func (sys *NormalSystem) Exit(wait *sync.WaitGroup) {
 
 	err := sys.addressbook.Clear(context.TODO())
 	if err != nil {
-		log.Warn("[braid.addressbook] clear err %v", err.Error())
+		log.WarnF("[braid.addressbook] clear err %v", err.Error())
 	}
 }

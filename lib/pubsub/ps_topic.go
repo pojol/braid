@@ -44,14 +44,14 @@ func newTopic(name string, mgr *Pubsub, opts ...TopicOption) *Topic {
 		}).Result()
 
 		if err != nil {
-			log.Warn("[braid.pubsub ]Topic %v init failed %v", rt.topic, err)
+			log.WarnF("[braid.pubsub ]Topic %v init failed %v", rt.topic, err)
 		} else {
 
 			thdredis.XDel(ctx, rt.topic, id)
 			if options.ttl > 0 {
 				err = thdredis.Expire(ctx, rt.topic, options.ttl).Err()
 				if err != nil {
-					log.Warn("[braid.pubsub ]Failed to set TTL for topic %v: %v", rt.topic, err)
+					log.WarnF("[braid.pubsub ]Failed to set TTL for topic %v: %v", rt.topic, err)
 				}
 			}
 
@@ -115,7 +115,7 @@ func (rt *Topic) Close() error {
 
 			_, err = cleanpipe.Exec(ctx)
 			if err != nil {
-				log.Warn("[braid.pubsub ]Topic %v clean failed %v", rt.topic, err)
+				log.WarnF("[braid.pubsub ]Topic %v clean failed %v", rt.topic, err)
 			}
 		}
 
@@ -135,7 +135,7 @@ func (rt *Topic) getOrCreateChannel(ctx context.Context, name string, p ChannelP
 	}
 	rt.channelMap[name] = channel
 
-	log.Info("[braid.pubsub ]Topic %v new channel %v", rt.topic, name)
+	log.InfoF("[braid.pubsub ]Topic %v new channel %v", rt.topic, name)
 	return channel, nil
 	//}
 

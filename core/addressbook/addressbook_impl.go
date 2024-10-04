@@ -221,7 +221,7 @@ func (ab *AddressBook) GetWildcardActor(ctx context.Context, actorType string) (
 	for _, addrJSON := range addrJSONs {
 		var addr core.AddressInfo
 		if err := json.Unmarshal([]byte(addrJSON), &addr); err != nil {
-			log.Warn("addressbook unmarshal actor type %v json err %v", actorType, err.Error())
+			log.WarnF("addressbook unmarshal actor type %v json err %v", actorType, err.Error())
 			continue // continue to next address
 		}
 
@@ -277,7 +277,7 @@ func (ab *AddressBook) GetLowWeightNodeForActor(ctx context.Context, actorType s
 	for nodeID, nodeInfoJSON := range nodeInfoMap {
 		var nodeInfo core.AddressInfo
 		if err := json.Unmarshal([]byte(nodeInfoJSON), &nodeInfo); err != nil {
-			log.Warn("unable to unmarshal node info: %v", err)
+			log.WarnF("unable to unmarshal node info: %v", err)
 			continue
 		}
 		pipe.HMGet(ctx, makeNodeKey(nodeID), "total_weight", fmt.Sprintf("actor:%s", actorType))
@@ -298,13 +298,13 @@ func (ab *AddressBook) GetLowWeightNodeForActor(ctx context.Context, actorType s
 
 		result, err := cmders[i].(*redis.SliceCmd).Result()
 		if err != nil {
-			log.Warn("unable to get node info: %v", err)
+			log.WarnF("unable to get node info: %v", err)
 			i++
 			continue
 		}
 
 		if len(result) < 2 {
-			log.Warn("unexpected result length: %d", len(result))
+			log.WarnF("unexpected result length: %d", len(result))
 			i++
 			continue
 		}
@@ -321,7 +321,7 @@ func (ab *AddressBook) GetLowWeightNodeForActor(ctx context.Context, actorType s
 
 		var nodeInfo core.AddressInfo
 		if err := json.Unmarshal([]byte(nodeInfoJSON), &nodeInfo); err != nil {
-			log.Warn("unable to unmarshal node info: %v", err)
+			log.WarnF("unable to unmarshal node info: %v", err)
 			i++
 			continue
 		}

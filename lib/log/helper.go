@@ -110,22 +110,22 @@ func SystemReqInfo(id LogAccID, path LogPath, token LogToken, ip LogRealIP, form
 	sLog.SystemReqInfo(id, path, token, ip, format, v...)
 }
 
-func Debug(format string, v ...interface{}) {
+func DebugF(format string, v ...interface{}) {
 	sLog.Log(zapcore.DebugLevel, format, v...)
 }
 
-func Info(format string, v ...interface{}) {
+func InfoF(format string, v ...interface{}) {
 	sLog.Log(zapcore.InfoLevel, format, v...)
 }
 
-func Error(format string, v ...interface{}) {
+func Errorf(format string, v ...interface{}) {
 	sLog.Log(zapcore.ErrorLevel, format, v...)
 }
 
-func Warn(format string, v ...interface{}) {
+func WarnF(format string, v ...interface{}) {
 	sLog.Log(zapcore.WarnLevel, format, v...)
 }
 
-func Panic(format string, v ...interface{}) {
+func PanicF(format string, v ...interface{}) {
 	sLog.Log(zapcore.PanicLevel, format, v...)
 }

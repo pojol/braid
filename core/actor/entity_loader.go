@@ -148,7 +148,7 @@ func (loader *EntityLoader) Sync(ctx context.Context) error {
 	_, err := trhreids.TxPipelined(ctx, "[EntityLoader.Sync]", func(pipe redis.Pipeliner) error {
 		for idx, load := range loader.Loaders {
 			if loader.Loaders[idx].Ins == nil {
-				log.Warn("sync %s Ins is nil", load.BlockName)
+				log.WarnF("sync %s Ins is nil", load.BlockName)
 				continue
 			}
 
@@ -217,6 +217,6 @@ func (loader *EntityLoader) SetModule(typ reflect.Type, module interface{}) {
 	}
 
 	if !flag {
-		log.Warn("set module not found", typ)
+		log.WarnF("set module not found", typ)
 	}
 }

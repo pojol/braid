@@ -2,56 +2,8 @@ package log
 
 import (
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
-var gBehaviorLog *zap.Logger
-
-// ExportBehaviorLog 设置global日志(注不能在多线程环境下使用
-func ExportBehaviorLog(log *zap.Logger) {
-	if log != nil {
-		gBehaviorLog = log
-	} else {
-		panic("logger point is nil!")
-	}
-}
-
-// 调试日志
-func InfoF(args ...zapcore.Field) {
-	gBehaviorLog.Info("", args...)
-}
-
-// 警告类日志
-func BSystemWarm(module, fc, msg string) {
-	gBehaviorLog.Info("",
-		zap.String("行为", "警告"),
-		zap.String("module", module),
-		zap.String("func", fc),
-		zap.String("msg", msg),
-	)
-}
-
-// 调试类日志
-func BSystemDebug(module, fc, msg string) {
-	gBehaviorLog.Info("",
-		zap.String("行为", "调试"),
-		zap.String("module", module),
-		zap.String("func", fc),
-		zap.String("msg", msg),
-	)
-}
-
-// 错误类日志 (需要告警
-func BSystemErr(module, fc, stack string) {
-	gBehaviorLog.Info("",
-		zap.String("行为", "错误"),
-		zap.String("module", module),
-		zap.String("func", fc),
-		zap.String("stack", stack),
-	)
-}
-
-// ServerLog -------------ServerLog-------------->>
 type ServerLog struct {
 	Helper
 }

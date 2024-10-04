@@ -63,7 +63,7 @@ func (c *Client) newconn(addr string) (*grpc.ClientConn, error) {
 	}
 
 EXT:
-	//c.log.Infof("[braid.client] new connect addr : %v err : %v", addr, err)
+	//c.log.InfoFf("[braid.client] new connect addr : %v err : %v", addr, err)
 	fmt.Printf("[braid.client] new connect addr : %v err : %v\n", addr, err)
 
 	return conn, err

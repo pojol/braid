@@ -211,5 +211,5 @@ func (a *Runtime) Exit() {
 	<-a.closeCh         // 等待所有消息处理完毕
 
 	a.tw.Shutdown()
-	log.Info("[braid.actor] %s has exited", a.Id)
+	log.InfoF("[braid.actor] %s has exited", a.Id)
 }

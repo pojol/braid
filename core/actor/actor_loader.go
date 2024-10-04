@@ -40,7 +40,7 @@ func (al *DefaultActorLoader) Pick(builder core.IActorBuilder) error {
 			}).Build(),
 		)
 		if err != nil {
-			log.Warn("[braid.actorLoader] call synamic picker err %v", err.Error())
+			log.WarnF("[braid.actorLoader] call synamic picker err %v", err.Error())
 		}
 	}()
 
