@@ -18,7 +18,7 @@ type ICacheStrategy interface {
 	Load(ctx context.Context) error
 
 	// Sync - Synchronizes memory data back to the cache
-	Sync(ctx context.Context) error
+	Sync(ctx context.Context, forceUpdate bool) error
 
 	// Store - Stores data to the database and clears the cache
 	Store(ctx context.Context) error
@@ -26,11 +26,8 @@ type ICacheStrategy interface {
 	// IsDirty - Checks if the data is dirty
 	IsDirty() bool
 
-	// GetModule - Retrieves the corresponding module from the loader by type
-	GetModule(typ reflect.Type) interface{}
-
-	// SetModule - Sets the module to the loader (usually during entity initialization)
-	SetModule(typ reflect.Type, module interface{})
+	// IsExist
+	IsExist(context.Context) bool
 }
 
 var verList = []VerStrategy{}

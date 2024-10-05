@@ -105,7 +105,7 @@ func TestEntityLoad(t *testing.T) {
 	userActor := a.(*mockdata.MockUserActor)
 	assert.Equal(t, userActor.State.IsDirty(), true)
 
-	userActor.State.Sync(context.TODO())
+	userActor.State.Sync(context.TODO(), false)
 	assert.Equal(t, userActor.State.IsDirty(), false)
 
 	time.Sleep(time.Second * 2)
@@ -153,7 +153,7 @@ func TestEntityDB(t *testing.T) {
 	assert.Equal(t, warp1.Airship.ID, warp2.Airship.ID)
 
 	warp2.User.Token = "222"
-	warp2.Sync(context.TODO())
+	warp2.Sync(context.TODO(), false)
 	warp2.Store(context.TODO())
 
 	//warp3 := NewEntityWapper(mockactorid)

@@ -36,21 +36,27 @@ type EntityLoader struct {
 
 func BuildEntityLoader(dbName, dbCol string, wrapper core.IEntity) *EntityLoader {
 	wrapperType := reflect.TypeOf(wrapper).Elem()
+	wrapperValue := reflect.ValueOf(wrapper).Elem()
 	loaders := make([]BlockLoader, 0)
 
 	for i := 0; i < wrapperType.NumField(); i++ {
 		field := wrapperType.Field(i)
-		if field.Type.Kind() == reflect.Ptr && field.Type.Elem().Kind() == reflect.Struct {
-			bsonTag := field.Tag.Get("bson")
-			blockName := strings.Split(bsonTag, ",")[0] // 获取 bson 标签的第一部分作为名称
-			if blockName == "" {
-				blockName = strings.ToLower(field.Name) // 如果没有 bson 标签，使用字段名的小写形式
+		fieldValue := wrapperValue.Field(i)
+		if field.Type.Kind() == reflect.Ptr {
+			elemType := field.Type.Elem()
+			if elemType.Kind() == reflect.Struct || (elemType.Kind() == reflect.Slice && elemType.Elem().Kind() == reflect.Struct) {
+				bsonTag := field.Tag.Get("bson")
+				blockName := strings.Split(bsonTag, ",")[0] // 获取 bson 标签的第一部分作为名称
+				if blockName == "" {
+					blockName = strings.ToLower(field.Name) // 如果没有 bson 标签，使用字段名的小写形式
+				}
+				fmt.Println("loader", fieldValue.Interface())
+				loaders = append(loaders, BlockLoader{
+					BlockName: blockName,
+					BlockType: field.Type,
+					Ins:       fieldValue.Interface(),
+				})
 			}
-			loaders = append(loaders, BlockLoader{
-				BlockName: blockName,
-				BlockType: field.Type,
-			})
-
 		}
 	}
 	return &EntityLoader{DBName: dbName, DBCol: dbCol, WrapperEntity: wrapper, Loaders: loaders}
@@ -109,7 +115,7 @@ func (loader *EntityLoader) Load(ctx context.Context) error {
 			}
 
 			// sync to redis
-			return loader.Sync(ctx)
+			return loader.Sync(ctx, false)
 		} else {
 			return err
 		}
@@ -140,7 +146,7 @@ func (loader *EntityLoader) Load(ctx context.Context) error {
 	return nil
 }
 
-func (loader *EntityLoader) Sync(ctx context.Context) error {
+func (loader *EntityLoader) Sync(ctx context.Context, forceUpdate bool) error {
 	if len(loader.Loaders) == 0 {
 		return def.ErrEntityLoadEntityLoadersEmpty(loader.WrapperEntity.GetID())
 	}
@@ -152,12 +158,24 @@ func (loader *EntityLoader) Sync(ctx context.Context) error {
 				continue
 			}
 
-			byt, err := proto.Marshal(loader.Loaders[idx].Ins.(proto.Message))
-			if err != nil {
-				return err
+			protoMsg, ok := loader.Loaders[idx].Ins.(proto.Message)
+			if !ok {
+				log.WarnF("module %s does not implement proto.Message, skipping", load.BlockName)
+				continue
 			}
 
-			if !bytes.Equal(loader.Loaders[idx].oldBytes, byt) {
+			if reflect.ValueOf(protoMsg).IsNil() {
+				log.WarnF("module %s is nil, skipping", load.BlockName)
+				fmt.Println(loader.Loaders[idx].Ins)
+				continue
+			}
+
+			byt, err := proto.Marshal(protoMsg)
+			if err != nil {
+				return fmt.Errorf("failed to marshal %s: %w", loader.Loaders[idx].BlockName, err)
+			}
+
+			if forceUpdate || !bytes.Equal(loader.Loaders[idx].oldBytes, byt) {
 				loader.Loaders[idx].oldBytes = byt // update
 				key := fmt.Sprintf("{%s}_%s", loader.WrapperEntity.GetID(), load.BlockName)
 				pipe.Set(ctx, key, byt, 0)
@@ -196,27 +214,16 @@ func (loader *EntityLoader) IsDirty() bool {
 
 	return false
 }
-func (loader *EntityLoader) GetModule(typ reflect.Type) interface{} {
-	for _, load := range loader.Loaders {
-		if load.BlockType == typ {
-			return load.Ins
-		}
-	}
-	return nil
-}
 
-func (loader *EntityLoader) SetModule(typ reflect.Type, module interface{}) {
+func (loader *EntityLoader) IsExist(ctx context.Context) bool {
+	key := fmt.Sprintf("{%s}_user", loader.WrapperEntity.GetID())
 
-	flag := false
-
-	for idx, load := range loader.Loaders {
-		if load.BlockType == typ {
-			loader.Loaders[idx].Ins = module
-			flag = true
-		}
+	existsCmd := trhreids.Exists(ctx, key)
+	exists, err := existsCmd.Result()
+	if err != nil {
+		log.ErrorF("Error checking if user exists: %v", err)
+		return false
 	}
 
-	if !flag {
-		log.WarnF("set module not found", typ)
-	}
+	return exists > 0
 }
