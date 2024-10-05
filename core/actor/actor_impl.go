@@ -2,6 +2,7 @@ package actor
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"runtime/debug"
 	"sync"
@@ -84,6 +85,91 @@ type reenterMessage struct {
 type RecoveryFunc func(interface{})
 type EventHandler func(*router.MsgWrapper) error
 
+type systemKey struct{}
+type actorKey struct{}
+
+type actorContext struct {
+	ctx context.Context
+}
+
+func (ac *actorContext) Call(tar router.Target, msg *router.MsgWrapper) error {
+	actor, ok := ac.ctx.Value(actorKey{}).(core.IActor)
+	if !ok {
+		panic(errors.New("the actor instance does not exist in the ActorContext"))
+	}
+
+	return actor.Call(tar, msg)
+}
+func (ac *actorContext) GetID() string {
+	actor, ok := ac.ctx.Value(actorKey{}).(core.IActor)
+	if !ok {
+		panic(errors.New("the actor instance does not exist in the ActorContext"))
+	}
+
+	return actor.ID()
+}
+func (ac *actorContext) GetType() string {
+	actor, ok := ac.ctx.Value(actorKey{}).(core.IActor)
+	if !ok {
+		panic(errors.New("the actor instance does not exist in the ActorContext"))
+	}
+
+	return actor.Type()
+}
+
+func (ac *actorContext) ReenterCall(ctx context.Context, tar router.Target, msg *router.MsgWrapper) core.IFuture {
+	actor, ok := ac.ctx.Value(actorKey{}).(core.IActor)
+	if !ok {
+		panic(errors.New("the actor instance does not exist in the ActorContext"))
+	}
+
+	return actor.ReenterCall(ctx, tar, msg)
+}
+
+func (ac *actorContext) Send(tar router.Target, msg *router.MsgWrapper) error {
+	sys, ok := ac.ctx.Value(systemKey{}).(core.ISystem)
+	if !ok {
+		panic(errors.New("the system instance does not exist in the ActorContext"))
+	}
+
+	return sys.Send(tar, msg)
+}
+
+func (ac *actorContext) Pub(topic string, msg *router.Message) error {
+	sys, ok := ac.ctx.Value(systemKey{}).(core.ISystem)
+	if !ok {
+		panic(errors.New("the system instance does not exist in the ActorContext"))
+	}
+
+	return sys.Pub(topic, msg)
+}
+
+func (ac *actorContext) AddressBook() core.IAddressBook {
+	sys, ok := ac.ctx.Value(systemKey{}).(core.ISystem)
+	if !ok {
+		panic(errors.New("the system instance does not exist in the ActorContext"))
+	}
+
+	return sys.AddressBook()
+}
+
+func (ac *actorContext) Loader(actorType string) core.IActorBuilder {
+	sys, ok := ac.ctx.Value(systemKey{}).(core.ISystem)
+	if !ok {
+		panic(errors.New("the system instance does not exist in the ActorContext"))
+	}
+
+	return sys.Loader(actorType)
+}
+
+func (ac *actorContext) WithValue(key, value interface{}) {
+	ac.ctx = context.WithValue(ac.ctx, key, value)
+}
+
+func (ac *actorContext) GetValue(key interface{}) interface{} {
+	return ac.ctx.Value(key)
+}
+
 type Runtime struct {
 	Id           string
 	Ty           string
@@ -99,7 +185,7 @@ type Runtime struct {
 	tw       *timewheel.TimeWheel
 	lastTick time.Time
 
-	ctx context.Context
+	actorCtx *actorContext
 }
 
 func (a *Runtime) Type() string {
@@ -118,10 +204,12 @@ func (a *Runtime) Init(ctx context.Context) {
 	a.shutdownCh = make(chan struct{})
 	a.chains = make(map[string]core.IChain)
 	a.recovery = defaultRecovery
-	a.ctx = context.Background()
+	a.actorCtx = &actorContext{
+		ctx: ctx,
+	}
 
-	a.SetContext(core.SystemKey{}, a.Sys)
-	a.SetContext(core.ActorKey{}, a)
+	a.actorCtx.ctx = context.WithValue(a.actorCtx.ctx, systemKey{}, a.Sys)
+	a.actorCtx.ctx = context.WithValue(a.actorCtx.ctx, actorKey{}, a)
 
 	a.tw = timewheel.New(10*time.Millisecond, 100) // 100个槽位，每个槽位10ms
 	a.lastTick = time.Now()
@@ -131,15 +219,15 @@ func defaultRecovery(r interface{}) {
 	fmt.Printf("Recovered from panic: %v\nStack trace:\n%s\n", r, debug.Stack())
 }
 
-func (a *Runtime) SetContext(key, value interface{}) {
-	a.ctx = context.WithValue(a.ctx, key, value)
+func (a *Runtime) Context() core.ActorContext {
+	return a.actorCtx
 }
 
-func (a *Runtime) RegisterEvent(ev string, chainFunc func(context.Context) core.IChain) error {
+func (a *Runtime) RegisterEvent(ev string, chainFunc func(ctx core.ActorContext) core.IChain) error {
 	if _, exists := a.chains[ev]; exists {
 		return def.ErrActorRepeatRegisterEvent(ev)
 	}
-	a.chains[ev] = chainFunc(a.ctx)
+	a.chains[ev] = chainFunc(a.actorCtx)
 	return nil
 }
 

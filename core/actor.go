@@ -12,52 +12,46 @@ type IChain interface {
 	Execute(*router.MsgWrapper) error
 }
 
-// Users can define custom keys to pass required structures into the context
+type ActorContext interface {
+	// Call 使用 actor 自身发起的 call 调用
+	Call(tar router.Target, msg *router.MsgWrapper) error
 
-// StateKey is a custom type for the context key
-type StateKey struct{}
+	// ReenterCall 使用 actor 自身发起的 ReenterCall 调用
+	ReenterCall(ctx context.Context, tar router.Target, msg *router.MsgWrapper) IFuture
 
-// SystemKey is a custom type for the context key
-type SystemKey struct{}
+	// Send sends an event to another actor
+	// Asynchronous call semantics, does not block the current goroutine, used for long-running RPC calls
+	Send(tar router.Target, msg *router.MsgWrapper) error
 
-type ActorKey struct{}
+	// Pub semantics for pubsub, used to publish messages to an actor's message cache queue
+	Pub(topic string, msg *router.Message) error
 
-// GetState retrieves the state from the given context.
-// If no state was set in the context, it returns nil.
-//
-// Parameters:
-//   - ctx: The context.Context to retrieve the state from.
-//
-// Returns:
-//   - The state stored in the context as an interface{}, or nil if not found.
-//   - The returned value should be type-asserted to its original type before use.
-func GetState(ctx context.Context) interface{} {
-	if ctx == nil {
-		return nil
-	}
-	return ctx.Value(StateKey{})
-}
+	// AddressBook 管理全局actor地址的对象，通常由 system 控制调用
+	AddressBook() IAddressBook
 
-// GetSystem retrieves the ISystem from the given context.
-// If no ISystem was set in the context, it returns nil.
-//
-// Parameters:
-//   - ctx: The context.Context to retrieve the ISystem from.
-//
-// Returns:
-//   - The ISystem stored in the context, or nil if not found.
-func GetSystem(ctx context.Context) ISystem {
-	if ctx == nil {
-		return nil
-	}
-	return ctx.Value(SystemKey{}).(ISystem)
-}
+	// Loader returns the actor loader
+	Loader(string) IActorBuilder
 
-func GetActor(ctx context.Context) IActor {
-	if ctx == nil {
-		return nil
-	}
-	return ctx.Value(ActorKey{}).(IActor)
+	GetID() string
+	GetType() string
+
+	// WithValue returns a new context with the given state.
+	// It allows you to embed any state information into the context for later retrieval.
+	//
+	// Parameters:
+	//   - key: The key for the type to be set in the context (can be defined using the form: type StateKey struct{})
+	//   - value: The corresponding value
+	WithValue(key, value interface{})
+
+	// GetValue retrieves a value from the context based on the provided key.
+	//
+	// Parameters:
+	//   - key: The key used to store the value in the context
+	//
+	// Returns:
+	//   - The value associated with the key, or nil if not found
+	//   - A boolean indicating whether the key was found in the context
+	GetValue(key interface{}) interface{}
 }
 
 type IFuture interface {
@@ -82,7 +76,7 @@ type IActor interface {
 	Received(msg *router.MsgWrapper) error
 
 	// RegisterEvent registers an event handling chain for the actor
-	RegisterEvent(ev string, createChainF func(context.Context) IChain) error
+	RegisterEvent(ev string, createChainF func(ActorContext) IChain) error
 
 	// RegisterTimer registers a timer function for the actor (Note: all times used here are in milliseconds)
 	//  dueTime: delay before execution, 0 for immediate execution
@@ -106,16 +100,7 @@ type IActor interface {
 
 	ReenterCall(ctx context.Context, tar router.Target, msg *router.MsgWrapper) IFuture
 
-	// SetContext returns a new context with the given state.
-	// It allows you to embed any state information into the context for later retrieval.
-	//
-	// Parameters:
-	//   - ctx: The parent context.Context to derive from.
-	//   - state: The state information to store in the new context. Can be of any type.
-	//
-	// Returns:
-	//   - A new context.Context that includes the provided state.
-	SetContext(key, value interface{})
+	Context() ActorContext
 
 	Exit()
 }

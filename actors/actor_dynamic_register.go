@@ -25,22 +25,19 @@ func NewDynamicRegisterActor(p core.IActorBuilder) core.IActor {
 
 func (a *dynamicRegisterActor) Init(ctx context.Context) {
 	a.Runtime.Init(ctx)
-	a.SetContext(loadKey{}, a.loader)
 
 	a.RegisterEvent(def.EvDynamicRegister, MakeDynamicRegister)
 }
 
-func MakeDynamicRegister(actorCtx context.Context) core.IChain {
+func MakeDynamicRegister(ctx core.ActorContext) core.IChain {
 	return &actor.DefaultChain{
 
 		Handler: func(mw *router.MsgWrapper) error {
 
-			loader := actorCtx.Value(loadKey{}).(core.IActorLoader)
-
 			actor_ty := mw.Req.Header.Custom["actor_ty"]
 			actor_id := mw.Req.Header.Custom["actor_id"]
 
-			builder := loader.Builder(actor_ty)
+			builder := ctx.Loader(actor_ty)
 			builder.WithID(actor_id)
 
 			for k, v := range mw.Req.Header.Custom {
