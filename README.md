@@ -29,11 +29,10 @@ sys.Loader("MockClacActor").WithID("001").WithPicker().Build()
 ```go
 
 // Bind message handler
-clacActor.RegisterEvent("ev_clac", func(actorCtx context.Context) *actor.DefaultChain {
+clacActor.RegisterEvent("ev_clac", func(ctx core.ActorContext) *actor.DefaultChain {
     
     // use middleware
     unpackcfg := &middleware.MsgUnpackCfg[proto.xxx]{}
-    sys := core.GetSystem(actorCtx)
 
     return &actor.DefaultChain{
         Before: []Base.MiddlewareHandler{
@@ -45,7 +44,7 @@ clacActor.RegisterEvent("ev_clac", func(actorCtx context.Context) *actor.Default
             // todo ...
 
             // Pass the message downstream
-            sys.Call(...)
+            ctx.Call(...)
 
             return nil
         }
@@ -53,9 +52,9 @@ clacActor.RegisterEvent("ev_clac", func(actorCtx context.Context) *actor.Default
 })
 
 // Register a periodic processing function
-clacActor.RegisterTimer(0, 1000, func(actorCtx context.Context) error {
+clacActor.RegisterTimer(0, 1000, func(ctx core.ActorContext) error {
 
-    state := core.GetState(actorCtx).(*xxxState)
+    state := ctx.GetValue(xxxStateKey{}).(*xxxState)
 
     if state.State == Init {
         // todo & state transitions
