@@ -25,7 +25,7 @@ func (a *MockClacActor) Init(ctx context.Context) {
 
 	fmt.Println("init", a.Id, "actor succ!")
 
-	a.RegisterEvent("print", func(actorCtx context.Context) core.IChain {
+	a.RegisterEvent("print", func(actorCtx core.ActorContext) core.IChain {
 		return &actor.DefaultChain{
 			Handler: func(m *router.MsgWrapper) error {
 
@@ -39,13 +39,12 @@ func (a *MockClacActor) Init(ctx context.Context) {
 			},
 		}
 	})
-	a.RegisterEvent("clac", func(ctx context.Context) core.IChain {
+	a.RegisterEvent("clac", func(actorCtx core.ActorContext) core.IChain {
 		return &actor.DefaultChain{
 			Handler: func(mw *router.MsgWrapper) error {
-				self := core.GetActor(ctx)
 
 				// 2.
-				fmt.Println(self.ID(), "recv clac event")
+				fmt.Println(actorCtx.GetID(), "recv clac event")
 				return nil
 			},
 		}
@@ -54,16 +53,13 @@ func (a *MockClacActor) Init(ctx context.Context) {
 	a.RegisterEvent("mockreenter", MakeEvReenter)
 }
 
-func MakeEvReenter(actorCtx context.Context) core.IChain {
+func MakeEvReenter(actorCtx core.ActorContext) core.IChain {
 	return &actor.DefaultChain{
 		Handler: func(mw *router.MsgWrapper) error {
-			// Get the actor instance
-			// 获取 actor 实例
-			self := core.GetActor(actorCtx)
 
 			// Initiate an asynchronous re-entrant call
 			// 发起一次异步可重入调用
-			future := self.ReenterCall(mw.Ctx, router.Target{ID: "clac-2", Ty: def.MockActorEntity, Ev: "clac"}, mw)
+			future := actorCtx.ReenterCall(mw.Ctx, router.Target{ID: "clac-2", Ty: def.MockActorEntity, Ev: "clac"}, mw)
 
 			// Register callback functions to handle the result after the asynchronous call completes. Note:
 			//  1. The Then method itself is a synchronous call, returning immediately.
@@ -76,7 +72,7 @@ func MakeEvReenter(actorCtx context.Context) core.IChain {
 			future.Then(func(ret *router.MsgWrapper) {
 
 				// 3.
-				fmt.Println(self.ID(), "call clac event callback!", ret.Err)
+				fmt.Println(actorCtx.GetID(), "call clac event callback!", ret.Err)
 
 			}).Then(func(ret *router.MsgWrapper) {
 				// Chained call
@@ -84,7 +80,7 @@ func MakeEvReenter(actorCtx context.Context) core.IChain {
 			})
 
 			// 1.
-			fmt.Println(self.ID(), "call clac event completed! but not callback")
+			fmt.Println(actorCtx.GetID(), "call clac event completed! but not callback")
 			// Note: This returns immediately, not waiting for the asynchronous operation to complete
 			// 注意：这里立即返回，不等待异步操作完成
 			return nil

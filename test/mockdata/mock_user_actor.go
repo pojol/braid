@@ -29,7 +29,7 @@ func (a *MockUserActor) Init(ctx context.Context) {
 	}
 
 	// Implement events
-	a.RegisterEvent("entity_test", func(actorCtx context.Context) core.IChain {
+	a.RegisterEvent("entity_test", func(actorCtx core.ActorContext) core.IChain {
 		return &actor.DefaultChain{
 			Handler: func(m *router.MsgWrapper) error {
 
