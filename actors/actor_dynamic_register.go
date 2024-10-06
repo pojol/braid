@@ -14,8 +14,6 @@ type dynamicRegisterActor struct {
 	loader core.IActorLoader
 }
 
-type loadKey struct{}
-
 func NewDynamicRegisterActor(p core.IActorBuilder) core.IActor {
 	return &dynamicRegisterActor{
 		Runtime: &actor.Runtime{Id: p.GetID(), Ty: def.ActorDynamicRegister, Sys: p.GetSystem()},

@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/pojol/braid/core"
-	"github.com/pojol/braid/def"
 	"github.com/pojol/braid/lib/log"
 	"github.com/pojol/braid/lib/mpsc"
 	"github.com/pojol/braid/lib/pubsub"
@@ -135,6 +134,15 @@ func (ac *actorContext) Send(tar router.Target, msg *router.MsgWrapper) error {
 	return sys.Send(tar, msg)
 }
 
+func (ac *actorContext) Unregister(id string) error {
+	sys, ok := ac.ctx.Value(systemKey{}).(core.ISystem)
+	if !ok {
+		panic(errors.New("the system instance does not exist in the ActorContext"))
+	}
+
+	return sys.Unregister(id)
+}
+
 func (ac *actorContext) Pub(topic string, msg *router.Message) error {
 	sys, ok := ac.ctx.Value(systemKey{}).(core.ISystem)
 	if !ok {
@@ -225,7 +233,7 @@ func (a *Runtime) Context() core.ActorContext {
 
 func (a *Runtime) RegisterEvent(ev string, chainFunc func(ctx core.ActorContext) core.IChain) error {
 	if _, exists := a.chains[ev]; exists {
-		return def.ErrActorRepeatRegisterEvent(ev)
+		return fmt.Errorf("actor: repeat register event %v", ev)
 	}
 	a.chains[ev] = chainFunc(a.actorCtx)
 	return nil

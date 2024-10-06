@@ -11,7 +11,6 @@ import (
 	"github.com/pojol/braid/3rd/mgo"
 	trhreids "github.com/pojol/braid/3rd/redis"
 	"github.com/pojol/braid/core"
-	"github.com/pojol/braid/def"
 	"github.com/pojol/braid/lib/log"
 	"github.com/redis/go-redis/v9"
 	"go.mongodb.org/mongo-driver/bson"
@@ -65,7 +64,7 @@ func BuildEntityLoader(dbName, dbCol string, wrapper core.IEntity) *EntityLoader
 func (loader *EntityLoader) tryLoad2DB(ctx context.Context) error {
 	collection := mgo.Collection(loader.DBName, loader.DBCol)
 	if collection == nil {
-		return def.ErrEntityLoadDBColNotFound(loader.WrapperEntity.GetID(), loader.DBName, loader.DBCol)
+		return fmt.Errorf("load block %s db col not found", loader.WrapperEntity.GetID())
 	}
 
 	var entityDoc bson.M
@@ -95,7 +94,7 @@ func (loader *EntityLoader) tryLoad2DB(ctx context.Context) error {
 
 func (loader *EntityLoader) Load(ctx context.Context) error {
 	if len(loader.Loaders) == 0 {
-		return def.ErrEntityLoadEntityLoadersEmpty(loader.WrapperEntity.GetID())
+		return fmt.Errorf("load block %s is not empty", loader.WrapperEntity.GetID())
 	}
 
 	var cmds []redis.Cmder
@@ -135,7 +134,7 @@ func (loader *EntityLoader) Load(ctx context.Context) error {
 		}
 
 		if err := proto.Unmarshal(bytSlice[idx], protoMsg); err != nil {
-			return def.ErrEntityLoadUnpack(loader.WrapperEntity.GetID(), load.BlockName)
+			return fmt.Errorf("load block %s unpack failed", load.BlockName)
 		}
 
 		loader.Loaders[idx].oldBytes = bytSlice[idx]
@@ -148,7 +147,7 @@ func (loader *EntityLoader) Load(ctx context.Context) error {
 
 func (loader *EntityLoader) Sync(ctx context.Context, forceUpdate bool) error {
 	if len(loader.Loaders) == 0 {
-		return def.ErrEntityLoadEntityLoadersEmpty(loader.WrapperEntity.GetID())
+		return fmt.Errorf("load block %s is not empty", loader.WrapperEntity.GetID())
 	}
 
 	_, err := trhreids.TxPipelined(ctx, "[EntityLoader.Sync]", func(pipe redis.Pipeliner) error {

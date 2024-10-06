@@ -32,6 +32,9 @@ type ActorContext interface {
 	// Loader returns the actor loader
 	Loader(string) IActorBuilder
 
+	// Unregister unregisters an actor
+	Unregister(id string) error
+
 	ID() string
 	Type() string
 

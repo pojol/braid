@@ -1,6 +1,8 @@
 package actor
 
-import "github.com/pojol/braid/core"
+import (
+	"github.com/pojol/braid/core"
+)
 
 type ActorGenerationMode int
 
@@ -25,6 +27,9 @@ type ActorLoaderBuilder struct {
 }
 
 func (p *ActorLoaderBuilder) WithID(id string) core.IActorBuilder {
+	if id == "" {
+		panic("[braid.actor] id is empty")
+	}
 	p.ID = id
 	return p
 }
