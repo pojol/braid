@@ -100,7 +100,7 @@ func (ac *actorContext) Call(tar router.Target, msg *router.MsgWrapper) error {
 
 	return actor.Call(tar, msg)
 }
-func (ac *actorContext) GetID() string {
+func (ac *actorContext) ID() string {
 	actor, ok := ac.ctx.Value(actorKey{}).(core.IActor)
 	if !ok {
 		panic(errors.New("the actor instance does not exist in the ActorContext"))
@@ -108,7 +108,7 @@ func (ac *actorContext) GetID() string {
 
 	return actor.ID()
 }
-func (ac *actorContext) GetType() string {
+func (ac *actorContext) Type() string {
 	actor, ok := ac.ctx.Value(actorKey{}).(core.IActor)
 	if !ok {
 		panic(errors.New("the actor instance does not exist in the ActorContext"))

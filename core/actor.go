@@ -32,8 +32,8 @@ type ActorContext interface {
 	// Loader returns the actor loader
 	Loader(string) IActorBuilder
 
-	GetID() string
-	GetType() string
+	ID() string
+	Type() string
 
 	// WithValue returns a new context with the given state.
 	// It allows you to embed any state information into the context for later retrieval.
