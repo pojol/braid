@@ -20,7 +20,7 @@ type timerActor struct {
 	lastTick time.Time
 }
 
-func (a *timerActor) RegisterTimer(dueTime int64, interval int64, f func() error, args interface{}) *timewheel.Timer {
+func (a *timerActor) RegisterTimer(dueTime int64, interval int64, f func(interface{}) error, args interface{}) *timewheel.Timer {
 	return a.tw.AddTimer(
 		time.Duration(dueTime)*time.Millisecond,
 		time.Duration(interval)*time.Millisecond,
@@ -36,7 +36,7 @@ func (a *timerActor) RemoveTimer(t *timewheel.Timer) {
 func (a *timerActor) Init() {
 
 	for i := 0; i < a.timerCount; i++ {
-		a.RegisterTimer(0, int64(rand.Intn(100)+1), func() error {
+		a.RegisterTimer(0, int64(rand.Intn(100)+1), func(interface{}) error {
 			// 模拟固定计算量
 			for j := 0; j < 1000; j++ {
 				atomic.AddInt64(&a.sum, int64(j))

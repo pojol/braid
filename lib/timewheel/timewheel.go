@@ -10,7 +10,7 @@ type Timer struct {
 	delay    time.Duration
 	nextTick time.Time
 	interval time.Duration
-	f        func() error
+	f        func(interface{}) error
 	args     interface{}
 }
 
@@ -40,7 +40,7 @@ func New(interval time.Duration, slotNum int) *TimeWheel {
 	return tw
 }
 
-func (tw *TimeWheel) AddTimer(delay time.Duration, interval time.Duration, f func() error, args interface{}) *Timer {
+func (tw *TimeWheel) AddTimer(delay time.Duration, interval time.Duration, f func(interface{}) error, args interface{}) *Timer {
 	tw.mutex.Lock()
 	defer tw.mutex.Unlock()
 
@@ -124,7 +124,7 @@ func (tw *TimeWheel) Tick() {
 	for e := currentSlot.Front(); e != nil; {
 		timer := e.Value.(*Timer)
 		if now.After(timer.nextTick) || now.Equal(timer.nextTick) {
-			timer.f()
+			timer.f(timer.args)
 			next := e.Next()
 			currentSlot.Remove(e)
 			e = next
