@@ -83,7 +83,7 @@ type IActor interface {
 	//  interval: time between each tick
 	//  f: callback function
 	//  args: can be used to pass the actor entity to the timer callback
-	RegisterTimer(dueTime int64, interval int64, f func() error, args interface{}) *timewheel.Timer
+	RegisterTimer(dueTime int64, interval int64, f func(interface{}) error, args interface{}) *timewheel.Timer
 
 	// SubscriptionEvent subscribes to a message
 	//  If this is the first subscription to this topic, opts will take effect (you can set some options for the topic, such as ttl)

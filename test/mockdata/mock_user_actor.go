@@ -47,7 +47,7 @@ func (a *MockUserActor) Init(ctx context.Context) {
 	})
 
 	// one minute try sync to cache
-	a.RegisterTimer(0, 1000*60, func() error {
+	a.RegisterTimer(0, 1000*60, func(args interface{}) error {
 		a.State.Sync(context.TODO(), false)
 
 		return nil

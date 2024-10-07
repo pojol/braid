@@ -237,7 +237,7 @@ func (a *Runtime) RegisterEvent(ev string, chainFunc func(ctx core.ActorContext)
 //	interval: Time interval between executions (in milliseconds). If 0, executes only once
 //	f: Callback function
 //	args: Arguments for the callback function
-func (a *Runtime) RegisterTimer(dueTime int64, interval int64, f func() error, args interface{}) *timewheel.Timer {
+func (a *Runtime) RegisterTimer(dueTime int64, interval int64, f func(interface{}) error, args interface{}) *timewheel.Timer {
 	return a.tw.AddTimer(
 		time.Duration(dueTime)*time.Millisecond,
 		time.Duration(interval)*time.Millisecond,
