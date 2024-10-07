@@ -78,13 +78,13 @@ func (sys *NormalSystem) AddressBook() core.IAddressBook {
 func (sys *NormalSystem) Register(builder core.IActorBuilder) (core.IActor, error) {
 
 	if builder.GetID() == "" || builder.GetType() == "" {
-		return nil, def.ErrSystemParm()
+		return nil, fmt.Errorf("[braid.system] register actor id %v type %v parm err", builder.GetID(), builder.GetType())
 	}
 
 	sys.Lock()
 	if _, ok := sys.actoridmap[builder.GetID()]; ok {
 		sys.Unlock()
-		return nil, def.ErrSystemRepeatRegistActor(builder.GetType(), builder.GetID())
+		return nil, fmt.Errorf("[braid.system] register actor %v repeat", builder.GetID())
 	}
 	sys.Unlock()
 
@@ -117,6 +117,36 @@ func (sys *NormalSystem) Register(builder core.IActorBuilder) (core.IActor, erro
 
 	log.InfoF("[braid.system] node %v register %v %v succ, cur weight %v", sys.addressbook.NodeID, builder.GetType(), builder.GetID(), 0)
 	return actor, nil
+}
+
+func (sys *NormalSystem) Unregister(id string) error {
+	// First, check if the actor exists and get it
+	sys.RLock()
+	actor, exists := sys.actoridmap[id]
+	sys.RUnlock()
+
+	if !exists {
+		return fmt.Errorf("actor %s not found", id)
+	}
+
+	// Call Exit on the actor
+	actor.Exit()
+
+	// Remove the actor from the map
+	sys.Lock()
+	delete(sys.actoridmap, id)
+	sys.Unlock()
+
+	// Unregister from the address book
+	err := sys.addressbook.Unregister(context.TODO(), id)
+	if err != nil {
+		// Log the error, but don't return it as the actor has already been removed locally
+		log.WarnF("[braid.system] Failed to unregister actor %s from address book: %v", id, err)
+	}
+
+	log.InfoF("[braid.system] Actor %s unregistered successfully", id)
+
+	return nil
 }
 
 func (sys *NormalSystem) Actors() []core.IActor {
@@ -299,7 +329,7 @@ func (sys *NormalSystem) FindActor(ctx context.Context, id string) (core.IActor,
 		return actorp, nil
 	}
 
-	return nil, def.ErrSystemCantFindLocalActor(id)
+	return nil, fmt.Errorf("[braid.system] find actor %v err", id)
 }
 
 func (sys *NormalSystem) Exit(wait *sync.WaitGroup) {

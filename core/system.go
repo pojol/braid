@@ -12,6 +12,8 @@ type CreateFunc func(IActorBuilder) IActor
 
 type ISystem interface {
 	Register(IActorBuilder) (IActor, error)
+	Unregister(id string) error
+
 	Actors() []IActor
 
 	FindActor(ctx context.Context, id string) (IActor, error)
