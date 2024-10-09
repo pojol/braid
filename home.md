@@ -19,4 +19,5 @@
 - [7. Using Actor State (CRUD)](pages-actor-state.md)
 - [8. Designing a Chat Server](pages-chat.md)
 - [9. Setting Up a Cluster](pages-cluster.md)
+- [10. Distributed Transactions](pages-transaction.md)
 ---
