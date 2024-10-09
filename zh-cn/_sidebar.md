@@ -1,0 +1,11 @@
+
+- Braid使用指引
+    - [1.通过脚手架构建hello braid](zh-cn/pages-hello-world.md)
+    - [2.构建一个服务，并注册actor进去](zh-cn/pages-container.md)
+    - [3.搭建一个websocket服务器](zh-cn/pages-websocket.md)
+    - [4.为actor引入状态](zh-cn/pages-entity-state.md)
+    - [5.处理消息](zh-cn/pages-actor-message.md)
+    - [6.发送消息](zh-cn/pages-actor-send.md)
+    - [7.使用actor状态（增删改查](zh-cn/pages-actor-state.md)
+    - [8.设计一个聊天服务器](zh-cn/pages-chat.md)
+    - [9.搭建一个集群](zh-cn/pages-cluster.md)
