@@ -36,7 +36,7 @@
     :root {
       --base-font-family: "Source Sans Pro", "Helvetica Neue", Arial, sans-serif;
       --base-line-height: 1.4;
-      --base-font-size: 1.125rem;
+      --base-font-size: 1rem;
 
       --cover-max-width: 45em;
 
@@ -190,7 +190,7 @@
 
       toc: {
         scope: '.markdown-section',
-        headings: 'h2,h3',
+        headings: 'h4,h5',
         title: '',
       },
 
@@ -333,7 +333,7 @@
   <script>
     if (getURLParameterByName(['standalone', 'embedded']) || standalone) {
       var editCSS = document.createElement('style')
-      editCSS.innerHTML = ".markdown-section {padding: 1rem 14px;}";
+      editCSS.innerHTML = ".markdown-section {padding: 1rem 12px;}";
       document.body.appendChild(editCSS);
     }
   </script>
