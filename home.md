@@ -32,4 +32,4 @@
 Braid is rapidly evolving, and now is the perfect time to join this vibrant community!
 
 - GitHub: [https://github.com/pojol/braid](https://github.com/pojol/braid)
-- Discord: [加入我们的 Discord](https://discord.gg/yXJgTrkWxT)
+- Discord: [Join our Discord](https://discord.gg/yXJgTrkWxT)
