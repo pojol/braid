@@ -19,11 +19,10 @@
 - [3.为actor引入状态](zh-cn/pages-entity-state.md) ✅
 - [4.处理消息](zh-cn/pages-actor-message.md) ✅
 - [5.发送消息](zh-cn/pages-actor-send.md) ✅
-- [6.使用actor状态（增删改查](zh-cn/pages-actor-state.md)
-- [7.搭建一个websocket服务器](zh-cn/pages-websocket.md)
-- [8.设计一个聊天服务器](zh-cn/pages-chat.md)
-- [9.搭建一个集群](zh-cn/pages-cluster.md)
-- [10.分布式事务TCC](pages-transaction.md)
+- [6.搭建一个websocket服务器](zh-cn/pages-websocket.md)
+- [7.设计一个聊天服务器](zh-cn/pages-chat.md)
+- [8.搭建一个集群](zh-cn/pages-cluster.md)
+- [9.分布式事务TCC](pages-transaction.md)
 
 ---
 
