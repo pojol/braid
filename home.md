@@ -18,7 +18,7 @@
 - [2. Building a Service and Registering Actors](pages-container.md) ✅
 - [3. Introducing State to Actors](pages-entity-state.md) ✅
 - [4. Handling Messages](pages-actor-message.md) ✅
-- [5. Sending Messages](pages-actor-send.md)
+- [5. Sending Messages](pages-actor-send.md) ✅
 - [6. Using Actor State (CRUD)](pages-actor-state.md)
 - [7. Setting Up a WebSocket Server](pages-websocket.md)
 - [8. Designing a Chat Server](pages-chat.md)
