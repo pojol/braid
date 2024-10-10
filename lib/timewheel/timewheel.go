@@ -89,19 +89,17 @@ func (tw *TimeWheel) RemoveTimer(t *Timer) {
 }
 
 func (tw *TimeWheel) getPositionAndCircle(d time.Duration) (pos int, circle int) {
-	delaySeconds := int(d.Seconds())
-	intervalSeconds := int(tw.interval.Seconds())
-
-	if delaySeconds == 0 {
-		// 如果延迟为0，立即执行
-		pos = tw.currentPos
-		circle = 0
-	} else {
-		// 计算位置和圈数
-		totalSlots := delaySeconds / intervalSeconds
-		circle = totalSlots / tw.slotNum
-		pos = (tw.currentPos + totalSlots) % tw.slotNum
+	if tw.interval < time.Microsecond {
+		tw.interval = time.Microsecond // 设置一个最小间隔
 	}
+
+	totalSlots := int(d / tw.interval)
+	if totalSlots == 0 {
+		totalSlots = 1
+	}
+
+	circle = totalSlots / tw.slotNum
+	pos = (tw.currentPos + totalSlots) % tw.slotNum
 
 	return
 }
@@ -130,7 +128,9 @@ func (tw *TimeWheel) Tick() {
 			e = next
 
 			if timer.interval > 0 {
-				timer.nextTick = now.Add(timer.interval)
+				for timer.nextTick.Before(now) || timer.nextTick.Equal(now) {
+					timer.nextTick = timer.nextTick.Add(timer.interval)
+				}
 				tw.addTimer(timer)
 			}
 		} else {
