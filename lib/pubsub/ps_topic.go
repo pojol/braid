@@ -3,6 +3,7 @@ package pubsub
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 
 	thdredis "github.com/pojol/braid/3rd/redis"
@@ -55,6 +56,11 @@ func newTopic(name string, mgr *Pubsub, opts ...TopicOption) *Topic {
 				}
 			}
 
+			err = thdredis.SAdd(ctx, BraidPubsubTopic, rt.topic).Err()
+			if err != nil {
+				log.WarnF("[braid.pubsub] Failed to add topic %v to BraidPubsubTopic set: %v", rt.topic, err)
+			}
+
 		}
 
 	}
@@ -103,22 +109,36 @@ func (rt *Topic) Sub(ctx context.Context, channel string, opts ...interface{}) (
 
 func (rt *Topic) Close() error {
 
-	ctx := context.TODO()
+	ctx := context.Background()
 	groups, err := thdredis.XInfoGroups(ctx, rt.topic).Result()
+	if err != nil && err != redis.Nil {
+		// 忽略 "no such key" 错误
+		if !strings.Contains(err.Error(), "no such key") {
+			return fmt.Errorf("failed to get XInfoGroups: %w", err)
+		}
+		groups = []redis.XInfoGroup{} // 设置为空切片
+		err = nil
+	}
 
 	if len(groups) == 0 {
 		cnt, err := thdredis.XLen(ctx, rt.topic).Result()
-		if err == nil && cnt == 0 {
+		if err != nil && err != redis.Nil {
+			return fmt.Errorf("failed to get XLen: %w", err)
+		}
+
+		if cnt == 0 {
 			cleanpipe := thdredis.Pipeline()
 			cleanpipe.Del(ctx, rt.topic)
 			cleanpipe.SRem(ctx, BraidPubsubTopic, rt.topic)
 
 			_, err = cleanpipe.Exec(ctx)
 			if err != nil {
-				log.WarnF("[braid.pubsub ]Topic %v clean failed %v", rt.topic, err)
+				return fmt.Errorf("failed to clean topic %s: %w", rt.topic, err)
 			}
+			log.InfoF("[braid.pubsub] Topic %v cleaned successfully", rt.topic)
+		} else {
+			log.InfoF("[braid.pubsub] Topic %v not cleaned: non-empty stream", rt.topic)
 		}
-
 	}
 
 	return err

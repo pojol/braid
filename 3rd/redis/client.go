@@ -47,6 +47,10 @@ func GetClient() *redis.Client {
 	return client
 }
 
+func MockClient(cli *redis.Client) {
+	client = cli
+}
+
 // Pipeline 管道
 func Pipeline() redis.Pipeliner {
 	return client.Pipeline()
