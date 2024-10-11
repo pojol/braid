@@ -20,7 +20,7 @@
 - [4. Handling Messages](pages-actor-message.md) ✅
 - [5. Sending Messages](pages-actor-send.md) ✅
 - [6. Setting Up a WebSocket Server](pages-websocket.md)
-- [7. Designing a Chat Server](pages-chat.md)
+- [7. Designing a Chat Server](pages-chat.md) ✅
 - [8. Setting Up a Cluster](pages-cluster.md)
 - [9. Distributed Transactions (TCC](pages-transaction.md)
 

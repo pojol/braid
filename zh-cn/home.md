@@ -5,11 +5,11 @@
 </br>
 
 ### 🌟 Braid 的亮点
-* Actor 模型: Braid 采用 Actor 模型，使得并发编程变得简单直观。每个 Actor 都是独立的处理单元，可以接收消息、更新状态、发送消息给其他 Actor。
+* Actor 模型: Braid 采用 Actor 模型，使得并发编程变得简单直观。
+* 易于使用: Braid 的 API 设计简洁明了，大大降低了学习曲线，让开发者可以快速上手。
 * 动态负载均衡: 通过内置的负载均衡机制，Braid 可以动态地在集群中分配和管理 Actor，确保系统资源的最优利用。
 * 灵活的消息处理: Braid 支持自定义消息处理逻辑，包括中间件、定时器和事件订阅，让你的微服务更加灵活多变。
 * 高性能: 基于 Go 语言的并发特性，Braid 提供了出色的性能表现，适合构建高吞吐量的分布式系统。
-* 易于使用: Braid 的 API 设计简洁明了，大大降低了学习曲线，让开发者可以快速上手。
 
 </br>
 
@@ -20,7 +20,7 @@
 - [4.处理消息](zh-cn/pages-actor-message.md) ✅
 - [5.发送消息](zh-cn/pages-actor-send.md) ✅
 - [6.搭建一个websocket服务器](zh-cn/pages-websocket.md)
-- [7.设计一个聊天服务器](zh-cn/pages-chat.md)
+- [7.设计一个聊天服务器](zh-cn/pages-chat.md) ✅
 - [8.搭建一个集群](zh-cn/pages-cluster.md)
 - [9.分布式事务TCC](pages-transaction.md)
 
