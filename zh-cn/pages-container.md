@@ -13,9 +13,9 @@
 ### 服务配置
 ```yaml
 node:
-  # 节点唯一标识符，可以通过环境变量 NODE_ID 传入
-  id: "{NODE_ID}"
-  weight: "{NODE_WEIGHT}"
+  # 节点唯一标识符，解析自动通过环境变量 BRAID_NODE_ID 获取（也可以手动传入
+  id: "{BRAID_NODE_ID}"
+  weight: "{BRAID_NODE_WEIGHT}"
   
   # Actor 可选项配置列表
   actors:
@@ -41,7 +41,7 @@ node_total_weight = 2 * 4 * 1000 = 8000
 
 </br>
 
-### Actor 配置
+### Actor 模版配置
 
 ```yaml
 actor_types:
