@@ -21,7 +21,7 @@
 - [5.发送消息](zh-cn/pages-actor-send.md) ✅
 - [6.搭建一个websocket服务器](zh-cn/pages-websocket.md)
 - [7.设计一个聊天服务器](zh-cn/pages-chat.md) ✅
-- [8.搭建一个集群](zh-cn/pages-cluster.md)
+- [8.搭建一个集群](zh-cn/pages-cluster.md) ✅
 - [9.分布式事务TCC](pages-transaction.md)
 
 ---
