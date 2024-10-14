@@ -109,7 +109,12 @@ func (sys *NormalSystem) Register(builder core.IActorBuilder) (core.IActor, erro
 	}
 
 	// Instantiate actor
-	actor := builder.GetConstructor()(builder)
+	var actor core.IActor
+	if builder.GetConstructor() != nil {
+		actor = builder.GetConstructor()(builder)
+	} else {
+		panic(fmt.Errorf("[braid.system] actor %v register err, constructor is nil", builder.GetType()))
+	}
 
 	sys.Lock()
 	sys.actoridmap[builder.GetID()] = actor
