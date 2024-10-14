@@ -111,7 +111,7 @@ type IActor interface {
 type IActorLoader interface {
 
 	// Builder selects an actor from the factory and provides a builder
-	Builder(string) IActorBuilder
+	Builder(string, ISystem) IActorBuilder
 
 	// Pick selects an appropriate node for the actor builder to register
 	Pick(IActorBuilder) error

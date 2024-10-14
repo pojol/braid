@@ -6,6 +6,25 @@
 [![Documentation](https://img.shields.io/badge/Documentation-Available-brightgreen)](https://pojol.github.io/braid/#/)
 [![Discord](https://img.shields.io/discord/1210543471593791488?color=7289da&label=Discord&logo=discord&style=flat-square)](https://discord.gg/yXJgTrkWxT)
 
+### Quick Start
+1. Install CLI Tool
+    ```shell
+    $ go install github.com/pojol/braid-cli@latest
+    ```
+2. Using the CLI to Generate a New Empty Project
+    ```shell
+    $ braid-cli new "you-project-name"
+    ```
+3. Creating .go Files from Actor Template Configurations
+    ```shell
+    $ cd you-project-name/template
+    $ go generate
+    ```
+4. Navigate to the services directory, then try to build and run the demo
+    ```shell
+    $ cd you-project-name/services/demo-1
+    $ go run main.go
+    ```
 
 ### Sample
 

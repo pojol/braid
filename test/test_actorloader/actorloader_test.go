@@ -10,7 +10,6 @@ import (
 	"github.com/pojol/braid/3rd/redis"
 	"github.com/pojol/braid/core"
 	"github.com/pojol/braid/core/cluster/node"
-	"github.com/pojol/braid/def"
 	"github.com/pojol/braid/lib/log"
 	"github.com/pojol/braid/test/mockdata"
 	"github.com/stretchr/testify/assert"
@@ -35,7 +34,8 @@ func TestActorLoader(t *testing.T) {
 
 	redis.FlushAll(context.TODO()) // clean cache
 
-	sys := node.BuildSystemWithOption("test-actor-loader-1", mockdata.BuildActorFactory())
+	loader := mockdata.BuildDefaultActorLoader(mockdata.BuildActorFactory())
+	sys := node.BuildSystemWithOption("test-actor-loader-1", loader)
 
 	node := &mockdata.ProcessNode{
 		P:   core.NodeParm{ID: "test-actor-loader-1"},
@@ -44,10 +44,10 @@ func TestActorLoader(t *testing.T) {
 
 	var err error
 
-	_, err = sys.Loader(def.ActorDynamicPicker).WithID("nodeid-picker").Build()
+	_, err = sys.Loader("MockDynamicPicker").WithID("nodeid-picker").Build()
 	assert.Equal(t, err, nil)
 
-	_, err = sys.Loader(def.ActorDynamicRegister).WithID("nodeid-register").Build()
+	_, err = sys.Loader("MockDynamicRegister").WithID("nodeid-register").Build()
 	assert.Equal(t, err, nil)
 
 	node.Init()

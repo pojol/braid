@@ -63,9 +63,10 @@ func setupBenchmark() {
 			panic(err)
 		}
 
+		loader := mockdata.BuildDefaultActorLoader(mockdata.BuildActorFactory())
 		sys := node.BuildSystemWithOption(
 			"node_"+strconv.Itoa(i),
-			mockdata.BuildActorFactory(),
+			loader,
 			node.SystemWithAcceptor(port),
 		)
 

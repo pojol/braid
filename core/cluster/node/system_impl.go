@@ -6,7 +6,6 @@ import (
 	"sync"
 
 	"github.com/pojol/braid/core"
-	"github.com/pojol/braid/core/actor"
 	"github.com/pojol/braid/core/addressbook"
 	"github.com/pojol/braid/def"
 	"github.com/pojol/braid/lib/grpc"
@@ -27,7 +26,7 @@ type NormalSystem struct {
 	sync.RWMutex
 }
 
-func BuildSystemWithOption(nodid string, factory core.IActorFactory, opts ...SystemOption) core.ISystem {
+func BuildSystemWithOption(nodid string, loader core.IActorLoader, opts ...SystemOption) core.ISystem {
 
 	p := SystemParm{
 		Ip:     "127.0.0.1",
@@ -43,7 +42,7 @@ func BuildSystemWithOption(nodid string, factory core.IActorFactory, opts ...Sys
 
 	// init grpc client
 	sys.client = grpc.BuildClientWithOption()
-	sys.loader = actor.BuildDefaultActorLoader(sys, factory)
+	sys.loader = loader
 
 	sys.ps = pubsub.BuildWithOption()
 
@@ -68,7 +67,7 @@ func (sys *NormalSystem) Update() {
 }
 
 func (sys *NormalSystem) Loader(ty string) core.IActorBuilder {
-	return sys.loader.Builder(ty)
+	return sys.loader.Builder(ty, sys)
 }
 
 func (sys *NormalSystem) AddressBook() core.IAddressBook {
