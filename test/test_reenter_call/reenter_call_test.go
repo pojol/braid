@@ -30,7 +30,9 @@ func TestReenterCall(t *testing.T) {
 	redis.BuildClientWithOption(redis.WithAddr("redis://127.0.0.1:6379/0"))
 	redis.FlushAll(context.TODO()) // clean cache
 
-	sys := node.BuildSystemWithOption("test-reenter-call-1", mockdata.BuildActorFactory())
+	loader := mockdata.BuildDefaultActorLoader(mockdata.BuildActorFactory())
+
+	sys := node.BuildSystemWithOption("test-reenter-call-1", loader)
 
 	node := &mockdata.ProcessNode{
 		P:   core.NodeParm{ID: "st-reenter-call-1"},

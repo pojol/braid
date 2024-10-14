@@ -1,6 +1,9 @@
 package actor
 
 import (
+	"fmt"
+	"strconv"
+
 	"github.com/pojol/braid/core"
 )
 
@@ -51,6 +54,27 @@ func (p *ActorLoaderBuilder) WithPicker() core.IActorBuilder {
 
 func (p *ActorLoaderBuilder) Build() (core.IActor, error) {
 	var err error
+
+	if _, ok := p.Options["weight"]; !ok {
+		p.Weight = 10 // default
+	} else {
+		weight, err := strconv.Atoi(p.Options["weight"].(string))
+		if err != nil {
+			panic(fmt.Errorf("init actor option weight err %v", err.Error()))
+		}
+		p.Weight = weight
+	}
+
+	if _, ok := p.Options["limit"]; !ok {
+		p.GlobalQuantityLimit = 0
+	} else {
+		limit, err := strconv.Atoi(p.Options["limit"].(string))
+		if err != nil {
+			panic(fmt.Errorf("init actor option limit err %v", err.Error()))
+		}
+		p.GlobalQuantityLimit = limit
+	}
+
 	if p.GenerationMode == LocalGeneration {
 		return p.ISystem.Register(p)
 	} else if p.GenerationMode == BalancedGeneration {

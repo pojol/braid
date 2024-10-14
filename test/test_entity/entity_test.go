@@ -9,7 +9,6 @@ import (
 	"github.com/pojol/braid/3rd/mgo"
 	"github.com/pojol/braid/3rd/redis"
 	"github.com/pojol/braid/core"
-	"github.com/pojol/braid/core/actor"
 	"github.com/pojol/braid/core/cluster/node"
 	"github.com/pojol/braid/lib/log"
 	"github.com/pojol/braid/router"
@@ -58,13 +57,11 @@ func mockEntity2DB(id string) {
 }
 
 func mockEntity(id string) core.ISystem {
-	sys := node.BuildSystemWithOption(
-		"test-mock-entity",
-		mockdata.BuildActorFactory(),
-	)
 
-	loader := actor.BuildDefaultActorLoader(sys, mockdata.BuildActorFactory())
-	loader.Builder("MockUserActor").WithID(id).Build()
+	loader := mockdata.BuildDefaultActorLoader(mockdata.BuildActorFactory())
+	sys := node.BuildSystemWithOption("test-mock-entity", loader)
+
+	loader.Builder("MockUserActor", sys).WithID(id).Build()
 
 	for _, a := range sys.Actors() {
 		a.Init(context.TODO())

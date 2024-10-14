@@ -1,9 +1,8 @@
 package mockdata
 
 import (
-	"github.com/pojol/braid/actors"
 	"github.com/pojol/braid/core"
-	"github.com/pojol/braid/def"
+	"github.com/pojol/braid/test/mockdata/mockactors"
 )
 
 // MockActorFactory is a factory for creating actors
@@ -20,8 +19,8 @@ func BuildActorFactory() *MockActorFactory {
 	factory.bind("MockUserActor", false, 80, 10000, NewUserActor)
 	factory.bind("MockClacActor", false, 20, 5, NewClacActor)
 
-	factory.bind(def.ActorDynamicPicker, false, 160, 3, actors.NewDynamicPickerActor)
-	factory.bind(def.ActorDynamicRegister, true, 80, 0, actors.NewDynamicRegisterActor)
+	factory.bind("MockDynamicPicker", false, 160, 3, mockactors.NewDynamicPickerActor)
+	factory.bind("MockDynamicRegister", true, 80, 0, mockactors.NewDynamicRegisterActor)
 
 	return factory
 }
