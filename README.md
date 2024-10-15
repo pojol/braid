@@ -22,7 +22,7 @@ $ go generate
 
 # 4. Navigate to the services directory, then try to build and run the demo
 $ cd you-project-name/services/demo-1
-$ go run main.go~
+$ go run main.go
 ```
 
 ### 2. Create a new actor and load it into the cluster
@@ -64,7 +64,7 @@ func (a *userActor) Init(ctx context.Context) {
 
 // factory.go with node.yaml
 case template.USER:
-    factory.bind(v.Name, v.Unique, v.Weight, v.Limit, NewUserActor)
+    factory.bind("USER", v.Unique, v.Weight, v.Limit, NewUserActor)
 ```
 
 ### 3. Implement logic for the actor
