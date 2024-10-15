@@ -6,51 +6,73 @@
 [![Documentation](https://img.shields.io/badge/Documentation-Available-brightgreen)](https://pojol.github.io/braid/#/)
 [![Discord](https://img.shields.io/discord/1210543471593791488?color=7289da&label=Discord&logo=discord&style=flat-square)](https://discord.gg/yXJgTrkWxT)
 
-### Quick Start
-1. Install CLI Tool
-    ```shell
-    $ go install github.com/pojol/braid-cli@latest
-    ```
-2. Using the CLI to Generate a New Empty Project
-    ```shell
-    $ braid-cli new "you-project-name"
-    ```
-3. Creating .go Files from Actor Template Configurations
-    ```shell
-    $ cd you-project-name/template
-    $ go generate
-    ```
-4. Navigate to the services directory, then try to build and run the demo
-    ```shell
-    $ cd you-project-name/services/demo-1
-    $ go run main.go
-    ```
+### 1. Quick Start
+> Install the scaffold project using the braid-cli tool
 
-### Sample
+```shell
+# 1. Install CLI Tool
+$ go install github.com/pojol/braid-cli@latest
 
-1. register actor
-```go
-// factory  e.g. test/mockdata/actor_factory
-factory.bind("MockClacActor", 
-    false,          // whether the node is unique
-    20,             // weight of the actor
-    50000,          // maximum number of actors to be built in the cluster
-    NewClacActor,   // constructor function for the actor
-)
+# 2. Using the CLI to Generate a New Empty Project
+$ braid-cli new "you-project-name"
+
+# 3. Creating .go Files from Actor Template Configurations
+$ cd you-project-name/template
+$ go generate
+
+# 4. Navigate to the services directory, then try to build and run the demo
+$ cd you-project-name/services/demo-1
+$ go run main.go~
 ```
 
-2. builder actor
-```go
-// Register a MockClacActor type actor to the cluster dynamically (via load balancing)
-sys.Loader("MockClacActor").WithID("001").WithPicker().Build()
+### 2. Create a new actor and load it into the cluster
+> Write actor_template.yaml to add new actor types and definitions
+
+```yaml
+- name: "USER"
+unique: false
+category: "dynamic"
+```
+> Write node.yaml to register actor templates to nodes (containers)
+
+```yaml
+actors:
+- name: "USER"
+    options:
+        weight: 100
+        limit: 10000
+```
+> Create actor constructors and bind them to the factory
+
+```golang
+type userActor struct {
+    *actor.Runtime
+    state *Entity
+}
+
+func NewUserActor(p core.IActorBuilder) core.IActor {
+    return &httpAcceptorActor{
+        Runtime: &actor.Runtime{Id: p.GetID(), Ty: p.GetType(), Sys: p.GetSystem()},
+        state: user.NewEntity(p.GetID())
+    }
+}
+
+func (a *userActor) Init(ctx context.Context) {
+    a.Runtime.Init(ctx)
+    a.state.Load(ctx)   // 将数据从cache装载到本地
+}
+
+// factory.go with node.yaml
+case template.USER:
+    factory.bind(v.Name, v.Unique, v.Weight, v.Limit, NewUserActor)
 ```
 
-3. Implement logic for the actor
-```go
+### 3. Implement logic for the actor
+> Note: All handling functions (events, timers) registered in the actor are processed synchronously. Users do not need to concern themselves with asynchronous logic within the actor.
 
-// Bind message handler
-clacActor.RegisterEvent("ev_clac", func(ctx core.ActorContext) *actor.DefaultChain {
-    
+> Bind event handler
+```go
+user.RegisterEvent("use_item", func(ctx core.ActorContext) *actor.DefaultChain {
     // use middleware
     unpackcfg := &middleware.MsgUnpackCfg[proto.xxx]{}
 
@@ -63,16 +85,14 @@ clacActor.RegisterEvent("ev_clac", func(ctx core.ActorContext) *actor.DefaultCha
             realmsg, ok := unpackcfg.Msg.(*proto.xxx)
             // todo ...
 
-            // Pass the message downstream
-            ctx.Call(...)
-
             return nil
         }
     }
 })
-
-// Register a periodic processing function
-clacActor.RegisterTimer(0, 1000, func(ctx core.ActorContext) error {
+```
+> Bind timer handler
+```go
+user.RegisterTimer(0, 1000, func(ctx core.ActorContext) error {
 
     state := ctx.GetValue(xxxStateKey{}).(*xxxState)
 
@@ -85,13 +105,10 @@ clacActor.RegisterTimer(0, 1000, func(ctx core.ActorContext) error {
 
     return nil
 })
-
-// Subscribe to messages (chat messages sent by others when offline)
-//  topic: Offline chat messages
-//  channel: The actor itself
-//  succ: Callback after successful subscription
-//  ttl: Time-to-live for messages in the cache
-clacActor.SubscriptionEvent(events.EvChatMessageStore, a.Id, func() {
+```
+> Subscribe to messages and bind event handler
+```go
+user.SubscriptionEvent("offline_messages", a.Id, func() {
 
     // After successful subscription, bind a handler function for the message
     a.RegisterEvent(events.EvChatMessageStore, events.MakeChatStoreMessage)
