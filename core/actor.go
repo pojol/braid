@@ -115,6 +115,8 @@ type IActorLoader interface {
 
 	// Pick selects an appropriate node for the actor builder to register
 	Pick(IActorBuilder) error
+
+	AssignToNode(INode)
 }
 
 type IActorBuilder interface {
@@ -122,25 +124,27 @@ type IActorBuilder interface {
 	GetType() string
 	GetGlobalQuantityLimit() int
 	GetNodeUnique() bool
-	GetOpt(key string) interface{}
-	GetOptions() map[string]interface{}
+	GetOpt(key string) string
+	GetOptions() map[string]string
 
 	GetSystem() ISystem
 	GetLoader() IActorLoader
 	GetConstructor() CreateFunc
 
 	// ---
-
 	WithID(string) IActorBuilder
 	WithType(string) IActorBuilder
-	WithOpt(string, interface{}) IActorBuilder
-	WithPicker() IActorBuilder
+	WithOpt(string, string) IActorBuilder
 
 	// ---
-	Build() (IActor, error)
+	Register() (IActor, error)
+	Picker() error
 }
 
 type ActorConstructor struct {
+	ID   string
+	Name string
+
 	// Weight occupied by the actor, weight algorithm reference: 2c4g (pod = 2 * 4 * 1000)
 	Weight int
 
@@ -152,8 +156,11 @@ type ActorConstructor struct {
 
 	// Global quantity limit for the current actor type that can be registered
 	GlobalQuantityLimit int
+
+	Options map[string]string
 }
 
 type IActorFactory interface {
 	Get(ty string) *ActorConstructor
+	GetActors() []*ActorConstructor
 }

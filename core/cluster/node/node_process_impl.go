@@ -48,6 +48,8 @@ func (pn *process) System() core.ISystem {
 
 func (pn *process) Init(opts ...core.NodeOption) error {
 
+	pn.p.Loader.AssignToNode(pn)
+
 	for _, a := range pn.p.Sys.Actors() {
 		a.Init(context.TODO())
 	}

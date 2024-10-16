@@ -16,15 +16,14 @@ type INode interface {
 }
 
 type NodeParm struct {
-	ID string // nod 的id全局唯一
+	ID     string // nod 的id全局唯一
+	Weight int
 
 	Ip   string // nod 的地址
 	Port int    // nod 的端口号
 
-	ClusterName string // 隶属于那个集群
-	ServiceName string // 隶属于那个服务
-
-	Sys ISystem
+	Sys    ISystem
+	Loader IActorLoader
 }
 
 type NodeOption func(*NodeParm)
@@ -43,8 +42,20 @@ func WithNodeID(id string) NodeOption {
 	}
 }
 
+func WithWeight(weight int) NodeOption {
+	return func(np *NodeParm) {
+		np.Weight = weight
+	}
+}
+
 func WithSystem(sys ISystem) NodeOption {
 	return func(p *NodeParm) {
 		p.Sys = sys
+	}
+}
+
+func WithLoader(load IActorLoader) NodeOption {
+	return func(p *NodeParm) {
+		p.Loader = load
 	}
 }

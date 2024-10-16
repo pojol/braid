@@ -1,29 +1,11 @@
 package actor
 
 import (
-	"fmt"
-	"strconv"
-
 	"github.com/pojol/braid/core"
 )
 
-type ActorGenerationMode int
-
-const (
-	LocalGeneration ActorGenerationMode = iota
-	BalancedGeneration
-)
-
-type CreateActorParm struct {
-	ID             string
-	ActorTy        string
-	Options        map[string]interface{}
-	GenerationMode ActorGenerationMode
-}
-
 // ActorLoaderBuilder used to build ActorLoader
 type ActorLoaderBuilder struct {
-	CreateActorParm
 	core.ISystem
 	core.ActorConstructor
 	core.IActorLoader
@@ -38,49 +20,13 @@ func (p *ActorLoaderBuilder) WithID(id string) core.IActorBuilder {
 }
 
 func (p *ActorLoaderBuilder) WithType(ty string) core.IActorBuilder {
-	p.ActorTy = ty
+	p.Name = ty
 	return p
 }
 
-func (p *ActorLoaderBuilder) WithOpt(key string, value interface{}) core.IActorBuilder {
+func (p *ActorLoaderBuilder) WithOpt(key string, value string) core.IActorBuilder {
 	p.Options[key] = value
 	return p
-}
-
-func (p *ActorLoaderBuilder) WithPicker() core.IActorBuilder {
-	p.GenerationMode = BalancedGeneration
-	return p
-}
-
-func (p *ActorLoaderBuilder) Build() (core.IActor, error) {
-	var err error
-
-	if _, ok := p.Options["weight"]; !ok {
-		p.Weight = 10 // default
-	} else {
-		weight, err := strconv.Atoi(p.Options["weight"].(string))
-		if err != nil {
-			panic(fmt.Errorf("init actor option weight err %v", err.Error()))
-		}
-		p.Weight = weight
-	}
-
-	if _, ok := p.Options["limit"]; !ok {
-		p.GlobalQuantityLimit = 0
-	} else {
-		limit, err := strconv.Atoi(p.Options["limit"].(string))
-		if err != nil {
-			panic(fmt.Errorf("init actor option limit err %v", err.Error()))
-		}
-		p.GlobalQuantityLimit = limit
-	}
-
-	if p.GenerationMode == LocalGeneration {
-		return p.ISystem.Register(p)
-	} else if p.GenerationMode == BalancedGeneration {
-		err = p.IActorLoader.Pick(p) // Note: This method is asynchronous
-	}
-	return nil, err
 }
 
 func (p *ActorLoaderBuilder) GetID() string {
@@ -88,7 +34,7 @@ func (p *ActorLoaderBuilder) GetID() string {
 }
 
 func (p *ActorLoaderBuilder) GetType() string {
-	return p.ActorTy
+	return p.Name
 }
 
 func (p *ActorLoaderBuilder) GetGlobalQuantityLimit() int {
@@ -99,11 +45,11 @@ func (p *ActorLoaderBuilder) GetNodeUnique() bool {
 	return p.NodeUnique
 }
 
-func (p *ActorLoaderBuilder) GetOptions() map[string]interface{} {
+func (p *ActorLoaderBuilder) GetOptions() map[string]string {
 	return p.Options
 }
 
-func (p *ActorLoaderBuilder) GetOpt(key string) interface{} {
+func (p *ActorLoaderBuilder) GetOpt(key string) string {
 	return p.Options[key]
 }
 
@@ -117,4 +63,12 @@ func (p *ActorLoaderBuilder) GetLoader() core.IActorLoader {
 
 func (p *ActorLoaderBuilder) GetConstructor() core.CreateFunc {
 	return p.Constructor
+}
+
+func (p *ActorLoaderBuilder) Register() (core.IActor, error) {
+	return p.ISystem.Register(p)
+}
+
+func (p *ActorLoaderBuilder) Picker() error {
+	return p.IActorLoader.Pick(p) // Note: This method is asynchronous
 }
