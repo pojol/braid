@@ -59,7 +59,7 @@ func NewUserActor(p core.IActorBuilder) core.IActor {
 
 func (a *userActor) Init(ctx context.Context) {
     a.Runtime.Init(ctx)
-    a.state.Load(ctx)   // 将数据从cache装载到本地
+    a.state.Load(ctx)   // Load data from cache to local storage
 }
 
 // factory.go with node.yaml
