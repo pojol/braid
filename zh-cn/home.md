@@ -1,27 +1,24 @@
 # Braid 编程指南
-
-> Braid 是一个轻量的分布式游戏框架，采用了 actor 设计模型，支持微服务，适用于游戏后端、物联网等场景。
+> Braid 是一个创新的无服务器游戏框架，核心由 Actor 模型驱动。它通过统一的地址系统实现智能负载管理，让开发者专注于 Actor 的设计和实现，而无需关注复杂的分布式系统组件。
 
 </br>
 
 ### 🌟 Braid 的亮点
-* Actor 模型: Braid 采用 Actor 模型，使得并发编程变得简单直观。
-* 易于使用: Braid 的 API 设计简洁明了，大大降低了学习曲线，让开发者可以快速上手。
-* 动态负载均衡: 通过内置的负载均衡机制，Braid 可以动态地在集群中分配和管理 Actor，确保系统资源的最优利用。
-* 灵活的消息处理: Braid 支持自定义消息处理逻辑，包括中间件、定时器和事件订阅，让你的微服务更加灵活多变。
-* 高性能: 基于 Go 语言的并发特性，Braid 提供了出色的性能表现，适合构建高吞吐量的分布式系统。
+* Actor 中心：框架本质是 Actor 的集合，简化分布式逻辑。
+* 自动负载均衡：通过地址系统实现智能资源分配。
+* 开发聚焦：无需考虑服务、集群等底层架构，专注于游戏逻辑。
 
 </br>
 
 ## 🔧 Braid 使用指引
 - [1.通过脚手架构建hello braid](zh-cn/pages-hello-world.md)
-- [2.构建一个服务，并注册actor进去](zh-cn/pages-container.md) ✅
-- [3.为actor引入状态](zh-cn/pages-entity-state.md) ✅
-- [4.处理消息](zh-cn/pages-actor-message.md) ✅
-- [5.发送消息](zh-cn/pages-actor-send.md) ✅
+- [2.构建一个服务，并注册actor进去](zh-cn/pages-container.md)
+- [3.为actor引入状态](zh-cn/pages-entity-state.md)
+- [4.处理消息](zh-cn/pages-actor-message.md)
+- [5.发送消息](zh-cn/pages-actor-send.md)
 - [6.搭建一个websocket服务器](zh-cn/pages-websocket.md)
-- [7.设计一个聊天服务器](zh-cn/pages-chat.md) ✅
-- [8.搭建一个集群](zh-cn/pages-cluster.md) ✅
+- [7.设计一个聊天服务器](zh-cn/pages-chat.md)
+- [8.搭建一个集群](zh-cn/pages-cluster.md)
 - [9.分布式事务TCC](pages-transaction.md)
 
 ---
