@@ -38,10 +38,9 @@ $ go run main.go
 actors:
 - name: "USER"
     id : "user"
-    options:
-        unique: false
-        weight: 100
-        limit: 10000
+    unique: false
+    weight: 100
+    limit: 10000
 ```
 > Create actor constructors and bind them to the factory
 
