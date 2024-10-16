@@ -32,19 +32,14 @@ $ go run main.go
 ```
 
 ### 2. Create a new actor and load it into the cluster
-> Write actor_template.yaml to add new actor types and definitions
-
-```yaml
-- name: "USER"
-unique: false
-category: "dynamic"
-```
 > Write node.yaml to register actor templates to nodes (containers)
 
 ```yaml
 actors:
 - name: "USER"
+    id : "user"
     options:
+        unique: false
         weight: 100
         limit: 10000
 ```
