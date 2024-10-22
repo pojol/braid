@@ -15,11 +15,9 @@ import (
 	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 )
 
-type acceptor struct {
+type Acceptor struct {
 	server *grpc.Server
 }
-
-var acceptorptr *acceptor
 
 type listen struct {
 	router.AcceptorServer
@@ -51,9 +49,8 @@ func recoverHandler(r interface{}) error {
 	return fmt.Errorf("[GRPC-SERVER RECOVER] err: %v stack: %s", err, buf)
 }
 
-func acceptorInit(sys core.ISystem, port int) {
-
-	acceptorptr = &acceptor{
+func NewAcceptor(sys core.ISystem, port int) (*Acceptor, error) {
+	a := &Acceptor{
 		server: grpc.BuildServerWithOption(
 			grpc.WithServerListen(":"+strconv.Itoa(port)),
 			grpc.WithServerGracefulStop(),
@@ -64,18 +61,20 @@ func acceptorInit(sys core.ISystem, port int) {
 		),
 	}
 
-	err := acceptorptr.server.Init()
+	err := a.server.Init()
 	if err != nil {
-		panic(fmt.Sprintf("Failed to initialize acceptor server: %v", err))
+		return nil, fmt.Errorf("Failed to initialize acceptor server: %v", err)
 	}
+
+	return a, nil
 }
 
-func acceptorUpdate() {
-	acceptorptr.server.Run()
+func (acceptor *Acceptor) Update() {
+	acceptor.server.Run()
 }
 
-func acceptorExit() {
-	acceptorptr.server.Close()
+func (acceptor *Acceptor) Exit() {
+	acceptor.server.Close()
 }
 
 // acceptor routing

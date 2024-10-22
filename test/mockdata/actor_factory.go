@@ -16,23 +16,59 @@ func BuildActorFactory() *MockActorFactory {
 		constructors: make(map[string]*core.ActorConstructor),
 	}
 
-	factory.bind("MockUserActor", false, 80, 10000, NewUserActor)
-	factory.bind("MockClacActor", false, 20, 5, NewClacActor)
+	factory.constructors["MockUserActor"] = &core.ActorConstructor{
+		ID:                  "MockUserActor",
+		Name:                "MockUserActor",
+		Weight:              80,
+		Constructor:         NewUserActor,
+		NodeUnique:          false,
+		GlobalQuantityLimit: 10000,
+		Dynamic:             true,
+		Options:             make(map[string]string),
+	}
 
-	factory.bind("MockDynamicPicker", false, 160, 3, mockactors.NewDynamicPickerActor)
-	factory.bind("MockDynamicRegister", true, 80, 0, mockactors.NewDynamicRegisterActor)
+	factory.constructors["MockClacActor"] = &core.ActorConstructor{
+		ID:                  "MockClacActor",
+		Name:                "MockClacActor",
+		Weight:              20,
+		Constructor:         NewClacActor,
+		NodeUnique:          false,
+		GlobalQuantityLimit: 5,
+		Dynamic:             true,
+		Options:             make(map[string]string),
+	}
+
+	factory.constructors["MockDynamicPicker"] = &core.ActorConstructor{
+		ID:                  "MockDynamicPicker",
+		Name:                "MockDynamicPicker",
+		Weight:              100,
+		Constructor:         mockactors.NewDynamicPickerActor,
+		NodeUnique:          true,
+		GlobalQuantityLimit: 10,
+		Options:             make(map[string]string),
+	}
+
+	factory.constructors["MockDynamicRegister"] = &core.ActorConstructor{
+		ID:                  "MockDynamicRegister",
+		Name:                "MockDynamicRegister",
+		Weight:              100,
+		Constructor:         mockactors.NewDynamicRegisterActor,
+		NodeUnique:          true,
+		GlobalQuantityLimit: 0,
+		Options:             make(map[string]string),
+	}
+
+	factory.constructors["MockActorControl"] = &core.ActorConstructor{
+		ID:                  "MockActorControl",
+		Name:                "MockActorControl",
+		Weight:              100,
+		Constructor:         mockactors.NewControlActor,
+		NodeUnique:          true,
+		GlobalQuantityLimit: 0,
+		Options:             make(map[string]string),
+	}
 
 	return factory
-}
-
-// Bind associates an actor type with its constructor function
-func (factory *MockActorFactory) bind(actorType string, unique bool, weight, limit int, f core.CreateFunc) {
-	factory.constructors[actorType] = &core.ActorConstructor{
-		NodeUnique:          unique,
-		Weight:              weight,
-		GlobalQuantityLimit: limit,
-		Constructor:         f,
-	}
 }
 
 func (factory *MockActorFactory) Get(actorType string) *core.ActorConstructor {
@@ -41,4 +77,12 @@ func (factory *MockActorFactory) Get(actorType string) *core.ActorConstructor {
 	}
 
 	return nil
+}
+
+func (factory *MockActorFactory) GetActors() []*core.ActorConstructor {
+	actors := []*core.ActorConstructor{}
+	for _, v := range factory.constructors {
+		actors = append(actors, v)
+	}
+	return actors
 }

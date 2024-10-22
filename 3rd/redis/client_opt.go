@@ -81,10 +81,22 @@ func WithMaxIdle(maxidle int) Option {
 	}
 }
 
+func WithMinIdle(minidle int) Option {
+	return func(options *Parm) {
+		options.redisopt.MinIdleConns = minidle
+	}
+}
+
 // WithPoolSize 链接数
 func WithPoolSize(size int) Option {
 	return func(c *Parm) {
 		c.redisopt.PoolSize = size
+	}
+}
+
+func WithPoolTimeout(timeout time.Duration) Option {
+	return func(options *Parm) {
+		options.redisopt.PoolTimeout = timeout
 	}
 }
 

@@ -38,7 +38,7 @@ func (a *dynamicRegisterActor) Init(ctx context.Context) {
 					builder.WithOpt(k, v)
 				}
 
-				actor, err := builder.Build()
+				actor, err := builder.Register()
 				if err != nil {
 					return err
 				}

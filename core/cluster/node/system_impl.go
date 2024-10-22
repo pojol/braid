@@ -20,15 +20,18 @@ type NormalSystem struct {
 	actoridmap  map[string]core.IActor
 	client      *grpc.Client
 	ps          *pubsub.Pubsub
-	p           SystemParm
+	acceptor    *Acceptor
+	p           core.SystemParm
 	loader      core.IActorLoader
+	factory     core.IActorFactory
 
 	sync.RWMutex
 }
 
-func BuildSystemWithOption(nodid string, loader core.IActorLoader, opts ...SystemOption) core.ISystem {
+func buildSystemWithOption(nodid string, loader core.IActorLoader, factory core.IActorFactory, opts ...core.SystemOption) core.ISystem {
+	var err error
 
-	p := SystemParm{
+	p := core.SystemParm{
 		Ip:     "127.0.0.1",
 		NodeID: nodid,
 	}
@@ -54,15 +57,18 @@ func BuildSystemWithOption(nodid string, loader core.IActorLoader, opts ...Syste
 	sys.p = p
 
 	if p.Port != 0 {
-		acceptorInit(sys, p.Port)
+		sys.acceptor, err = NewAcceptor(sys, p.Port)
+		if err != nil {
+			panic(fmt.Errorf("[system] new acceptor err %v", err.Error()))
+		}
 	}
 
 	return sys
 }
 
 func (sys *NormalSystem) Update() {
-	if sys.p.Port != 0 {
-		acceptorUpdate()
+	if sys.p.Port != 0 && sys.acceptor != nil {
+		sys.acceptor.Update()
 	}
 }
 
@@ -102,7 +108,7 @@ func (sys *NormalSystem) Register(builder core.IActorBuilder) (core.IActor, erro
 	}
 
 	// Register first, then build
-	err := sys.addressbook.Register(context.TODO(), builder.GetType(), builder.GetID())
+	err := sys.addressbook.Register(context.TODO(), builder.GetType(), builder.GetID(), builder.GetWeight())
 	if err != nil {
 		return nil, err
 	}
@@ -119,7 +125,7 @@ func (sys *NormalSystem) Register(builder core.IActorBuilder) (core.IActor, erro
 	sys.actoridmap[builder.GetID()] = actor
 	sys.Unlock()
 
-	log.InfoF("[braid.system] node %v register %v %v succ, cur weight %v", sys.addressbook.NodeID, builder.GetType(), builder.GetID(), 0)
+	log.InfoF("[braid.system] node %v register %v %v succ", sys.addressbook.NodeID, builder.GetType(), builder.GetID())
 	return actor, nil
 }
 
@@ -142,7 +148,7 @@ func (sys *NormalSystem) Unregister(id string) error {
 	sys.Unlock()
 
 	// Unregister from the address book
-	err := sys.addressbook.Unregister(context.TODO(), id)
+	err := sys.addressbook.Unregister(context.TODO(), id, sys.factory.Get(actor.Type()).Weight)
 	if err != nil {
 		// Log the error, but don't return it as the actor has already been removed locally
 		log.WarnF("[braid.system] Failed to unregister actor %s from address book: %v", id, err)
@@ -339,7 +345,9 @@ func (sys *NormalSystem) FindActor(ctx context.Context, id string) (core.IActor,
 func (sys *NormalSystem) Exit(wait *sync.WaitGroup) {
 	if sys.p.Port != 0 {
 		wait.Add(1)
-		acceptorExit()
+		if sys.acceptor != nil {
+			sys.acceptor.Exit()
+		}
 		wait.Done()
 	}
 

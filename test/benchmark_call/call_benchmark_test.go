@@ -31,7 +31,7 @@ import (
 // 16节点	16w个actor	4跳
 
 var (
-	nodes         []*mockdata.ProcessNode
+	nodes         []core.INode
 	actorjump1arr []string
 	actorjump2arr []string
 	initOnce      sync.Once
@@ -63,17 +63,15 @@ func setupBenchmark() {
 			panic(err)
 		}
 
-		loader := mockdata.BuildDefaultActorLoader(mockdata.BuildActorFactory())
-		sys := node.BuildSystemWithOption(
-			"node_"+strconv.Itoa(i),
-			loader,
-			node.SystemWithAcceptor(port),
-		)
+		factory := mockdata.BuildActorFactory()
+		loader := mockdata.BuildDefaultActorLoader(factory)
 
-		node := &mockdata.ProcessNode{
-			P:   core.NodeParm{ID: strconv.Itoa(i)},
-			Sys: sys,
-		}
+		node := node.BuildProcessWithOption(
+			core.NodeWithID(strconv.Itoa(i)),
+			core.NodeWithLoader(loader),
+			core.NodeWithFactory(factory),
+			core.NodeWithSystemOpts(core.SystemWithAcceptor(port)),
+		)
 
 		for k := 0; k < JumpNum; k++ {
 			for j := 0; j < ActorNum/JumpNum; j++ {
@@ -86,7 +84,7 @@ func setupBenchmark() {
 					actorjump2arr = append(actorjump2arr, aid)
 				}
 
-				sys.Loader("MockClacActor").WithID(aid).Build()
+				node.System().Loader("MockClacActor").WithID(aid).Register()
 			}
 		}
 

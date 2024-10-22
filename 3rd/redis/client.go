@@ -280,6 +280,14 @@ func HLen(ctx context.Context, key string) *redis.IntCmd {
 	return client.HLen(ctx, key)
 }
 
+func HIncrBy(ctx context.Context, key, field string, incr int64) *redis.IntCmd {
+	span, err := doTracing(ctx, spanTag{"cmd", "HIncrBy"}, spanTag{"key", key})
+	if err == nil {
+		defer span.End(ctx)
+	}
+	return client.HIncrBy(ctx, key, field, incr)
+}
+
 func HKeys(ctx context.Context, key string) *redis.StringSliceCmd {
 	span, err := doTracing(ctx, spanTag{"cmd", "HKeys"}, spanTag{"key", key})
 	if err == nil {

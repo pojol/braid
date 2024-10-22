@@ -58,17 +58,23 @@ func mockEntity2DB(id string) {
 
 func mockEntity(id string) core.ISystem {
 
-	loader := mockdata.BuildDefaultActorLoader(mockdata.BuildActorFactory())
-	sys := node.BuildSystemWithOption("test-mock-entity", loader)
+	factory := mockdata.BuildActorFactory()
+	loader := mockdata.BuildDefaultActorLoader(factory)
 
-	loader.Builder("MockUserActor", sys).WithID(id).Build()
+	nod := node.BuildProcessWithOption(
+		core.NodeWithID("test-mock-entity"),
+		core.NodeWithFactory(factory),
+		core.NodeWithLoader(loader),
+	)
 
-	for _, a := range sys.Actors() {
+	loader.Builder("MockUserActor", nod.System()).WithID(id).Register()
+
+	for _, a := range nod.System().Actors() {
 		a.Init(context.TODO())
 		go a.Update()
 	}
 
-	return sys
+	return nod.System()
 }
 
 func TestEntityLoad(t *testing.T) {

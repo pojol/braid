@@ -37,6 +37,10 @@ func (p *ActorLoaderBuilder) GetType() string {
 	return p.Name
 }
 
+func (p *ActorLoaderBuilder) GetWeight() int {
+	return p.Weight
+}
+
 func (p *ActorLoaderBuilder) GetGlobalQuantityLimit() int {
 	return p.GlobalQuantityLimit
 }

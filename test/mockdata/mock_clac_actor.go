@@ -3,6 +3,7 @@ package mockdata
 import (
 	"context"
 	"fmt"
+	"sync/atomic"
 
 	"github.com/pojol/braid/core"
 	"github.com/pojol/braid/core/actor"
@@ -16,14 +17,16 @@ type MockClacActor struct {
 
 func NewClacActor(p core.IActorBuilder) core.IActor {
 	return &MockClacActor{
-		Runtime: &actor.Runtime{Id: p.GetType(), Ty: "MockClacActor", Sys: p.GetSystem()},
+		Runtime: &actor.Runtime{Id: p.GetID(), Ty: p.GetType(), Sys: p.GetSystem()},
 	}
 }
+
+var GlobalCreateCnt = int32(0)
 
 func (a *MockClacActor) Init(ctx context.Context) {
 	a.Runtime.Init(ctx)
 
-	fmt.Println("init", a.Id, "actor succ!")
+	atomic.AddInt32(&GlobalCreateCnt, 1)
 
 	a.RegisterEvent("print", func(actorCtx core.ActorContext) core.IChain {
 		return &actor.DefaultChain{

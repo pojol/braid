@@ -55,16 +55,33 @@ func (al *DefaultActorLoader) Builder(ty string, sys core.ISystem) core.IActorBu
 	}
 
 	builder := &actor.ActorLoaderBuilder{
-		CreateActorParm: actor.CreateActorParm{
-			GenerationMode: actor.LocalGeneration, // Default to local option, can be modified using withpicker
-			Options:        make(map[string]interface{}),
-		},
 		ISystem:          sys,
 		ActorConstructor: *ac,
 		IActorLoader:     al,
 	}
 
-	builder.WithType(ty)
-
 	return builder
+}
+
+func (al *DefaultActorLoader) AssignToNode(node core.INode) {
+	actors := al.factory.GetActors()
+
+	for _, actor := range actors {
+
+		if actor.Dynamic {
+			continue
+		}
+
+		builder := al.Builder(actor.Name, node.System())
+		if actor.ID == "" {
+			actor.ID = actor.Name
+		}
+
+		builder.WithID(node.ID() + "_" + actor.ID)
+
+		_, err := builder.Register()
+		if err != nil {
+			log.InfoF("assign to node build actor %s err %v", actor.Name, err)
+		}
+	}
 }

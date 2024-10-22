@@ -30,33 +30,33 @@ func TestReenterCall(t *testing.T) {
 	redis.BuildClientWithOption(redis.WithAddr("redis://127.0.0.1:6379/0"))
 	redis.FlushAll(context.TODO()) // clean cache
 
-	loader := mockdata.BuildDefaultActorLoader(mockdata.BuildActorFactory())
+	factory := mockdata.BuildActorFactory()
+	loader := mockdata.BuildDefaultActorLoader(factory)
 
-	sys := node.BuildSystemWithOption("test-reenter-call-1", loader)
-
-	node := &mockdata.ProcessNode{
-		P:   core.NodeParm{ID: "st-reenter-call-1"},
-		Sys: sys,
-	}
+	nod := node.BuildProcessWithOption(
+		core.NodeWithID("test-reenter-call-1"),
+		core.NodeWithLoader(loader),
+		core.NodeWithFactory(factory),
+	)
 
 	// build
 	var err error
-	_, err = sys.Loader("MockClacActor").WithID("clac-1").Build()
+	_, err = nod.System().Loader("MockClacActor").WithID("clac-1").Register()
 	assert.Equal(t, err, nil)
-	_, err = sys.Loader("MockClacActor").WithID("clac-2").Build()
+	_, err = nod.System().Loader("MockClacActor").WithID("clac-2").Register()
 	assert.Equal(t, err, nil)
 
-	node.Init()
-	node.Update()
+	nod.Init()
+	nod.Update()
 
 	time.Sleep(time.Second)
 
-	err = sys.Call(router.Target{ID: "clac-1", Ty: "MockClacActor", Ev: "mockreenter"}, router.NewMsgWrap(context.TODO()).Build())
+	err = nod.System().Call(router.Target{ID: "clac-1", Ty: "MockClacActor", Ev: "mockreenter"}, router.NewMsgWrap(context.TODO()).Build())
 	assert.Equal(t, err, nil)
 
 	time.Sleep(time.Second * 2)
 
 	wg := sync.WaitGroup{}
-	sys.Exit(&wg)
+	nod.System().Exit(&wg)
 	wg.Wait()
 }

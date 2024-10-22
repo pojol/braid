@@ -12,7 +12,8 @@ import (
 )
 
 type process struct {
-	p core.NodeParm
+	p   core.NodeParm
+	sys core.ISystem
 }
 
 var pcs *process
@@ -28,7 +29,8 @@ func BuildProcessWithOption(opts ...core.NodeOption) core.INode {
 	}
 
 	pcs = &process{
-		p: p,
+		sys: buildSystemWithOption(p.ID, p.Loader, p.Factory, p.SystemOpts...),
+		p:   p,
 	}
 
 	return pcs
@@ -43,14 +45,14 @@ func (pn *process) ID() string {
 }
 
 func (pn *process) System() core.ISystem {
-	return pn.p.Sys
+	return pn.sys
 }
 
 func (pn *process) Init(opts ...core.NodeOption) error {
 
 	pn.p.Loader.AssignToNode(pn)
 
-	for _, a := range pn.p.Sys.Actors() {
+	for _, a := range pn.sys.Actors() {
 		a.Init(context.TODO())
 	}
 
@@ -59,9 +61,9 @@ func (pn *process) Init(opts ...core.NodeOption) error {
 
 func (pn *process) Update() {
 
-	pn.p.Sys.Update()
+	pn.sys.Update()
 
-	for _, a := range pn.p.Sys.Actors() {
+	for _, a := range pn.sys.Actors() {
 		go a.Update()
 	}
 }
@@ -76,7 +78,7 @@ func (pn *process) WaitClose() {
 	var wg sync.WaitGroup
 
 	// Call the system's shutdown method with the WaitGroup
-	pn.p.Sys.Exit(&wg)
+	pn.sys.Exit(&wg)
 
 	// Wait for all actors to finish their cleanup
 	wg.Wait()

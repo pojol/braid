@@ -124,6 +124,7 @@ type IActorBuilder interface {
 	GetType() string
 	GetGlobalQuantityLimit() int
 	GetNodeUnique() bool
+	GetWeight() int
 	GetOpt(key string) string
 	GetOptions() map[string]string
 
@@ -147,6 +148,8 @@ type ActorConstructor struct {
 
 	// Weight occupied by the actor, weight algorithm reference: 2c4g (pod = 2 * 4 * 1000)
 	Weight int
+
+	Dynamic bool
 
 	// Constructor function
 	Constructor CreateFunc
