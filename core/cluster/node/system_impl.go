@@ -43,9 +43,14 @@ func buildSystemWithOption(nodid string, loader core.IActorLoader, factory core.
 		actoridmap: make(map[string]core.IActor),
 	}
 
+	if loader == nil || factory == nil {
+		panic("[braid.system] loader or factory is nil!")
+	}
+
 	// init grpc client
 	sys.client = grpc.BuildClientWithOption()
 	sys.loader = loader
+	sys.factory = factory
 
 	sys.ps = pubsub.BuildWithOption()
 
@@ -59,7 +64,7 @@ func buildSystemWithOption(nodid string, loader core.IActorLoader, factory core.
 	if p.Port != 0 {
 		sys.acceptor, err = NewAcceptor(sys, p.Port)
 		if err != nil {
-			panic(fmt.Errorf("[system] new acceptor err %v", err.Error()))
+			panic(fmt.Errorf("[braid.system] new acceptor err %v", err.Error()))
 		}
 	}
 
@@ -141,7 +146,7 @@ func (sys *NormalSystem) Unregister(id string) error {
 	sys.RUnlock()
 
 	if !exists {
-		return fmt.Errorf("actor %s not found", id)
+		return fmt.Errorf("[braid.system] actor %s not found", id)
 	}
 
 	// Call Exit on the actor
@@ -273,7 +278,7 @@ func (sys *NormalSystem) handleLocalCall(actorp core.IActor, msg *router.MsgWrap
 		case <-msg.Done:
 			return nil
 		case <-msg.Ctx.Done():
-			return fmt.Errorf("actor %v message %v processing timed out", msg.Req.Header.TargetActorID, msg.Req.Header.Event)
+			return fmt.Errorf("[braid.system] actor %v message %v processing timed out", msg.Req.Header.TargetActorID, msg.Req.Header.Event)
 		}
 	} else {
 		return actorp.Received(msg)
