@@ -95,7 +95,6 @@ func (sys *NormalSystem) Register(builder core.IActorBuilder) (core.IActor, erro
 
 	if builder.GetGlobalQuantityLimit() != 0 {
 
-		// 检查当前节点是否已经存在
 		if builder.GetNodeUnique() {
 			for _, v := range sys.actoridmap {
 				if v.Type() == builder.GetType() {
@@ -104,7 +103,13 @@ func (sys *NormalSystem) Register(builder core.IActorBuilder) (core.IActor, erro
 			}
 		}
 
-		// 检查注册数是否已经超出限制
+		cnt, err := sys.addressbook.GetActorTypeCount(context.TODO(), builder.GetType())
+		if err != nil {
+			return nil, fmt.Errorf("[barid.system] get type count err %v", err)
+		}
+		if int(cnt) >= builder.GetGlobalQuantityLimit() {
+			return nil, fmt.Errorf("[braid.system] actor %v global quantity limit current count %v", builder.GetType(), cnt)
+		}
 	}
 
 	// Register first, then build

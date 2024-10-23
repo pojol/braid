@@ -178,6 +178,14 @@ func SPop(ctx context.Context, key string) *redis.StringCmd {
 	return client.SPop(ctx, key)
 }
 
+func SCard(ctx context.Context, key string) *redis.IntCmd {
+	span, err := doTracing(ctx, spanTag{"cmd", "SCard"}, spanTag{"key", key})
+	if err == nil {
+		defer span.End(ctx)
+	}
+	return client.SCard(ctx, key)
+}
+
 // ------------ ZSet 有序集合 ----------
 
 func ZScore(ctx context.Context, key, member string) *redis.FloatCmd {

@@ -307,6 +307,23 @@ func (ab *AddressBook) GetLowWeightNodeForActor(ctx context.Context, actorType s
 	return selectedNode, nil
 }
 
+// GetActorTypeCount retrieves the count of registered actors of the specified type
+func (ab *AddressBook) GetActorTypeCount(ctx context.Context, actorType string) (int64, error) {
+	key := fmt.Sprintf(def.RedisAddressbookTyField+"%s", actorType)
+
+	count, err := trdredis.SCard(ctx, key).Result()
+	if err != nil {
+		if err == redis.Nil {
+			// Key doesn't exist, return 0
+			return 0, nil
+		}
+		return 0, fmt.Errorf("failed to get count for actor type %s: %v", actorType, err)
+	}
+
+	// count will be 0 for empty sets
+	return count, nil
+}
+
 func (ab *AddressBook) Clear(ctx context.Context) error {
 	mu := &dismutex.Mutex{Token: ab.NodeID}
 	err := mu.Lock(ctx, "[addressbook.register]")
