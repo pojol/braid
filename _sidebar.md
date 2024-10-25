@@ -9,3 +9,8 @@
     - [7. Designing a Chat Server](pages-chat.md)
     - [8. Setting Up a Cluster](pages-cluster.md)
     - [9. Distributed Transactions](pages-transaction.md)
+
+- Console Tools
+    - [Information Bar](pages-tools-information.md)
+    - [Query Bar](pages-tools-query.md)
+    - [Actor Bar](pages-tools-actor.md)

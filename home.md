@@ -25,7 +25,16 @@
 - [8. Setting Up a Cluster](pages-cluster.md)
 - [9. Distributed Transactions (TCC](pages-transaction.md)
 
----
+<div style="display: flex; align-items: center; margin: 1em 0;">
+  <div style="flex-grow: 1; height: 1px; background-color: #ccc;"></div>
+  <div style="margin: 0 10px; font-weight: bold; color: #666;">Web</div>
+  <div style="flex-grow: 1; height: 1px; background-color: #ccc;"></div>
+</div>
+
+## Console Tools
+- [Information Bar](pages-tools-information)
+- [Query Bar](pages-tools-query)
+- [Actor Bar](pages-tools-actor)
 
 ### 🌐 Join the Braid Community
 
