@@ -29,7 +29,7 @@ func BuildProcessWithOption(opts ...core.NodeOption) core.INode {
 	}
 
 	pcs = &process{
-		sys: buildSystemWithOption(p.ID, p.Loader, p.Factory, p.SystemOpts...),
+		sys: buildSystemWithOption(p.ID, p.Ip, p.Port, p.Loader, p.Factory, p.Tracer),
 		p:   p,
 	}
 

@@ -70,7 +70,7 @@ func setupBenchmark() {
 			core.NodeWithID(strconv.Itoa(i)),
 			core.NodeWithLoader(loader),
 			core.NodeWithFactory(factory),
-			core.NodeWithSystemOpts(core.SystemWithAcceptor(port)),
+			core.NodeWithPort(port),
 		)
 
 		for k := 0; k < JumpNum; k++ {

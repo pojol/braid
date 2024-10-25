@@ -62,7 +62,7 @@ func TestMain(m *testing.M) {
 				core.NodeWithWeight(10000),
 				core.NodeWithLoader(loader),
 				core.NodeWithFactory(factory),
-				core.NodeWithSystemOpts(core.SystemWithAcceptor(p)),
+				core.NodeWithPort(p),
 			)
 
 			err := nod.Init()
@@ -149,7 +149,7 @@ func TestPicker(b *testing.T) {
 		core.NodeWithID(nodid),
 		core.NodeWithWeight(10000),
 		core.NodeWithLoader(loader),
-		core.NodeWithSystemOpts(core.SystemWithAcceptor(p)),
+		core.NodeWithPort(p),
 	)
 
 	err := nod.Init()

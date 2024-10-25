@@ -12,6 +12,7 @@ import (
 	"github.com/pojol/braid/lib/log"
 	"github.com/pojol/braid/lib/pubsub"
 	"github.com/pojol/braid/lib/span"
+	"github.com/pojol/braid/lib/tracer"
 	"github.com/pojol/braid/router"
 )
 
@@ -21,26 +22,27 @@ type NormalSystem struct {
 	client      *grpc.Client
 	ps          *pubsub.Pubsub
 	acceptor    *Acceptor
-	p           core.SystemParm
 	loader      core.IActorLoader
 	factory     core.IActorFactory
+
+	nodeID   string
+	nodeIP   string
+	nodePort int
+
+	trac tracer.ITracer
 
 	sync.RWMutex
 }
 
-func buildSystemWithOption(nodid string, loader core.IActorLoader, factory core.IActorFactory, opts ...core.SystemOption) core.ISystem {
+func buildSystemWithOption(nodId, nodeIp string, nodePort int, loader core.IActorLoader, factory core.IActorFactory, trac tracer.ITracer) core.ISystem {
 	var err error
-
-	p := core.SystemParm{
-		Ip:     "127.0.0.1",
-		NodeID: nodid,
-	}
-	for _, opt := range opts {
-		opt(&p)
-	}
 
 	sys := &NormalSystem{
 		actoridmap: make(map[string]core.IActor),
+		nodeID:     nodId,
+		nodeIP:     nodeIp,
+		nodePort:   nodePort,
+		trac:       trac,
 	}
 
 	if loader == nil || factory == nil {
@@ -55,14 +57,13 @@ func buildSystemWithOption(nodid string, loader core.IActorLoader, factory core.
 	sys.ps = pubsub.BuildWithOption()
 
 	sys.addressbook = addressbook.New(core.AddressInfo{
-		Node: p.NodeID,
-		Ip:   p.Ip,
-		Port: p.Port,
+		Node: sys.nodeID,
+		Ip:   sys.nodeIP,
+		Port: sys.nodePort,
 	})
-	sys.p = p
 
-	if p.Port != 0 {
-		sys.acceptor, err = NewAcceptor(sys, p.Port)
+	if sys.nodePort != 0 {
+		sys.acceptor, err = NewAcceptor(sys, sys.nodePort)
 		if err != nil {
 			panic(fmt.Errorf("[braid.system] new acceptor err %v", err.Error()))
 		}
@@ -72,7 +73,7 @@ func buildSystemWithOption(nodid string, loader core.IActorLoader, factory core.
 }
 
 func (sys *NormalSystem) Update() {
-	if sys.p.Port != 0 && sys.acceptor != nil {
+	if sys.nodePort != 0 && sys.acceptor != nil {
 		sys.acceptor.Update()
 	}
 }
@@ -103,7 +104,7 @@ func (sys *NormalSystem) Register(builder core.IActorBuilder) (core.IActor, erro
 		if builder.GetNodeUnique() {
 			for _, v := range sys.actoridmap {
 				if v.Type() == builder.GetType() {
-					return nil, fmt.Errorf("[barid.system] register unique type actor %v in %v", builder.GetType(), sys.p.NodeID)
+					return nil, fmt.Errorf("[barid.system] register unique type actor %v in %v", builder.GetType(), sys.nodeID)
 				}
 			}
 		}
@@ -187,8 +188,8 @@ func (sys *NormalSystem) Call(tar router.Target, msg *router.MsgWrapper) error {
 	var actor core.IActor
 	var err error
 
-	if sys.p.Tracer != nil {
-		span, err := sys.p.Tracer.GetSpan(span.SystemCall)
+	if sys.trac != nil {
+		span, err := sys.trac.GetSpan(span.SystemCall)
 		if err == nil {
 			msg.Ctx = span.Begin(msg.Ctx)
 			fmt.Println(msg.Req.Header.PrevActorType, "=>", tar.Ty)
@@ -353,7 +354,7 @@ func (sys *NormalSystem) FindActor(ctx context.Context, id string) (core.IActor,
 }
 
 func (sys *NormalSystem) Exit(wait *sync.WaitGroup) {
-	if sys.p.Port != 0 {
+	if sys.nodePort != 0 {
 		wait.Add(1)
 		if sys.acceptor != nil {
 			sys.acceptor.Exit()

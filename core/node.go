@@ -18,13 +18,13 @@ type INode interface {
 }
 
 type NodeParm struct {
-	ID     string // nod 的id全局唯一
+	ID     string // node's globally unique ID
 	Weight int
 
-	Ip   string // nod 的地址
-	Port int    // nod 的端口号
+	Ip   string
+	Port int
 
-	SystemOpts []SystemOption
+	Tracer tracer.ITracer
 
 	Loader  IActorLoader
 	Factory IActorFactory
@@ -64,29 +64,20 @@ func NodeWithFactory(factory IActorFactory) NodeOption {
 	}
 }
 
-type SystemParm struct {
-	NodeID string
-	Ip     string
-	Port   int
-	Tracer tracer.ITracer
-}
-
-type SystemOption func(*SystemParm)
-
-func SystemWithAcceptor(port int) SystemOption {
-	return func(sp *SystemParm) {
-		sp.Port = port
-	}
-}
-
-func SystemWithTracer(t tracer.ITracer) SystemOption {
-	return func(sp *SystemParm) {
-		sp.Tracer = t
-	}
-}
-
-func NodeWithSystemOpts(opts ...SystemOption) NodeOption {
+func NodeWithIP(ip string) NodeOption {
 	return func(np *NodeParm) {
-		np.SystemOpts = append(np.SystemOpts, opts...)
+		np.Ip = ip
+	}
+}
+
+func NodeWithPort(port int) NodeOption {
+	return func(np *NodeParm) {
+		np.Port = port
+	}
+}
+
+func NodeWithTracer(t tracer.ITracer) NodeOption {
+	return func(np *NodeParm) {
+		np.Tracer = t
 	}
 }
