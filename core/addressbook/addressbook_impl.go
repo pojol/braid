@@ -3,6 +3,7 @@ package addressbook
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strconv"
 	"sync"
@@ -13,6 +14,10 @@ import (
 	"github.com/pojol/braid/lib/dismutex"
 	"github.com/pojol/braid/lib/log"
 	"github.com/redis/go-redis/v9"
+)
+
+var (
+	ErrUnknownActor = errors.New("unknown actor")
 )
 
 type AddressBook struct {
@@ -159,7 +164,10 @@ func (ab *AddressBook) GetByID(ctx context.Context, id string) (core.AddressInfo
 
 	addrJSON, err := trdredis.HGet(ctx, def.RedisAddressbookIDField, id).Result()
 	if err != nil {
-		return core.AddressInfo{}, fmt.Errorf("address not found for id: %s", id)
+		if err == redis.Nil {
+			return core.AddressInfo{}, ErrUnknownActor
+		}
+		return core.AddressInfo{}, fmt.Errorf("[braid.addressbook] get by id %s hget err: %s", id, err.Error())
 	}
 
 	var addr core.AddressInfo
