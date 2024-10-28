@@ -63,7 +63,7 @@ func NewAcceptor(sys core.ISystem, port int) (*Acceptor, error) {
 
 	err := a.server.Init()
 	if err != nil {
-		return nil, fmt.Errorf("Failed to initialize acceptor server: %v", err)
+		return nil, fmt.Errorf("failed to initialize acceptor server: %v", err)
 	}
 
 	return a, nil

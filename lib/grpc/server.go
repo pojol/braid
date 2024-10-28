@@ -99,4 +99,6 @@ func (s *Server) Close() {
 	} else {
 		s.rpc.Stop()
 	}
+
+	log.InfoF("[braid.grpc] %v close succ", s.parm.ListenAddr)
 }

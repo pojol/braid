@@ -7,6 +7,7 @@ import (
 	"os/signal"
 	"sync"
 	"syscall"
+	"time"
 
 	"github.com/pojol/braid/core"
 )
@@ -74,14 +75,33 @@ func (pn *process) WaitClose() {
 	s := <-ch
 	fmt.Printf("Received signal %v, initiating graceful shutdown...\n", s)
 
-	// Create a WaitGroup
+	// Create a WaitGroup and a context with timeout
 	var wg sync.WaitGroup
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
 
 	// Call the system's shutdown method with the WaitGroup
 	pn.sys.Exit(&wg)
 
-	// Wait for all actors to finish their cleanup
-	wg.Wait()
+	// Create a channel to signal when all actors have finished
+	done := make(chan struct{})
 
-	fmt.Println("All actors have shut down. Exiting process.")
+	// Wait for all actors to finish their cleanup in a goroutine
+	go func() {
+		wg.Wait()
+		close(done)
+	}()
+
+	// Wait for either all actors to finish or the timeout to occur
+	select {
+	case <-done:
+		fmt.Println("All actors have shut down gracefully. Exiting process.")
+	case <-ctx.Done():
+		fmt.Println("Shutdown timed out after 30 seconds. Force exiting.")
+	}
+
+	// Perform any final cleanup if necessary
+	// ...
+
+	fmt.Println("Process exited.")
 }
