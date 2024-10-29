@@ -12,6 +12,9 @@ type ClientParm struct {
 	PoolCapacity int
 	PoolIdle     time.Duration
 
+	MaxConcurrentCalls int
+	CallTimeout        time.Duration
+
 	AddressLst []string
 
 	UnaryInterceptors  []grpc.UnaryClientInterceptor
@@ -20,9 +23,11 @@ type ClientParm struct {
 
 var (
 	DefaultClientParm = ClientParm{
-		PoolInitNum:  8,
-		PoolCapacity: 64,
-		PoolIdle:     time.Second * 100,
+		PoolInitNum:        8,
+		PoolCapacity:       64,
+		MaxConcurrentCalls: 1024,
+		CallTimeout:        time.Second * 10,
+		PoolIdle:           time.Second * 100,
 	}
 )
 
@@ -54,6 +59,18 @@ func WithClientPoolIdle(second int) ClientOption {
 func WithClientConns(lst []string) ClientOption {
 	return func(c *ClientParm) {
 		c.AddressLst = append(c.AddressLst, lst...)
+	}
+}
+
+func WithMaxConcurrentCalls(maxCalls int) ClientOption {
+	return func(cp *ClientParm) {
+		cp.MaxConcurrentCalls = maxCalls
+	}
+}
+
+func WithCallTimeout(callTimeout time.Duration) ClientOption {
+	return func(cp *ClientParm) {
+		cp.CallTimeout = callTimeout
 	}
 }
 

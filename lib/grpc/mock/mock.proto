@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package mock;
+
+option go_package = "mock";
+
+// MockService 用于测试的服务定义
+service MockService {
+    rpc Process(MockRequest) returns (MockResponse) {}
+}
+
+// MockRequest 请求消息
+message MockRequest {
+    string message = 1;
+}
+
+// MockResponse 响应消息
+message MockResponse {
+    string message = 1;
+}

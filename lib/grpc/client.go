@@ -8,6 +8,8 @@ import (
 	"time"
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
+	"github.com/pojol/braid/lib/log"
+	"golang.org/x/sync/errgroup"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
@@ -28,6 +30,7 @@ var (
 type Client struct {
 	parm    ClientParm
 	connmap sync.Map
+	workers chan struct{} // 用于限制并发的 channel
 }
 
 func BuildClientWithOption(opts ...ClientOption) *Client {
@@ -39,7 +42,8 @@ func BuildClientWithOption(opts ...ClientOption) *Client {
 	}
 
 	return &Client{
-		parm: p,
+		parm:    p,
+		workers: make(chan struct{}, p.MaxConcurrentCalls), // 设置最大并发数
 	}
 }
 
@@ -159,12 +163,18 @@ func (c *Client) CallWait(ctx context.Context, addr, methon string, args, reply 
 }
 
 func (c *Client) Call(ctx context.Context, addr, methon string, args interface{}, opts ...interface{}) error {
+	select {
+	case c.workers <- struct{}{}: // 获取工作槽
+		defer func() { <-c.workers }() // 释放工作槽
+	case <-ctx.Done():
+		return ctx.Err()
+	}
 
 	var grpcopts []grpc.CallOption
 
 	conn, err := c.getConn(addr)
 	if err != nil {
-		fmt.Printf("[braid.client] client get conn warning %s", err.Error())
+		log.WarnF("[braid.client] client get conn warning %s", err.Error())
 		return err
 	}
 
@@ -172,18 +182,32 @@ func (c *Client) Call(ctx context.Context, addr, methon string, args interface{}
 		for _, v := range opts {
 			callopt, ok := v.(grpc.CallOption)
 			if !ok {
-				fmt.Printf("[braid.client] call option type mismatch")
+				log.WarnF("[braid.client] call option type mismatch")
 			}
 			grpcopts = append(grpcopts, callopt)
 		}
 	}
 
-	go func() {
-		err = conn.Invoke(ctx, methon, args, nil, grpcopts...)
-		if err != nil {
-			fmt.Printf("[braid.client] invoke warning %s, methon = %s, addr = %s", err.Error(), methon, addr)
+	// 使用 errgroup 来管理 goroutine
+	g, ctx := errgroup.WithContext(ctx)
+	g.Go(func() error {
+		if err := conn.Invoke(ctx, methon, args, nil, grpcopts...); err != nil {
+			return fmt.Errorf("[braid.client] invoke error: method=%s, addr=%s: %w",
+				methon, addr, err)
 		}
+		return nil
+	})
+
+	// 设置超时
+	done := make(chan error, 1)
+	go func() {
+		done <- g.Wait()
 	}()
 
-	return err
+	select {
+	case err := <-done:
+		return err
+	case <-time.After(c.parm.CallTimeout):
+		return fmt.Errorf("call timeout after %v", c.parm.CallTimeout)
+	}
 }
