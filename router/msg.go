@@ -4,6 +4,8 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"github.com/pojol/braid/def"
+	"github.com/pojol/braid/lib/log"
 	"github.com/pojol/braid/lib/warpwaitgroup"
 )
 
@@ -63,6 +65,11 @@ func (b *MsgWrapperBuilder) WithReqCustom(key, value string) *MsgWrapperBuilder 
 	return b
 }
 
+func (b *MsgWrapperBuilder) WithGateID(id string) *MsgWrapperBuilder {
+	b.WithReqCustom(def.CustomGateID, id)
+	return b
+}
+
 // WithRes set res header
 func (b *MsgWrapperBuilder) WithResHeader(h *Header) *MsgWrapperBuilder {
 	b.wrapper.Res.Header = h
@@ -85,6 +92,33 @@ func (b *MsgWrapperBuilder) WithResCustom(key, value string) *MsgWrapperBuilder 
 // Build build msg wrapper
 func (b *MsgWrapperBuilder) Build() *MsgWrapper {
 	return &b.wrapper
+}
+
+func (mw *MsgWrapper) GetGateID() string {
+	if mw == nil {
+		log.WarnF("message wrapper is nil")
+		return ""
+	}
+	if mw.Req == nil || mw.Req.Header == nil {
+		log.WarnF("invalid message structure: missing header")
+		return ""
+	}
+	if mw.Req.Header.Custom == nil {
+		log.WarnF("custom field map is nil")
+		return ""
+	}
+
+	gateID, exists := mw.Req.Header.Custom[def.CustomGateID]
+	if !exists {
+		log.WarnF("gate ID not found in message")
+		return ""
+	}
+	if gateID == "" {
+		log.WarnF("gate ID is empty")
+		return ""
+	}
+
+	return gateID
 }
 
 /*
