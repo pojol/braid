@@ -16,11 +16,14 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/redis/go-redis/v9 v9.6.1
 	github.com/stretchr/testify v1.9.0
+	github.com/traefik/yaegi v0.16.1
 	github.com/uber/jaeger-client-go v2.30.0+incompatible
 	github.com/uber/jaeger-lib v2.4.1+incompatible
 	go.mongodb.org/mongo-driver v1.16.1
 	go.uber.org/zap v1.18.1
 	golang.org/x/exp v0.0.0-20191030013958-a1ab85dbe136
+	golang.org/x/sync v0.7.0
+	golang.org/x/time v0.5.0
 	google.golang.org/grpc v1.65.0
 	k8s.io/api v0.31.0
 	k8s.io/apimachinery v0.31.0
@@ -67,11 +70,9 @@ require (
 	golang.org/x/crypto v0.24.0 // indirect
 	golang.org/x/net v0.26.0 // indirect
 	golang.org/x/oauth2 v0.21.0 // indirect
-	golang.org/x/sync v0.7.0 // indirect
 	golang.org/x/sys v0.21.0 // indirect
 	golang.org/x/term v0.21.0 // indirect
 	golang.org/x/text v0.16.0 // indirect
-	golang.org/x/time v0.5.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240528184218-531527333157 // indirect
 	google.golang.org/protobuf v1.34.2 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect

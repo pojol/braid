@@ -7,16 +7,16 @@ import (
 
 // MockActorFactory is a factory for creating actors
 type MockActorFactory struct {
-	constructors map[string]*core.ActorConstructor
+	Constructors map[string]*core.ActorConstructor
 }
 
 // NewActorFactory create new actor factory
 func BuildActorFactory() *MockActorFactory {
 	factory := &MockActorFactory{
-		constructors: make(map[string]*core.ActorConstructor),
+		Constructors: make(map[string]*core.ActorConstructor),
 	}
 
-	factory.constructors["MockUserActor"] = &core.ActorConstructor{
+	factory.Constructors["MockUserActor"] = &core.ActorConstructor{
 		ID:                  "MockUserActor",
 		Name:                "MockUserActor",
 		Weight:              80,
@@ -27,7 +27,7 @@ func BuildActorFactory() *MockActorFactory {
 		Options:             make(map[string]string),
 	}
 
-	factory.constructors["MockClacActor"] = &core.ActorConstructor{
+	factory.Constructors["MockClacActor"] = &core.ActorConstructor{
 		ID:                  "MockClacActor",
 		Name:                "MockClacActor",
 		Weight:              20,
@@ -38,7 +38,7 @@ func BuildActorFactory() *MockActorFactory {
 		Options:             make(map[string]string),
 	}
 
-	factory.constructors["MockDynamicPicker"] = &core.ActorConstructor{
+	factory.Constructors["MockDynamicPicker"] = &core.ActorConstructor{
 		ID:                  "MockDynamicPicker",
 		Name:                "MockDynamicPicker",
 		Weight:              100,
@@ -48,7 +48,7 @@ func BuildActorFactory() *MockActorFactory {
 		Options:             make(map[string]string),
 	}
 
-	factory.constructors["MockDynamicRegister"] = &core.ActorConstructor{
+	factory.Constructors["MockDynamicRegister"] = &core.ActorConstructor{
 		ID:                  "MockDynamicRegister",
 		Name:                "MockDynamicRegister",
 		Weight:              100,
@@ -58,7 +58,7 @@ func BuildActorFactory() *MockActorFactory {
 		Options:             make(map[string]string),
 	}
 
-	factory.constructors["MockActorControl"] = &core.ActorConstructor{
+	factory.Constructors["MockActorControl"] = &core.ActorConstructor{
 		ID:                  "MockActorControl",
 		Name:                "MockActorControl",
 		Weight:              100,
@@ -72,8 +72,8 @@ func BuildActorFactory() *MockActorFactory {
 }
 
 func (factory *MockActorFactory) Get(actorType string) *core.ActorConstructor {
-	if _, ok := factory.constructors[actorType]; ok {
-		return factory.constructors[actorType]
+	if _, ok := factory.Constructors[actorType]; ok {
+		return factory.Constructors[actorType]
 	}
 
 	return nil
@@ -81,7 +81,7 @@ func (factory *MockActorFactory) Get(actorType string) *core.ActorConstructor {
 
 func (factory *MockActorFactory) GetActors() []*core.ActorConstructor {
 	actors := []*core.ActorConstructor{}
-	for _, v := range factory.constructors {
+	for _, v := range factory.Constructors {
 		actors = append(actors, v)
 	}
 	return actors
