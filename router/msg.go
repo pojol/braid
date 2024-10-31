@@ -46,9 +46,31 @@ func NewMsgWrap(ctx context.Context) *MsgWrapperBuilder {
 	}
 }
 
-// WithReq set req header
 func (b *MsgWrapperBuilder) WithReqHeader(h *Header) *MsgWrapperBuilder {
-	b.wrapper.Req.Header = h
+	if b.wrapper.Req.Header != nil && h != nil {
+		// Copy fields from the input header to existing header
+		b.wrapper.Req.Header.ID = h.ID
+		b.wrapper.Req.Header.Event = h.Event
+		b.wrapper.Req.Header.OrgActorID = h.OrgActorID
+		b.wrapper.Req.Header.OrgActorType = h.OrgActorType
+		b.wrapper.Req.Header.Token = h.Token
+		b.wrapper.Req.Header.PrevActorType = h.PrevActorType
+		b.wrapper.Req.Header.TargetActorID = h.TargetActorID
+		b.wrapper.Req.Header.TargetActorType = h.TargetActorType
+
+		// Deep copy the Custom map
+		if h.Custom != nil {
+			if b.wrapper.Req.Header.Custom == nil {
+				b.wrapper.Req.Header.Custom = make(map[string]string)
+			}
+			for k, v := range h.Custom {
+				b.wrapper.Req.Header.Custom[k] = v
+			}
+		}
+	} else {
+		// If either header is nil, directly set the header
+		b.wrapper.Req.Header = h
+	}
 	return b
 }
 
