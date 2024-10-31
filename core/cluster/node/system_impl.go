@@ -308,21 +308,50 @@ func (sys *NormalSystem) Send(tar router.Target, msg *router.MsgWrapper) error {
 	msg.Req.Header.TargetActorID = tar.ID
 	msg.Req.Header.TargetActorType = tar.Ty
 
-	sys.RLock()
-	actor, isLocal := sys.actoridmap[tar.ID]
-	sys.RUnlock()
+	var info core.AddressInfo
+	var actor core.IActor
+	var err error
 
-	if isLocal {
-		// For local actors, use Received directly
-		return actor.Received(msg)
+	switch tar.ID {
+	case def.SymbolWildcard:
+		info, err = sys.addressbook.GetWildcardActor(msg.Ctx, tar.Ty)
+		// Check if the wildcard actor is local
+		sys.RLock()
+		actor, ok := sys.actoridmap[info.ActorId]
+		sys.RUnlock()
+		if ok {
+			return actor.Received(msg)
+		}
+	case def.SymbolLocalFirst:
+		actor, info, err = sys.findLocalOrWildcardActor(msg.Ctx, tar.Ty)
+		if err != nil {
+			return err
+		}
+		if actor != nil {
+			return actor.Received(msg)
+		}
+	default:
+		// First, check if it's a local call
+		sys.RLock()
+		actorp, ok := sys.actoridmap[tar.ID]
+		sys.RUnlock()
+
+		if ok {
+			return actorp.Received(msg)
+		}
+
+		// If not local, get from addressbook
+		info, err = sys.addressbook.GetByID(msg.Ctx, tar.ID)
 	}
 
-	// For remote actors, get address info
-	info, err := sys.addressbook.GetByID(msg.Ctx, tar.ID)
 	if err != nil {
 		return err
 	}
 
+	return sys.handleRemoteSend(info, msg)
+}
+
+func (sys *NormalSystem) handleRemoteSend(info core.AddressInfo, msg *router.MsgWrapper) error {
 	return sys.client.Call(msg.Ctx,
 		fmt.Sprintf("%s:%d", info.Ip, info.Port),
 		"/router.Acceptor/routing",
