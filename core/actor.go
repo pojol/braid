@@ -15,6 +15,7 @@ type IChain interface {
 type ActorContext interface {
 	// Call 使用 actor 自身发起的 call 调用
 	Call(tar router.Target, msg *router.MsgWrapper) error
+	CallBy(id string, ev string, msg *router.MsgWrapper) error
 
 	// ReenterCall 使用 actor 自身发起的 ReenterCall 调用
 	ReenterCall(ctx context.Context, tar router.Target, msg *router.MsgWrapper) IFuture

@@ -2,6 +2,7 @@ package router
 
 import (
 	"context"
+	"strconv"
 
 	"github.com/google/uuid"
 	"github.com/pojol/braid/def"
@@ -114,6 +115,48 @@ func (b *MsgWrapperBuilder) WithResCustom(key, value string) *MsgWrapperBuilder 
 // Build build msg wrapper
 func (b *MsgWrapperBuilder) Build() *MsgWrapper {
 	return &b.wrapper
+}
+
+func (mw *MsgWrapper) WithReqCustom(key, value string) {
+	if mw.Req.Header.Custom == nil {
+		mw.Req.Header.Custom = make(map[string]string)
+	}
+	mw.Req.Header.Custom[key] = value
+}
+
+func (mw *MsgWrapper) GetReqCustomStr(key string) string {
+	return mw.Req.Header.Custom[key]
+}
+
+func (mw *MsgWrapper) GetReqCustomInt(key string) int {
+	val := mw.Req.Header.Custom[key]
+	if val == "" {
+		return 0
+	}
+	i, _ := strconv.Atoi(val)
+	return i
+}
+
+func (mw *MsgWrapper) WithResCustom(key, value string) {
+	if mw.Res.Header.Custom == nil {
+		mw.Res.Header.Custom = make(map[string]string)
+	}
+	mw.Res.Header.Custom[key] = value
+}
+
+// GetResCustomString gets a string value from custom headers
+func (mw *MsgWrapper) GetResCustomStr(key string) string {
+	return mw.Res.Header.Custom[key]
+}
+
+// GetResCustomInt gets an int value from custom headers
+func (mw *MsgWrapper) GetResCustomInt(key string) int {
+	val := mw.Res.Header.Custom[key]
+	if val == "" {
+		return 0
+	}
+	i, _ := strconv.Atoi(val)
+	return i
 }
 
 func (mw *MsgWrapper) GetGateID() string {

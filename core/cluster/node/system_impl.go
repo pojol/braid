@@ -192,7 +192,6 @@ func (sys *NormalSystem) Call(tar router.Target, msg *router.MsgWrapper) error {
 		span, err := sys.trac.GetSpan(span.SystemCall)
 		if err == nil {
 			msg.Ctx = span.Begin(msg.Ctx)
-			fmt.Println(msg.Req.Header.PrevActorType, "=>", tar.Ty)
 
 			span.SetTag("actor", tar.Ty)
 			span.SetTag("event", tar.Ev)

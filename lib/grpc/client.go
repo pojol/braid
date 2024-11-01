@@ -161,52 +161,37 @@ func (c *Client) CallWait(ctx context.Context, addr, methon string, args, reply 
 	return err
 }
 
-func (c *Client) Call(ctx context.Context, addr, methon string, args interface{}, reply interface{}, opts ...interface{}) error {
+func (c *Client) Call(ctx context.Context, addr, method string, args interface{}, reply interface{}, opts ...interface{}) error {
+
 	select {
 	case c.workers <- struct{}{}: // 获取工作槽
 		defer func() { <-c.workers }() // 释放工作槽
 	case <-ctx.Done():
-		return ctx.Err()
+		return fmt.Errorf("[braid.client] failed to acquire worker: %w", ctx.Err())
 	}
-
-	var grpcopts []grpc.CallOption
 
 	conn, err := c.getConn(addr)
 	if err != nil {
-		log.WarnF("[braid.client] client get conn warning %s", err.Error())
-		return err
+		return fmt.Errorf("[braid.client] failed to get connection: %w", err)
 	}
 
-	if len(opts) != 0 {
-		for _, v := range opts {
-			callopt, ok := v.(grpc.CallOption)
-			if !ok {
-				log.WarnF("[braid.client] call option type mismatch")
-			}
+	grpcopts := make([]grpc.CallOption, 0, len(opts))
+	for _, v := range opts {
+		if callopt, ok := v.(grpc.CallOption); ok {
 			grpcopts = append(grpcopts, callopt)
+		} else {
+			return fmt.Errorf("[braid.client] invalid call option type: %T", v)
 		}
 	}
 
-	// 使用 errgroup 来管理 goroutine
-	g, ctx := errgroup.WithContext(ctx)
+	g, gCtx := errgroup.WithContext(ctx)
 	g.Go(func() error {
-		if err := conn.Invoke(ctx, methon, args, reply, grpcopts...); err != nil {
+		if err := conn.Invoke(gCtx, method, args, reply, grpcopts...); err != nil {
 			return fmt.Errorf("[braid.client] invoke error: method=%s, addr=%s: %w",
-				methon, addr, err)
+				method, addr, err)
 		}
 		return nil
 	})
 
-	// 设置超时
-	done := make(chan error, 1)
-	go func() {
-		done <- g.Wait()
-	}()
-
-	select {
-	case err := <-done:
-		return err
-	case <-time.After(c.parm.CallTimeout):
-		return fmt.Errorf("call timeout after %v", c.parm.CallTimeout)
-	}
+	return g.Wait()
 }

@@ -87,31 +87,6 @@ func TestClient_Call(t *testing.T) {
 			args:   &mock.MockRequest{Message: "test"},
 		},
 		{
-			name: "timeout",
-			setup: func() (*Client, *grpc.Server, string) {
-				mockService := &MockService{delay: time.Second * 2}
-				srv, lis := setupMockServer(t, mockService)
-				client := BuildClientWithOption(
-					WithMaxConcurrentCalls(1),
-					WithCallTimeout(time.Second),
-					WithDialOptions(grpc.WithContextDialer(getBufDialer(lis))),
-					WithClientConns([]string{"bufconn"}),
-				)
-
-				// 初始化客户端
-				err := client.Init()
-				if err != nil {
-					t.Fatalf("Failed to initialize client: %v", err)
-				}
-
-				return client, srv, "bufconn"
-			},
-			ctx:         context.Background(),
-			method:      "/mock.MockService/Process",
-			args:        &mock.MockRequest{Message: "test"},
-			expectedErr: "call timeout after 1s",
-		},
-		{
 			name: "context cancelled",
 			setup: func() (*Client, *grpc.Server, string) {
 				mockService := &MockService{}
@@ -300,17 +275,21 @@ func TestClient_Call_ResourceCleanup(t *testing.T) {
 	client := BuildClientWithOption(
 		WithMaxConcurrentCalls(1),
 		WithCallTimeout(time.Second),
+		WithDialOptions(grpc.WithContextDialer(getBufDialer(lis))),
+		WithClientConns([]string{"bufconn"}),
 	)
 
-	// 执行调用
-	err := client.Call(context.Background(), lis.Addr().String(),
+	err := client.Init()
+	if err != nil {
+		t.Fatalf("Failed to initialize client: %v", err)
+	}
+
+	err = client.Call(context.Background(), "bufconn",
 		"/mock.MockService/Process", &mock.MockRequest{Message: "test"}, &mock.MockResponse{})
 	assert.NoError(t, err)
 
-	// 验证工作槽是否被正确释放
 	select {
 	case client.workers <- struct{}{}:
-		// 如果可以获取工作槽，说明之前的调用正确释放了资源
 		<-client.workers // 释放工作槽
 	default:
 		t.Error("Worker slot was not properly released")

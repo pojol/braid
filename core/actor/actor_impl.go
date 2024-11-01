@@ -99,6 +99,20 @@ func (ac *actorContext) Call(tar router.Target, msg *router.MsgWrapper) error {
 
 	return actor.Call(tar, msg)
 }
+
+func (ac *actorContext) CallBy(id string, ev string, msg *router.MsgWrapper) error {
+	actor, ok := ac.ctx.Value(actorKey{}).(core.IActor)
+	if !ok {
+		panic(errors.New("the actor instance does not exist in the ActorContext"))
+	}
+
+	if id == "" || ev == "" {
+		panic(errors.New("callby parm err"))
+	}
+
+	return actor.Call(router.Target{ID: id, Ev: ev}, msg)
+}
+
 func (ac *actorContext) ID() string {
 	actor, ok := ac.ctx.Value(actorKey{}).(core.IActor)
 	if !ok {
@@ -107,6 +121,7 @@ func (ac *actorContext) ID() string {
 
 	return actor.ID()
 }
+
 func (ac *actorContext) Type() string {
 	actor, ok := ac.ctx.Value(actorKey{}).(core.IActor)
 	if !ok {
