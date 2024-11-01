@@ -13,6 +13,7 @@ import (
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 var (
@@ -54,23 +55,21 @@ func (c *Client) newconn(addr string) (*grpc.ClientConn, error) {
 	var conn *grpc.ClientConn
 	var err error
 
+	dialOpts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
 	if len(c.parm.UnaryInterceptors) > 0 {
-		conn, err = grpc.DialContext(ctx, addr, grpc.WithInsecure(), grpc.WithUnaryInterceptor(grpc_middleware.ChainUnaryClient(c.parm.UnaryInterceptors...)))
-		if err != nil {
-			goto EXT
-		}
-	} else {
-		conn, err = grpc.DialContext(ctx, addr, grpc.WithInsecure())
-		if err != nil {
-			goto EXT
-		}
+		dialOpts = append(dialOpts, grpc.WithUnaryInterceptor(grpc_middleware.ChainUnaryClient(c.parm.UnaryInterceptors...)))
+	}
+	if len(c.parm.dialOptions) > 0 {
+		dialOpts = append(dialOpts, c.parm.dialOptions...)
 	}
 
-EXT:
-	//c.log.InfoFf("[braid.client] new connect addr : %v err : %v", addr, err)
-	fmt.Printf("[braid.client] new connect addr : %v err : %v\n", addr, err)
+	conn, err = grpc.DialContext(ctx, addr, dialOpts...)
+	if err != nil {
+		log.WarnF("[braid.client] new connect addr : %v err : %v", addr, err)
+		return nil, err
+	}
 
-	return conn, err
+	return conn, nil
 }
 
 func (c *Client) closeconn(conn *grpc.ClientConn) error {
@@ -162,7 +161,7 @@ func (c *Client) CallWait(ctx context.Context, addr, methon string, args, reply 
 	return err
 }
 
-func (c *Client) Call(ctx context.Context, addr, methon string, args interface{}, opts ...interface{}) error {
+func (c *Client) Call(ctx context.Context, addr, methon string, args interface{}, reply interface{}, opts ...interface{}) error {
 	select {
 	case c.workers <- struct{}{}: // 获取工作槽
 		defer func() { <-c.workers }() // 释放工作槽
@@ -191,7 +190,7 @@ func (c *Client) Call(ctx context.Context, addr, methon string, args interface{}
 	// 使用 errgroup 来管理 goroutine
 	g, ctx := errgroup.WithContext(ctx)
 	g.Go(func() error {
-		if err := conn.Invoke(ctx, methon, args, nil, grpcopts...); err != nil {
+		if err := conn.Invoke(ctx, methon, args, reply, grpcopts...); err != nil {
 			return fmt.Errorf("[braid.client] invoke error: method=%s, addr=%s: %w",
 				methon, addr, err)
 		}
