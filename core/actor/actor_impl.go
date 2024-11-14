@@ -234,7 +234,7 @@ func (a *Runtime) Init(ctx context.Context) {
 	a.actorCtx.ctx = context.WithValue(a.actorCtx.ctx, systemKey{}, a.Sys)
 	a.actorCtx.ctx = context.WithValue(a.actorCtx.ctx, actorKey{}, a)
 
-	a.tw = timewheel.New(10*time.Millisecond, 100) // 100个槽位，每个槽位10ms
+	a.tw = timewheel.New(100*time.Millisecond, 100) // 100个槽位，每个槽位10ms
 	a.lastTick = time.Now()
 }
 
@@ -399,6 +399,9 @@ func (a *Runtime) ReenterCall(ctx context.Context, tar router.Target, msg *route
 }
 
 func (a *Runtime) Update() {
+	ticker := time.NewTicker(a.tw.Interval())
+	defer ticker.Stop()
+
 	checkClose := func() {
 		for !a.q.Empty() || !a.reenterQueue.Empty() {
 			time.Sleep(10 * time.Millisecond)
@@ -409,13 +412,10 @@ func (a *Runtime) Update() {
 	}
 
 	for {
-		now := time.Now()
-		if now.Sub(a.lastTick) >= a.tw.Interval() {
-			a.tw.Tick()
-			a.lastTick = now
-		}
-
 		select {
+		case <-ticker.C:
+			a.tw.Tick()
+			a.lastTick = time.Now()
 		case <-a.q.C:
 			msgInterface := a.q.Pop()
 
