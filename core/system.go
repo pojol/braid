@@ -12,7 +12,7 @@ type CreateFunc func(IActorBuilder) IActor
 
 type ISystem interface {
 	Register(IActorBuilder) (IActor, error)
-	Unregister(id string) error
+	Unregister(id, ty string) error
 
 	Actors() []IActor
 

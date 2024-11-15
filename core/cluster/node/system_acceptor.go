@@ -8,6 +8,7 @@ import (
 
 	"github.com/pojol/braid/core"
 	"github.com/pojol/braid/lib/grpc"
+	"github.com/pojol/braid/lib/log"
 	"github.com/pojol/braid/router"
 
 	realgrpc "google.golang.org/grpc"
@@ -99,7 +100,7 @@ func (s *listen) Routing(ctx context.Context, msg *router.RouteReq) (*router.Rou
 	}, warpper)
 
 	if err != nil {
-		fmt.Println("listen routing", msg.Msg.Header.Event, "err", err.Error())
+		log.InfoF("listen routing %v err %v", msg.Msg.Header.Event, err.Error())
 	}
 
 	res.Msg = warpper.Res

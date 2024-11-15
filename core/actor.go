@@ -29,12 +29,13 @@ type ActorContext interface {
 
 	// AddressBook 管理全局actor地址的对象，通常由 system 控制调用
 	AddressBook() IAddressBook
+	System() ISystem
 
 	// Loader returns the actor loader
 	Loader(string) IActorBuilder
 
 	// Unregister unregisters an actor
-	Unregister(id string) error
+	Unregister(id, ty string) error
 
 	ID() string
 	Type() string

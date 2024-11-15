@@ -2,6 +2,7 @@ package node
 
 import (
 	"context"
+	"errors"
 	fmt "fmt"
 	"sync"
 
@@ -33,6 +34,8 @@ type NormalSystem struct {
 
 	sync.RWMutex
 }
+
+var ErrSelfCall = errors.New("cannot call self node through RPC")
 
 func buildSystemWithOption(nodId, nodeIp string, nodePort int, loader core.IActorLoader, factory core.IActorFactory, trac tracer.ITracer) core.ISystem {
 	var err error
@@ -140,26 +143,29 @@ func (sys *NormalSystem) Register(builder core.IActorBuilder) (core.IActor, erro
 	return actor, nil
 }
 
-func (sys *NormalSystem) Unregister(id string) error {
+func (sys *NormalSystem) Unregister(id, ty string) error {
 	// First, check if the actor exists and get it
 	sys.RLock()
 	actor, exists := sys.actoridmap[id]
 	sys.RUnlock()
 
-	if !exists {
-		return fmt.Errorf("[braid.system] actor %s not found", id)
+	if exists {
+		// Call Exit on the actor
+		actor.Exit()
+
+		// Remove the actor from the map
+		sys.Lock()
+		delete(sys.actoridmap, id)
+		sys.Unlock()
 	}
 
-	// Call Exit on the actor
-	actor.Exit()
-
-	// Remove the actor from the map
-	sys.Lock()
-	delete(sys.actoridmap, id)
-	sys.Unlock()
-
 	// Unregister from the address book
-	err := sys.addressbook.Unregister(context.TODO(), id, sys.factory.Get(actor.Type()).Weight)
+	ac := sys.factory.Get(ty)
+	if ac == nil {
+		return fmt.Errorf("[braid.system] unregister actor id %v unknown type %v", id, ty)
+	}
+
+	err := sys.addressbook.Unregister(context.TODO(), id, sys.factory.Get(ty).Weight)
 	if err != nil {
 		// Log the error, but don't return it as the actor has already been removed locally
 		log.WarnF("[braid.system] Failed to unregister actor %s from address book: %v", id, err)
@@ -209,7 +215,7 @@ func (sys *NormalSystem) Call(tar router.Target, msg *router.MsgWrapper) error {
 		actor, ok := sys.actoridmap[info.ActorId]
 		sys.RUnlock()
 		if ok {
-			return sys.handleLocalCall(actor, msg)
+			return sys.localCall(actor, msg)
 		}
 	case def.SymbolLocalFirst:
 		actor, info, err = sys.findLocalOrWildcardActor(msg.Ctx, tar.Ty)
@@ -218,7 +224,7 @@ func (sys *NormalSystem) Call(tar router.Target, msg *router.MsgWrapper) error {
 		}
 		if actor != nil {
 			// Local call
-			return sys.handleLocalCall(actor, msg)
+			return sys.localCall(actor, msg)
 		}
 	default:
 		// First, check if it's a local call
@@ -227,7 +233,7 @@ func (sys *NormalSystem) Call(tar router.Target, msg *router.MsgWrapper) error {
 		sys.RUnlock()
 
 		if ok {
-			return sys.handleLocalCall(actorp, msg)
+			return sys.localCall(actorp, msg)
 		}
 
 		// If not local, get from addressbook
@@ -236,6 +242,11 @@ func (sys *NormalSystem) Call(tar router.Target, msg *router.MsgWrapper) error {
 
 	if err != nil {
 		return err
+	}
+
+	if info.Ip == sys.nodeIP && info.Port == sys.nodePort {
+		log.WarnF("[system.call] err actorTy %v actorID %v call ev %v self-call", tar.Ty, tar.ID, tar.Ev)
+		return ErrSelfCall
 	}
 
 	// At this point, we know it's a remote call
@@ -257,7 +268,7 @@ func (sys *NormalSystem) findLocalOrWildcardActor(ctx context.Context, ty string
 	return nil, info, err
 }
 
-func (sys *NormalSystem) handleLocalCall(actorp core.IActor, msg *router.MsgWrapper) error {
+func (sys *NormalSystem) localCall(actorp core.IActor, msg *router.MsgWrapper) error {
 	root := msg.Wg.Count() == 0
 	if root {
 		msg.Done = make(chan struct{})
@@ -345,6 +356,11 @@ func (sys *NormalSystem) Send(tar router.Target, msg *router.MsgWrapper) error {
 
 	if err != nil {
 		return err
+	}
+
+	if info.Ip == sys.nodeIP && info.Port == sys.nodePort {
+		log.WarnF("[system.call] err actorTy %v actorID %v call ev %v self-call", tar.Ty, tar.ID, tar.Ev)
+		return ErrSelfCall
 	}
 
 	return sys.handleRemoteSend(info, msg)

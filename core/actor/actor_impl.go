@@ -149,13 +149,13 @@ func (ac *actorContext) Send(tar router.Target, msg *router.MsgWrapper) error {
 	return sys.Send(tar, msg)
 }
 
-func (ac *actorContext) Unregister(id string) error {
+func (ac *actorContext) Unregister(id, ty string) error {
 	sys, ok := ac.ctx.Value(systemKey{}).(core.ISystem)
 	if !ok {
 		panic(errors.New("the system instance does not exist in the ActorContext"))
 	}
 
-	return sys.Unregister(id)
+	return sys.Unregister(id, ty)
 }
 
 func (ac *actorContext) Pub(topic string, msg *router.Message) error {
@@ -174,6 +174,15 @@ func (ac *actorContext) AddressBook() core.IAddressBook {
 	}
 
 	return sys.AddressBook()
+}
+
+func (ac *actorContext) System() core.ISystem {
+	sys, ok := ac.ctx.Value(systemKey{}).(core.ISystem)
+	if !ok {
+		panic(errors.New("the system instance does not exist in the ActorContext"))
+	}
+
+	return sys
 }
 
 func (ac *actorContext) Loader(actorType string) core.IActorBuilder {
@@ -438,10 +447,10 @@ func (a *Runtime) Update() {
 				if chain, ok := a.chains[msg.Req.Header.Event]; ok {
 					err := chain.Execute(msg)
 					if err != nil {
-						fmt.Printf("actor %v execute %v chain err %v\n", a.Id, msg.Req.Header.Event, err)
+						log.WarnF("actor %v execute %v chain err %v", a.Id, msg.Req.Header.Event, err)
 					}
 				} else {
-					fmt.Printf("actor %v No handlers for message type: %s\n", a.Id, msg.Req.Header.Event)
+					log.WarnF("actor %v No handlers for message type: %s", a.Id, msg.Req.Header.Event)
 				}
 			}()
 
