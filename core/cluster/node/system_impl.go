@@ -207,6 +207,10 @@ func (sys *NormalSystem) Call(tar router.Target, msg *router.MsgWrapper) error {
 		}
 	}
 
+	if tar.ID == "" {
+		return fmt.Errorf("[braid.system] call unknown target id")
+	}
+
 	switch tar.ID {
 	case def.SymbolWildcard:
 		info, err = sys.addressbook.GetWildcardActor(msg.Ctx, tar.Ty)
@@ -321,6 +325,10 @@ func (sys *NormalSystem) Send(tar router.Target, msg *router.MsgWrapper) error {
 	var info core.AddressInfo
 	var actor core.IActor
 	var err error
+
+	if tar.ID == "" {
+		return fmt.Errorf("[braid.system] send unknown target id")
+	}
 
 	switch tar.ID {
 	case def.SymbolWildcard:
