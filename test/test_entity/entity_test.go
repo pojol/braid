@@ -12,6 +12,7 @@ import (
 	"github.com/pojol/braid/core/cluster/node"
 	"github.com/pojol/braid/lib/log"
 	"github.com/pojol/braid/router"
+	"github.com/pojol/braid/router/msg"
 	"github.com/pojol/braid/test/mockdata"
 	"github.com/stretchr/testify/assert"
 )
@@ -98,10 +99,11 @@ func TestEntityLoad(t *testing.T) {
 	// load entity with db and sync to redis
 	sys := mockEntity(id)
 
-	msg := router.NewMsgWrap(context.TODO()).Build()
-	sys.Call(router.Target{ID: id, Ty: ty, Ev: "entity_test"}, msg)
+	m := msg.NewBuilder(context.TODO()).Build()
+	sys.Call(router.Target{ID: id, Ty: ty, Ev: "entity_test"}, m)
 
-	assert.Equal(t, msg.Res.Header.Custom["code"], "200")
+	assert.Equal(t, m.Err, nil)
+	assert.Equal(t, msg.GetResField[string](m, "code"), "200")
 	a, e := sys.FindActor(context.TODO(), id)
 	assert.NoError(t, e, nil)
 

@@ -2,6 +2,8 @@ package log
 
 import (
 	"fmt"
+	"runtime"
+	"strings"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -21,6 +23,29 @@ type helper struct {
 
 func NewHelper(logger *zap.Logger, tag string) Helper {
 	return &helper{logger: logger, tag: tag}
+}
+
+func getStackTrace() string {
+	// 分配调用栈空间
+	const depth = 64
+	var pcs [depth]uintptr
+	n := runtime.Callers(2, pcs[:])
+	frames := runtime.CallersFrames(pcs[:n])
+
+	var builder strings.Builder
+	builder.WriteString("\nStack Trace:\n")
+
+	for {
+		frame, more := frames.Next()
+		builder.WriteString(fmt.Sprintf("%s\n\t%s:%d\n",
+			frame.Function,
+			frame.File,
+			frame.Line))
+		if !more {
+			break
+		}
+	}
+	return builder.String()
 }
 
 func (h *helper) SystemLog(level zapcore.Level, code LogECode, id LogAccID, path LogPath, token LogToken, ip LogRealIP, format string, v ...interface{}) {
@@ -55,7 +80,21 @@ func (h *helper) Log(level zapcore.Level, format string, v ...interface{}) {
 		return
 	}
 
+	var stack_trace zapcore.Field
 	msg := fmt.Sprintf(format, v...)
+
+	if level == zapcore.ErrorLevel || level == zapcore.WarnLevel {
+		stackInfo := getStackTrace()
+		stack_trace = zap.String("stack_trace", stackInfo)
+
+		// 控制台输出，使用不同颜色区分
+		if level == zapcore.ErrorLevel {
+			fmt.Printf("\033[31m[ERROR] %s\n%s\033[0m\n", msg, stackInfo) // 红色
+		} else {
+			fmt.Printf("\033[33m[WARN] %s\n%s\033[0m\n", msg, stackInfo) // 黄色
+		}
+	}
+
 	field := zap.String(ServerTagKey, h.tag)
 	switch level {
 	case zapcore.DebugLevel:
@@ -63,9 +102,9 @@ func (h *helper) Log(level zapcore.Level, format string, v ...interface{}) {
 	case zapcore.InfoLevel:
 		h.logger.Info(msg, field)
 	case zapcore.WarnLevel:
-		h.logger.Warn(msg, field)
+		h.logger.Warn(msg, field, stack_trace)
 	case zapcore.ErrorLevel:
-		h.logger.Error(msg, field)
+		h.logger.Error(msg, field, stack_trace)
 	case zapcore.DPanicLevel:
 		h.logger.DPanic(msg, field)
 	case zapcore.PanicLevel:

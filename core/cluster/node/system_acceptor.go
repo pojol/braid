@@ -10,6 +10,7 @@ import (
 	"github.com/pojol/braid/lib/grpc"
 	"github.com/pojol/braid/lib/log"
 	"github.com/pojol/braid/router"
+	"github.com/pojol/braid/router/msg"
 
 	realgrpc "google.golang.org/grpc"
 
@@ -79,30 +80,28 @@ func (acceptor *Acceptor) Exit() {
 }
 
 // acceptor routing
-func (s *listen) Routing(ctx context.Context, msg *router.RouteReq) (*router.RouteRes, error) {
+func (s *listen) Routing(ctx context.Context, req *router.RouteReq) (*router.RouteRes, error) {
 	res := &router.RouteRes{}
-	warpper := &router.MsgWrapper{
+	mw := &msg.Wrapper{
 		Ctx: ctx,
-		Req: msg.Msg,
+		Req: req.Msg,
 		Res: &router.Message{
-			Header: &router.Header{
-				Custom: make(map[string]string),
-			},
+			Header: &router.Header{},
 		},
 	}
 
-	warpper.Req.Header.PrevActorType = "GrpcAcceptor"
+	mw.Req.Header.PrevActorType = "GrpcAcceptor"
 
 	err := s.sys.Call(router.Target{
-		ID: msg.Msg.Header.TargetActorID,
-		Ty: msg.Msg.Header.TargetActorType,
-		Ev: msg.Msg.Header.Event,
-	}, warpper)
+		ID: req.Msg.Header.TargetActorID,
+		Ty: req.Msg.Header.TargetActorType,
+		Ev: req.Msg.Header.Event,
+	}, mw)
 
 	if err != nil {
-		log.InfoF("listen routing %v err %v", msg.Msg.Header.Event, err.Error())
+		log.InfoF("listen routing %v err %v", req.Msg.Header.Event, err.Error())
 	}
 
-	res.Msg = warpper.Res
+	res.Msg = mw.Res
 	return res, nil
 }

@@ -12,6 +12,7 @@ import (
 	"github.com/pojol/braid/core/cluster/node"
 	"github.com/pojol/braid/lib/log"
 	"github.com/pojol/braid/router"
+	"github.com/pojol/braid/router/msg"
 	"github.com/pojol/braid/test/mockdata"
 	"github.com/stretchr/testify/assert"
 )
@@ -51,7 +52,7 @@ func TestReenterCall(t *testing.T) {
 
 	time.Sleep(time.Second)
 
-	err = nod.System().Call(router.Target{ID: "clac-1", Ty: "MockClacActor", Ev: "mockreenter"}, router.NewMsgWrap(context.TODO()).Build())
+	err = nod.System().Call(router.Target{ID: "clac-1", Ty: "MockClacActor", Ev: "mockreenter"}, msg.NewBuilder(context.TODO()).Build())
 	assert.Equal(t, err, nil)
 
 	time.Sleep(time.Second * 2)

@@ -5,7 +5,8 @@ import (
 
 	"github.com/pojol/braid/core"
 	"github.com/pojol/braid/core/actor"
-	"github.com/pojol/braid/router"
+	"github.com/pojol/braid/def"
+	"github.com/pojol/braid/router/msg"
 )
 
 type dynamicRegisterActor struct {
@@ -26,16 +27,21 @@ func (a *dynamicRegisterActor) Init(ctx context.Context) {
 	a.RegisterEvent("MockDynamicRegister", func(ctx core.ActorContext) core.IChain {
 		return &actor.DefaultChain{
 
-			Handler: func(mw *router.MsgWrapper) error {
+			Handler: func(mw *msg.Wrapper) error {
 
-				actor_ty := mw.Req.Header.Custom["actor_ty"]
-				actor_id := mw.Req.Header.Custom["actor_id"]
+				actor_ty := msg.GetReqField[string](mw, def.KeyActorTy)
+				actor_id := msg.GetReqField[string](mw, def.KeyActorID)
 
 				builder := ctx.Loader(actor_ty)
 				builder.WithID(actor_id)
 
-				for k, v := range mw.Req.Header.Custom {
-					builder.WithOpt(k, v)
+				m, err := mw.GetReqCustomMap()
+				if err != nil {
+					return err
+				}
+
+				for k, v := range m {
+					builder.WithOpt(k, v.(string))
 				}
 
 				actor, err := builder.Register()
