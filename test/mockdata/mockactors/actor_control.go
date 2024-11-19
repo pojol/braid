@@ -6,7 +6,7 @@ import (
 	"github.com/pojol/braid/core"
 	"github.com/pojol/braid/core/actor"
 	"github.com/pojol/braid/lib/log"
-	"github.com/pojol/braid/router"
+	"github.com/pojol/braid/router/msg"
 )
 
 type controlActor struct {
@@ -24,10 +24,10 @@ func (a *controlActor) Init(ctx context.Context) {
 
 	a.RegisterEvent("MockUnregister", func(ctx core.ActorContext) core.IChain {
 		return &actor.DefaultChain{
-			Handler: func(mw *router.MsgWrapper) error {
+			Handler: func(mw *msg.Wrapper) error {
 
-				actor_id := mw.Req.Header.Custom["actor_id"]
-				actor_ty := mw.Req.Header.Custom["actor_ty"]
+				actor_id := msg.GetReqField[string](mw, "actor_id")
+				actor_ty := msg.GetReqField[string](mw, "actor_ty")
 
 				err := ctx.Unregister(actor_id, actor_ty)
 				if err != nil {

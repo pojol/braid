@@ -6,23 +6,24 @@ import (
 	"github.com/pojol/braid/lib/pubsub"
 	"github.com/pojol/braid/lib/timewheel"
 	"github.com/pojol/braid/router"
+	"github.com/pojol/braid/router/msg"
 )
 
 type IChain interface {
-	Execute(*router.MsgWrapper) error
+	Execute(*msg.Wrapper) error
 }
 
 type ActorContext interface {
 	// Call 使用 actor 自身发起的 call 调用
-	Call(tar router.Target, msg *router.MsgWrapper) error
-	CallBy(id string, ev string, msg *router.MsgWrapper) error
+	Call(tar router.Target, mw *msg.Wrapper) error
+	CallBy(id string, ev string, mw *msg.Wrapper) error
 
 	// ReenterCall 使用 actor 自身发起的 ReenterCall 调用
-	ReenterCall(ctx context.Context, tar router.Target, msg *router.MsgWrapper) IFuture
+	ReenterCall(ctx context.Context, tar router.Target, mw *msg.Wrapper) IFuture
 
 	// Send sends an event to another actor
 	// Asynchronous call semantics, does not block the current goroutine, used for long-running RPC calls
-	Send(tar router.Target, msg *router.MsgWrapper) error
+	Send(tar router.Target, mw *msg.Wrapper) error
 
 	// Pub semantics for pubsub, used to publish messages to an actor's message cache queue
 	Pub(topic string, msg *router.Message) error
@@ -60,10 +61,10 @@ type ActorContext interface {
 }
 
 type IFuture interface {
-	Complete(*router.MsgWrapper)
+	Complete(*msg.Wrapper)
 	IsCompleted() bool
 
-	Then(func(*router.MsgWrapper)) IFuture
+	Then(func(*msg.Wrapper)) IFuture
 }
 
 // IActor is an abstraction of threads (goroutines). In a Node (process),
@@ -78,7 +79,7 @@ type IActor interface {
 	Type() string
 
 	// Received pushes a message into the actor's mailbox
-	Received(msg *router.MsgWrapper) error
+	Received(mw *msg.Wrapper) error
 
 	// RegisterEvent registers an event handling chain for the actor
 	RegisterEvent(ev string, createChainF func(ActorContext) IChain) error
@@ -101,9 +102,9 @@ type IActor interface {
 	Update()
 
 	// Call sends an event to another actor
-	Call(tar router.Target, msg *router.MsgWrapper) error
+	Call(tar router.Target, mw *msg.Wrapper) error
 
-	ReenterCall(ctx context.Context, tar router.Target, msg *router.MsgWrapper) IFuture
+	ReenterCall(ctx context.Context, tar router.Target, mw *msg.Wrapper) IFuture
 
 	Context() ActorContext
 
