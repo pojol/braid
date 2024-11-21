@@ -1,23 +1,20 @@
-# Braid A Lightweight Actor Framework Simplifying Game Development
-> Braid is an innovative serverless game framework driven by the Actor model at its core. It achieves intelligent load management through a unified addressing system, allowing developers to focus on designing and implementing Actors without the need to concern themselves with complex distributed system components.
-
+# Braid 一个轻量级的 Actor 游戏开发框架
+> Braid 是一个以 Actor 模型为核心驱动的创新型无服务器游戏框架。它通过统一的寻址系统实现自动负载管理，使开发者能够专注于设计和实现，而无需关心复杂的分布式系统组件。
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/pojol/braid?style=flat-square)](https://goreportcard.com/report/github.com/pojol/braid)
 [![Demo](https://img.shields.io/badge/demo-braid--demo-brightgreen?style=flat-square)](https://github.com/pojol/braid-demo)
 [![Documentation](https://img.shields.io/badge/Documentation-Available-brightgreen)](https://pojol.github.io/braid/#/)
 [![Discord](https://img.shields.io/discord/1210543471593791488?color=7289da&label=Discord&logo=discord&style=flat-square)](https://discord.gg/yXJgTrkWxT)
 
-[![image.png](https://i.postimg.cc/pr9vjVDm/image.png)](https://postimg.cc/T5XBM6Nx)
+[![image.png](https://i.postimg.cc/BbvzLhfN/image.png)](https://postimg.cc/Vr3g2W6b)
 
-[中文](https://github.com/pojol/braid/blob/master/README_CN.md)
+### 特性
+* 以 Actor 为中心：框架本质上是 Actor 的集合，简化了分布式逻辑。
+* 自动负载均衡：通过寻址系统实现自动资源分配。
+* 专注开发：无需考虑服务或集群等底层架构，专注于游戏逻辑。
 
-### Features
-* Actor-Centric: The framework is essentially a collection of Actors, simplifying distributed logic.
-* Automatic Load Balancing: Intelligent resource allocation through the addressing system.
-* Development Focus: No need to consider underlying architecture like services or clusters; concentrate on game logic.
-
-### 1. Quick Start
-> Install the scaffold project using the braid-cli tool
+### 1. 快速开始
+> 使用 braid-cli 工具安装脚手架项目
 
 ```shell
 # 1. Install CLI Tool
@@ -35,8 +32,8 @@ $ cd you-project-name/services/demo-1
 $ go run main.go
 ```
 
-### 2. Create a new actor and load it into the cluster
-> Write node.yaml to register actor templates to nodes (containers)
+### 2. 创建新的 actor 并将其加载到集群中
+> 编写 node.yaml 将 actor 模板注册到节点（容器）中
 
 ```yaml
 actors:
@@ -46,7 +43,7 @@ actors:
     weight: 100
     limit: 10000
 ```
-> Create actor constructors and bind them to the factory
+> 将 actor 的构建函数绑定到 actor 工厂中
 
 ```golang
 type userActor struct {
@@ -71,10 +68,10 @@ case template.USER:
     factory.bind("USER", v.Unique, v.Weight, v.Limit, NewUserActor)
 ```
 
-### 3. Implement logic for the actor
-> Note: All handling functions (events, timers) registered in the actor are processed synchronously. Users do not need to concern themselves with asynchronous logic within the actor.
+### 3. 实现 actor 的逻辑
+> 注意：在 actor 中注册的所有处理函数（事件、定时器）都是同步处理的，用户无需关心集群内部的异步逻辑。
 
-> Bind event handler
+> 绑定事件函数具柄
 ```go
 user.RegisterEvent("use_item", func(ctx core.ActorContext) *actor.DefaultChain {
     // use middleware
@@ -94,7 +91,7 @@ user.RegisterEvent("use_item", func(ctx core.ActorContext) *actor.DefaultChain {
     }
 })
 ```
-> Bind timer handler
+> 绑定 timer handler
 ```go
 user.RegisterTimer(0, 1000, func(ctx core.ActorContext) error {
 
@@ -110,7 +107,7 @@ user.RegisterTimer(0, 1000, func(ctx core.ActorContext) error {
     return nil
 })
 ```
-> Subscribe to messages and bind event handler
+> 订阅消息（mq
 ```go
 user.SubscriptionEvent("offline_messages", a.Id, func() {
 
