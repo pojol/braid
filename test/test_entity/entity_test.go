@@ -19,11 +19,27 @@ import (
 	"github.com/pojol/braid/test/mockdata/mockactors"
 	"github.com/pojol/braid/test/mockdata/mockentity"
 	"github.com/stretchr/testify/assert"
+	"github.com/tryvium-travels/memongo"
 )
 
 func TestMain(m *testing.M) {
 	slog, _ := log.NewServerLogger("test")
 	log.SetSLog(slog)
+
+	mongoServer, err := memongo.Start("4.0.5") // 指定 MongoDB 版本
+	if err != nil {
+		panic(err)
+	}
+	defer mongoServer.Stop()
+
+	// 获取连接地址
+	mongoURI := mongoServer.URIWithRandomDB()
+
+	// 初始化你的 MongoDB 客户端
+	mgo.Build(mgo.AppendConn(mgo.ConnInfo{
+		Name: "braid-test",
+		Addr: mongoURI,
+	}))
 
 	mr, err := miniredis.Run()
 	if err != nil {
@@ -90,11 +106,6 @@ func mockEntity(id string) core.ISystem {
 }
 
 func TestEntityLoad(t *testing.T) {
-	// use mock redis
-	mgo.Build(mgo.AppendConn(mgo.ConnInfo{
-		Name: "braid-test",
-		Addr: "mongodb://127.0.0.1:27017",
-	}))
 
 	id := "test.actor.1"
 	ty := "mockUserActor"
@@ -132,11 +143,6 @@ func TestEntityStore(t *testing.T) {
 }
 
 func TestEntityDB(t *testing.T) {
-	mgo.Build(mgo.AppendConn(mgo.ConnInfo{
-		Name: "braid-test",
-		Addr: "mongodb://127.0.0.1:27017",
-	}))
-
 	mockactorid := "test.actor.1"
 
 	warp1 := mockentity.NewEntityWapper(mockactorid)

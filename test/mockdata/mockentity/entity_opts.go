@@ -1,4 +1,4 @@
-package actor
+package mockentity
 
 import "github.com/pojol/braid/core"
 

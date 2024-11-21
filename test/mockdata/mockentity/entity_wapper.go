@@ -5,7 +5,6 @@ import (
 	"reflect"
 
 	"github.com/pojol/braid/core"
-	"github.com/pojol/braid/core/actor"
 )
 
 type EntityWapper struct {
@@ -55,7 +54,7 @@ func NewEntityWapper(id string) *EntityWapper {
 	e := &EntityWapper{
 		ID: id,
 	}
-	e.cs = actor.BuildEntityLoader("braid-test", "entity_test", e)
+	e.cs = BuildEntityLoader("braid-test", "entity_test", e)
 	return e
 }
 
