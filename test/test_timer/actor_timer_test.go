@@ -7,10 +7,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/alicebob/miniredis/v2"
 	"github.com/pojol/braid/3rd/redis"
 	"github.com/pojol/braid/core"
 	"github.com/pojol/braid/core/actor"
-	"github.com/pojol/braid/core/cluster/node"
+	"github.com/pojol/braid/core/node"
 	"github.com/pojol/braid/lib/log"
 	"github.com/pojol/braid/test/mockdata"
 )
@@ -20,6 +21,13 @@ func TestMain(m *testing.M) {
 	log.SetSLog(slog)
 
 	defer log.Sync()
+
+	mr, err := miniredis.Run()
+	if err != nil {
+		panic(err)
+	}
+	defer mr.Close()
+	redis.BuildClientWithOption(redis.WithAddr(fmt.Sprintf("redis://%s", mr.Addr())))
 
 	os.Exit(m.Run())
 }
@@ -44,8 +52,6 @@ func (ta *MockTimerActor) Init(ctx context.Context) {
 }
 
 func TestActorTimer(t *testing.T) {
-	redis.BuildClientWithOption(redis.WithAddr("redis://127.0.0.1:6379/0"))
-	redis.FlushAll(context.TODO()) // clean cache
 
 	factory := mockdata.BuildActorFactory()
 	factory.Constructors["MockTimerActor"] = &core.ActorConstructor{

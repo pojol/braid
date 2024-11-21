@@ -1,4 +1,4 @@
-package mockdata
+package mockactors
 
 import (
 	"context"
@@ -7,17 +7,18 @@ import (
 	"github.com/pojol/braid/core"
 	"github.com/pojol/braid/core/actor"
 	"github.com/pojol/braid/router/msg"
+	"github.com/pojol/braid/test/mockdata/mockentity"
 )
 
 type MockUserActor struct {
 	*actor.Runtime
-	State *EntityWapper
+	State *mockentity.EntityWapper
 }
 
 func NewUserActor(p core.IActorBuilder) core.IActor {
 	return &MockUserActor{
 		Runtime: &actor.Runtime{Id: p.GetID(), Ty: "MockUserActor"},
-		State:   NewEntityWapper(p.GetID()),
+		State:   mockentity.NewEntityWapper(p.GetID()),
 	}
 }
 
