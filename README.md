@@ -7,6 +7,8 @@
 [![Documentation](https://img.shields.io/badge/Documentation-Available-brightgreen)](https://pojol.github.io/braid/#/)
 [![Discord](https://img.shields.io/discord/1210543471593791488?color=7289da&label=Discord&logo=discord&style=flat-square)](https://discord.gg/yXJgTrkWxT)
 
+[![image.png](https://i.postimg.cc/pr9vjVDm/image.png)](https://postimg.cc/T5XBM6Nx)
+
 ### Features
 * Actor-Centric: The framework is essentially a collection of Actors, simplifying distributed logic.
 * Automatic Load Balancing: Intelligent resource allocation through the addressing system.
