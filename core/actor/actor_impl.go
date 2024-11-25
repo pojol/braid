@@ -15,14 +15,15 @@ import (
 	"github.com/pojol/braid/lib/pubsub"
 	"github.com/pojol/braid/lib/timewheel"
 	"github.com/pojol/braid/router"
+	"github.com/pojol/braid/router/msg"
 )
 
 // Future represents an asynchronous operation
 type Future struct {
-	result    *router.MsgWrapper
+	result    *msg.Wrapper
 	err       error
 	done      chan struct{}
-	callbacks []func(msg *router.MsgWrapper)
+	callbacks []func(mw *msg.Wrapper)
 	mutex     sync.Mutex
 }
 
@@ -32,7 +33,7 @@ func NewFuture() *Future {
 	}
 }
 
-func (f *Future) Then(callback func(msg *router.MsgWrapper)) core.IFuture {
+func (f *Future) Then(callback func(mw *msg.Wrapper)) core.IFuture {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -42,15 +43,15 @@ func (f *Future) Then(callback func(msg *router.MsgWrapper)) core.IFuture {
 	}
 
 	newFuture := NewFuture()
-	f.callbacks = append(f.callbacks, func(msg *router.MsgWrapper) {
-		callback(msg)
-		newFuture.Complete(msg)
+	f.callbacks = append(f.callbacks, func(mw *msg.Wrapper) {
+		callback(mw)
+		newFuture.Complete(mw)
 	})
 
 	return newFuture
 }
 
-func (f *Future) Complete(result *router.MsgWrapper) {
+func (f *Future) Complete(result *msg.Wrapper) {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
 
@@ -82,7 +83,7 @@ type reenterMessage struct {
 }
 
 type RecoveryFunc func(interface{})
-type EventHandler func(*router.MsgWrapper) error
+type EventHandler func(*msg.Wrapper) error
 
 type systemKey struct{}
 type actorKey struct{}
@@ -91,14 +92,28 @@ type actorContext struct {
 	ctx context.Context
 }
 
-func (ac *actorContext) Call(tar router.Target, msg *router.MsgWrapper) error {
+func (ac *actorContext) Call(tar router.Target, mw *msg.Wrapper) error {
 	actor, ok := ac.ctx.Value(actorKey{}).(core.IActor)
 	if !ok {
 		panic(errors.New("the actor instance does not exist in the ActorContext"))
 	}
 
-	return actor.Call(tar, msg)
+	return actor.Call(tar, mw)
 }
+
+func (ac *actorContext) CallBy(id string, ev string, mw *msg.Wrapper) error {
+	actor, ok := ac.ctx.Value(actorKey{}).(core.IActor)
+	if !ok {
+		panic(errors.New("the actor instance does not exist in the ActorContext"))
+	}
+
+	if id == "" || ev == "" {
+		panic(errors.New("callby parm err"))
+	}
+
+	return actor.Call(router.Target{ID: id, Ev: ev}, mw)
+}
+
 func (ac *actorContext) ID() string {
 	actor, ok := ac.ctx.Value(actorKey{}).(core.IActor)
 	if !ok {
@@ -107,6 +122,7 @@ func (ac *actorContext) ID() string {
 
 	return actor.ID()
 }
+
 func (ac *actorContext) Type() string {
 	actor, ok := ac.ctx.Value(actorKey{}).(core.IActor)
 	if !ok {
@@ -116,31 +132,31 @@ func (ac *actorContext) Type() string {
 	return actor.Type()
 }
 
-func (ac *actorContext) ReenterCall(ctx context.Context, tar router.Target, msg *router.MsgWrapper) core.IFuture {
+func (ac *actorContext) ReenterCall(ctx context.Context, tar router.Target, mw *msg.Wrapper) core.IFuture {
 	actor, ok := ac.ctx.Value(actorKey{}).(core.IActor)
 	if !ok {
 		panic(errors.New("the actor instance does not exist in the ActorContext"))
 	}
 
-	return actor.ReenterCall(ctx, tar, msg)
+	return actor.ReenterCall(ctx, tar, mw)
 }
 
-func (ac *actorContext) Send(tar router.Target, msg *router.MsgWrapper) error {
+func (ac *actorContext) Send(tar router.Target, mw *msg.Wrapper) error {
 	sys, ok := ac.ctx.Value(systemKey{}).(core.ISystem)
 	if !ok {
 		panic(errors.New("the system instance does not exist in the ActorContext"))
 	}
 
-	return sys.Send(tar, msg)
+	return sys.Send(tar, mw)
 }
 
-func (ac *actorContext) Unregister(id string) error {
+func (ac *actorContext) Unregister(id, ty string) error {
 	sys, ok := ac.ctx.Value(systemKey{}).(core.ISystem)
 	if !ok {
 		panic(errors.New("the system instance does not exist in the ActorContext"))
 	}
 
-	return sys.Unregister(id)
+	return sys.Unregister(id, ty)
 }
 
 func (ac *actorContext) Pub(topic string, msg *router.Message) error {
@@ -159,6 +175,15 @@ func (ac *actorContext) AddressBook() core.IAddressBook {
 	}
 
 	return sys.AddressBook()
+}
+
+func (ac *actorContext) System() core.ISystem {
+	sys, ok := ac.ctx.Value(systemKey{}).(core.ISystem)
+	if !ok {
+		panic(errors.New("the system instance does not exist in the ActorContext"))
+	}
+
+	return sys
 }
 
 func (ac *actorContext) Loader(actorType string) core.IActorBuilder {
@@ -219,7 +244,7 @@ func (a *Runtime) Init(ctx context.Context) {
 	a.actorCtx.ctx = context.WithValue(a.actorCtx.ctx, systemKey{}, a.Sys)
 	a.actorCtx.ctx = context.WithValue(a.actorCtx.ctx, actorKey{}, a)
 
-	a.tw = timewheel.New(10*time.Millisecond, 100) // 100个槽位，每个槽位10ms
+	a.tw = timewheel.New(100*time.Millisecond, 100) // 100个槽位，每个槽位10ms
 	a.lastTick = time.Now()
 }
 
@@ -280,38 +305,38 @@ func (a *Runtime) SubscriptionEvent(topic string, channel string, succ func(), o
 	return nil
 }
 
-func (a *Runtime) Call(tar router.Target, msg *router.MsgWrapper) error {
+func (a *Runtime) Call(tar router.Target, mw *msg.Wrapper) error {
 
-	if msg.Req.Header.OrgActorID == "" { // Only record the original sender
-		msg.Req.Header.OrgActorID = a.Id
-		msg.Req.Header.OrgActorType = a.Ty
+	if mw.Req.Header.OrgActorID == "" { // Only record the original sender
+		mw.Req.Header.OrgActorID = a.Id
+		mw.Req.Header.OrgActorType = a.Ty
 	}
 
 	// Updated to the latest value on each call
-	msg.Req.Header.PrevActorType = a.Ty
+	mw.Req.Header.PrevActorType = a.Ty
 
-	return a.Sys.Call(tar, msg)
+	return a.Sys.Call(tar, mw)
 }
 
-func (a *Runtime) Received(msg *router.MsgWrapper) error {
+func (a *Runtime) Received(mw *msg.Wrapper) error {
 
-	msg.Wg.Add(1)
+	mw.Wg.Add(1)
 	if atomic.LoadInt32(&a.closed) == 0 { // 并不是所有的actor都需要处理退出信号
-		a.q.Push(msg)
+		a.q.Push(mw)
 	}
 
 	return nil
 }
 
-func (a *Runtime) ReenterCall(ctx context.Context, tar router.Target, msg *router.MsgWrapper) core.IFuture {
+func (a *Runtime) ReenterCall(ctx context.Context, tar router.Target, rmw *msg.Wrapper) core.IFuture {
 	future := NewFuture()
 
 	// 准备消息头
-	if msg.Req.Header.OrgActorID == "" {
-		msg.Req.Header.OrgActorID = a.Id
-		msg.Req.Header.OrgActorType = a.Ty
+	if rmw.Req.Header.OrgActorID == "" {
+		rmw.Req.Header.OrgActorID = a.Id
+		rmw.Req.Header.OrgActorType = a.Ty
 	}
-	msg.Req.Header.PrevActorType = a.Ty
+	rmw.Req.Header.PrevActorType = a.Ty
 
 	// 创建一个带有取消功能的新 context
 	ctxWithCancel, cancel := context.WithCancel(ctx)
@@ -323,43 +348,45 @@ func (a *Runtime) ReenterCall(ctx context.Context, tar router.Target, msg *route
 		defer cancel()
 
 		// 执行异步调用
-		err := a.Sys.Call(tar, msg)
+		err := a.Sys.Call(tar, rmw)
 		if err != nil {
-			future.Complete(msg)
+			future.Complete(rmw)
 			return
 		}
 
 		// 等待消息处理完成或上下文取消
 		select {
 		case <-ctxWithCancel.Done():
-			msg.Err = ctxWithCancel.Err()
-		case <-msg.Done:
+			rmw.Err = ctxWithCancel.Err()
+		case <-rmw.Done:
 			// 消息处理完成
 		}
 
-		future.Complete(msg)
+		future.Complete(rmw)
 	}()
 
 	// 创建一个新的 Future 用于重入
 	reenterFuture := NewFuture()
 
-	future.Then(func(ret *router.MsgWrapper) {
+	future.Then(func(ret *msg.Wrapper) {
 		reenterMsg := &reenterMessage{
-			action: func(mw *router.MsgWrapper) error {
+			action: func(mw *msg.Wrapper) error {
 				defer func() {
 					if r := recover(); r != nil {
 						log.ErrorF("panic in ReenterCall: %v", r)
-						msg.Err = fmt.Errorf("panic in ReenterCall: %v", r)
-						reenterFuture.Complete(msg)
+						rmw.Err = fmt.Errorf("panic in ReenterCall: %v", r)
+						reenterFuture.Complete(rmw)
 					}
 				}()
 
 				if mw.Err != nil {
-					reenterFuture.Complete(msg)
+					rmw.Err = mw.Err
+					reenterFuture.Complete(rmw)
 					return mw.Err
 				}
 
-				reenterFuture.Complete(mw)
+				rmw.Res = mw.Res
+				reenterFuture.Complete(rmw)
 				return nil
 			},
 			msg: ret,
@@ -373,7 +400,7 @@ func (a *Runtime) ReenterCall(ctx context.Context, tar router.Target, msg *route
 		case <-ctx.Done():
 			cancel()
 			if !future.IsCompleted() {
-				future.Complete(msg)
+				future.Complete(rmw)
 			}
 		case <-done:
 			// 调用已完成，不需要做任何事
@@ -384,6 +411,9 @@ func (a *Runtime) ReenterCall(ctx context.Context, tar router.Target, msg *route
 }
 
 func (a *Runtime) Update() {
+	ticker := time.NewTicker(a.tw.Interval())
+	defer ticker.Stop()
+
 	checkClose := func() {
 		for !a.q.Empty() || !a.reenterQueue.Empty() {
 			time.Sleep(10 * time.Millisecond)
@@ -394,17 +424,14 @@ func (a *Runtime) Update() {
 	}
 
 	for {
-		now := time.Now()
-		if now.Sub(a.lastTick) >= a.tw.Interval() {
-			a.tw.Tick()
-			a.lastTick = now
-		}
-
 		select {
+		case <-ticker.C:
+			a.tw.Tick()
+			a.lastTick = time.Now()
 		case <-a.q.C:
 			msgInterface := a.q.Pop()
 
-			msg, ok := msgInterface.(*router.MsgWrapper)
+			mw, ok := msgInterface.(*msg.Wrapper)
 			if !ok {
 				fmt.Println(a.Id, "Received non-Message type")
 				continue
@@ -417,20 +444,20 @@ func (a *Runtime) Update() {
 					}
 
 					// 通知调用者消息处理完成
-					msg.Wg.Done()
+					mw.Wg.Done()
 				}()
 
-				if chain, ok := a.chains[msg.Req.Header.Event]; ok {
-					err := chain.Execute(msg)
+				if chain, ok := a.chains[mw.Req.Header.Event]; ok {
+					err := chain.Execute(mw)
 					if err != nil {
-						fmt.Printf("actor %v execute %v chain err %v\n", a.Id, msg.Req.Header.Event, err)
+						log.WarnF("actor %v event %v execute err %v", a.Id, mw.Req.Header.Event, err)
 					}
 				} else {
-					fmt.Printf("actor %v No handlers for message type: %s\n", a.Id, msg.Req.Header.Event)
+					log.WarnF("actor %v No handlers for message type: %s", a.Id, mw.Req.Header.Event)
 				}
 			}()
 
-			if msg.Req.Header.Event == "exit" {
+			if mw.Req.Header.Event == "exit" {
 				if atomic.CompareAndSwapInt32(&a.closed, 0, 1) {
 					go checkClose()
 				}
@@ -439,7 +466,7 @@ func (a *Runtime) Update() {
 		case <-a.reenterQueue.C:
 			reenterMsgInterface := a.reenterQueue.Pop()
 			if reenterMsg, ok := reenterMsgInterface.(*reenterMessage); ok {
-				reenterMsg.action(reenterMsg.msg.(*router.MsgWrapper))
+				reenterMsg.action(reenterMsg.msg.(*msg.Wrapper))
 			}
 		case <-a.shutdownCh:
 			if atomic.CompareAndSwapInt32(&a.closed, 0, 1) {

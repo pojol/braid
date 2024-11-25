@@ -1,4 +1,4 @@
-package mockdata
+package mockactors
 
 import (
 	"context"
@@ -9,6 +9,7 @@ import (
 	"github.com/pojol/braid/core/actor"
 	"github.com/pojol/braid/def"
 	"github.com/pojol/braid/router"
+	"github.com/pojol/braid/router/msg"
 )
 
 type MockClacActor struct {
@@ -30,13 +31,13 @@ func (a *MockClacActor) Init(ctx context.Context) {
 
 	a.RegisterEvent("print", func(actorCtx core.ActorContext) core.IChain {
 		return &actor.DefaultChain{
-			Handler: func(m *router.MsgWrapper) error {
+			Handler: func(mw *msg.Wrapper) error {
 
 				a.Call(router.Target{
 					ID: "mockentity",
 					Ty: def.MockActorEntity,
 					Ev: "print",
-				}, &router.MsgWrapper{Ctx: context.TODO(), Req: &router.Message{Header: &router.Header{}}})
+				}, &msg.Wrapper{Ctx: context.TODO(), Req: &router.Message{Header: &router.Header{}}})
 
 				return nil
 			},
@@ -44,7 +45,7 @@ func (a *MockClacActor) Init(ctx context.Context) {
 	})
 	a.RegisterEvent("clac", func(actorCtx core.ActorContext) core.IChain {
 		return &actor.DefaultChain{
-			Handler: func(mw *router.MsgWrapper) error {
+			Handler: func(mw *msg.Wrapper) error {
 
 				// 2.
 				fmt.Println(actorCtx.ID(), "recv clac event")
@@ -58,7 +59,7 @@ func (a *MockClacActor) Init(ctx context.Context) {
 
 func MakeEvReenter(actorCtx core.ActorContext) core.IChain {
 	return &actor.DefaultChain{
-		Handler: func(mw *router.MsgWrapper) error {
+		Handler: func(mw *msg.Wrapper) error {
 
 			// Initiate an asynchronous re-entrant call
 			// 发起一次异步可重入调用
@@ -72,12 +73,12 @@ func MakeEvReenter(actorCtx core.ActorContext) core.IChain {
 			//  1. Then 方法本身是同步调用，立即返回。
 			//  2. future 代表的异步操作是并行执行的。
 			//  3. 回调函数会在 future 完成后被依次同步调用
-			future.Then(func(ret *router.MsgWrapper) {
+			future.Then(func(ret *msg.Wrapper) {
 
 				// 3.
 				fmt.Println(actorCtx.ID(), "call clac event callback!", ret.Err)
 
-			}).Then(func(ret *router.MsgWrapper) {
+			}).Then(func(ret *msg.Wrapper) {
 				// Chained call
 				// 链式调用
 			})

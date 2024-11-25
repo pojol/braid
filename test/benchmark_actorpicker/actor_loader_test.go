@@ -12,10 +12,11 @@ import (
 
 	trdredis "github.com/pojol/braid/3rd/redis"
 	"github.com/pojol/braid/core"
-	"github.com/pojol/braid/core/cluster/node"
+	"github.com/pojol/braid/core/node"
 	"github.com/pojol/braid/def"
 	"github.com/pojol/braid/lib/log"
 	"github.com/pojol/braid/test/mockdata"
+	"github.com/pojol/braid/test/mockdata/mockactors"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -149,6 +150,7 @@ func TestPicker(b *testing.T) {
 		core.NodeWithID(nodid),
 		core.NodeWithWeight(10000),
 		core.NodeWithLoader(loader),
+		core.NodeWithFactory(factory),
 		core.NodeWithPort(p),
 	)
 
@@ -169,7 +171,7 @@ func TestPicker(b *testing.T) {
 	}
 
 	time.Sleep(time.Second * 20)
-	b.Logf("total register count %v", atomic.LoadInt32(&mockdata.GlobalCreateCnt))
+	b.Logf("total register count %v", atomic.LoadInt32(&mockactors.GlobalCreateCnt))
 
 	// 再看下分布情况
 	printWeight()

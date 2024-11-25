@@ -52,7 +52,7 @@ func Parse(token string) (string, error) {
 	})
 
 	if err != nil {
-		return "", fmt.Errorf("jwt.Parse error:%v", err)
+		return "", fmt.Errorf("jwt.Parse %v error:%v", token, err)
 	}
 	return c.EntityID, nil
 }

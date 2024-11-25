@@ -17,6 +17,8 @@ type ClientParm struct {
 
 	AddressLst []string
 
+	dialOptions []grpc.DialOption
+
 	UnaryInterceptors  []grpc.UnaryClientInterceptor
 	StreamInterceptors []grpc.StreamClientInterceptor
 }
@@ -71,6 +73,12 @@ func WithMaxConcurrentCalls(maxCalls int) ClientOption {
 func WithCallTimeout(callTimeout time.Duration) ClientOption {
 	return func(cp *ClientParm) {
 		cp.CallTimeout = callTimeout
+	}
+}
+
+func WithDialOptions(opts ...grpc.DialOption) ClientOption {
+	return func(cp *ClientParm) {
+		cp.dialOptions = append(cp.dialOptions, opts...)
 	}
 }
 

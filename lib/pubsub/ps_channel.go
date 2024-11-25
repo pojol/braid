@@ -11,6 +11,7 @@ import (
 	"github.com/pojol/braid/lib/mpsc"
 	"github.com/pojol/braid/lib/unbounded"
 	"github.com/pojol/braid/router"
+	"github.com/pojol/braid/router/msg"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -94,10 +95,10 @@ func (c *Channel) addHandlers(queue *mpsc.Queue) {
 				continue
 			}
 
-			msg := router.NewMsgWrap(context.TODO()).
+			mb := msg.NewBuilder(context.TODO()).
 				WithReqHeader(&router.Header{ID: recvmsg.Header.ID, Event: recvmsg.Header.Event}).
 				WithReqBody(recvmsg.Body).Build()
-			queue.Push(msg)
+			queue.Push(mb)
 
 			pipe.XAck(context.TODO(), c.topic, c.channel, recvmsg.Header.Event)
 			pipe.XDel(context.TODO(), c.topic, recvmsg.Header.ID)

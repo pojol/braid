@@ -7,7 +7,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/pojol/braid/core"
 	"github.com/pojol/braid/core/actor"
+	"github.com/pojol/braid/def"
 	"github.com/pojol/braid/router"
+	"github.com/pojol/braid/router/msg"
 	"golang.org/x/time/rate"
 )
 
@@ -29,14 +31,14 @@ func (a *dynamicPickerActor) Init(ctx context.Context) {
 	a.RegisterEvent("MockDynamicPick", func(ctx core.ActorContext) core.IChain {
 		return &actor.DefaultChain{
 
-			Handler: func(mw *router.MsgWrapper) error {
+			Handler: func(mw *msg.Wrapper) error {
 
 				// 使用限流器
 				if err := a.limiter.Wait(mw.Ctx); err != nil {
 					return err
 				}
 
-				actor_ty := mw.Req.Header.Custom["actor_ty"]
+				actor_ty := msg.GetReqField[string](mw, def.KeyActorTy)
 
 				// Select a node with low weight and relatively fewer registered actors of this type
 				nodeaddr, err := ctx.AddressBook().GetLowWeightNodeForActor(mw.Ctx, actor_ty)
@@ -45,10 +47,10 @@ func (a *dynamicPickerActor) Init(ctx context.Context) {
 				}
 
 				// rename
-				mw.Req.Header.Custom["actor_id"] = nodeaddr.Node + "_" + actor_ty + "_" + uuid.NewString()
+				msgbuild := mw.ToBuilder().WithReqCustomFields(msg.Attr{Key: "actor_id", Value: nodeaddr.Node + "_" + actor_ty + "_" + uuid.NewString()})
 
 				// dispatcher to picker node
-				return ctx.Call(router.Target{ID: nodeaddr.Node + "_" + "MockDynamicRegister", Ty: "MockDynamicRegister", Ev: "MockDynamicRegister"}, mw)
+				return ctx.Call(router.Target{ID: nodeaddr.Node + "_" + "MockDynamicRegister", Ty: "MockDynamicRegister", Ev: "MockDynamicRegister"}, msgbuild.Build())
 			},
 		}
 	})

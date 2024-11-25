@@ -1,4 +1,4 @@
-package mockdata
+package mockentity
 
 import fmt "fmt"
 

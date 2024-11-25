@@ -158,7 +158,7 @@ func (ab *AddressBook) GetByID(ctx context.Context, id string) (core.AddressInfo
 	ab.RLock()
 	if _, ok := ab.IDMap[id]; ok {
 		ab.RUnlock()
-		return core.AddressInfo{Node: ab.NodeID, Ip: ab.Ip, Port: ab.Port}, nil // return local node info directly
+		return core.AddressInfo{Node: ab.NodeID, Ip: ab.Ip, Port: ab.Port, ActorId: id}, nil // return local node info directly
 	}
 	ab.RUnlock()
 

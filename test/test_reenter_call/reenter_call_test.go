@@ -2,16 +2,19 @@ package testreentercall
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"sync"
 	"testing"
 	"time"
 
+	"github.com/alicebob/miniredis/v2"
 	"github.com/pojol/braid/3rd/redis"
 	"github.com/pojol/braid/core"
-	"github.com/pojol/braid/core/cluster/node"
+	"github.com/pojol/braid/core/node"
 	"github.com/pojol/braid/lib/log"
 	"github.com/pojol/braid/router"
+	"github.com/pojol/braid/router/msg"
 	"github.com/pojol/braid/test/mockdata"
 	"github.com/stretchr/testify/assert"
 )
@@ -22,14 +25,17 @@ func TestMain(m *testing.M) {
 
 	defer log.Sync()
 
+	mr, err := miniredis.Run()
+	if err != nil {
+		panic(err)
+	}
+	defer mr.Close()
+	redis.BuildClientWithOption(redis.WithAddr(fmt.Sprintf("redis://%s", mr.Addr())))
+
 	os.Exit(m.Run())
 }
 
 func TestReenterCall(t *testing.T) {
-	// use mock redis
-	redis.BuildClientWithOption(redis.WithAddr("redis://127.0.0.1:6379/0"))
-	redis.FlushAll(context.TODO()) // clean cache
-
 	factory := mockdata.BuildActorFactory()
 	loader := mockdata.BuildDefaultActorLoader(factory)
 
@@ -51,7 +57,7 @@ func TestReenterCall(t *testing.T) {
 
 	time.Sleep(time.Second)
 
-	err = nod.System().Call(router.Target{ID: "clac-1", Ty: "MockClacActor", Ev: "mockreenter"}, router.NewMsgWrap(context.TODO()).Build())
+	err = nod.System().Call(router.Target{ID: "clac-1", Ty: "MockClacActor", Ev: "mockreenter"}, msg.NewBuilder(context.TODO()).Build())
 	assert.Equal(t, err, nil)
 
 	time.Sleep(time.Second * 2)

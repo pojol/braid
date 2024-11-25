@@ -2,13 +2,13 @@ package mockdata
 
 import (
 	"context"
-	fmt "fmt"
 
 	"github.com/pojol/braid/core"
 	"github.com/pojol/braid/core/actor"
 	"github.com/pojol/braid/def"
 	"github.com/pojol/braid/lib/log"
 	"github.com/pojol/braid/router"
+	"github.com/pojol/braid/router/msg"
 )
 
 type DefaultActorLoader struct {
@@ -21,23 +21,21 @@ func BuildDefaultActorLoader(factory core.IActorFactory) core.IActorLoader {
 
 func (al *DefaultActorLoader) Pick(builder core.IActorBuilder) error {
 
-	customOptions := make(map[string]string)
+	msgbuild := msg.NewBuilder(context.TODO())
 
 	for key, value := range builder.GetOptions() {
-		customOptions[key] = fmt.Sprint(value)
+		msgbuild.WithReqCustomFields(msg.Attr{Key: key, Value: value})
 	}
 
-	customOptions["actor_id"] = builder.GetID()
-	customOptions["actor_ty"] = builder.GetType()
+	msgbuild.WithReqCustomFields(def.ActorID(builder.GetID()))
+	msgbuild.WithReqCustomFields(def.ActorTy(builder.GetType()))
 
 	go func() {
 		err := builder.GetSystem().Call(router.Target{
 			ID: def.SymbolWildcard,
 			Ty: "MockDynamicPicker",
 			Ev: "MockDynamicPick"},
-			router.NewMsgWrap(context.TODO()).WithReqHeader(&router.Header{
-				Custom: customOptions,
-			}).Build(),
+			msgbuild.Build(),
 		)
 		if err != nil {
 			log.WarnF("[braid.actorLoader] call dynamic picker err %v", err.Error())

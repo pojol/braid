@@ -10,10 +10,11 @@ import (
 	"github.com/pojol/braid/3rd/redis"
 	"github.com/pojol/braid/core"
 	"github.com/pojol/braid/core/actor"
-	"github.com/pojol/braid/core/cluster/node"
+	"github.com/pojol/braid/core/node"
 	"github.com/pojol/braid/def"
 	"github.com/pojol/braid/lib/log"
 	"github.com/pojol/braid/router"
+	"github.com/pojol/braid/router/msg"
 	"github.com/pojol/braid/test/mockdata"
 )
 
@@ -96,8 +97,9 @@ func TestScript(t *testing.T) {
 	nod.Update()
 
 	time.Sleep(time.Second)
+
 	nod.System().Call(router.Target{ID: def.SymbolLocalFirst, Ty: "MockScriptActor", Ev: "test_script"},
-		router.NewMsgWrap(context.Background()).WithReqCustom("test", "hello braid script").Build(),
+		msg.NewBuilder(context.Background()).WithReqCustomFields(msg.Attr{Key: "test", Value: "hello braid script"}).Build(),
 	)
 
 	time.Sleep(time.Second)

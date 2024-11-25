@@ -2,6 +2,7 @@ package node
 
 import (
 	"context"
+	"errors"
 	fmt "fmt"
 	"sync"
 
@@ -14,6 +15,7 @@ import (
 	"github.com/pojol/braid/lib/span"
 	"github.com/pojol/braid/lib/tracer"
 	"github.com/pojol/braid/router"
+	"github.com/pojol/braid/router/msg"
 )
 
 type NormalSystem struct {
@@ -33,6 +35,8 @@ type NormalSystem struct {
 
 	sync.RWMutex
 }
+
+var ErrSelfCall = errors.New("cannot call self node through RPC")
 
 func buildSystemWithOption(nodId, nodeIp string, nodePort int, loader core.IActorLoader, factory core.IActorFactory, trac tracer.ITracer) core.ISystem {
 	var err error
@@ -140,26 +144,29 @@ func (sys *NormalSystem) Register(builder core.IActorBuilder) (core.IActor, erro
 	return actor, nil
 }
 
-func (sys *NormalSystem) Unregister(id string) error {
+func (sys *NormalSystem) Unregister(id, ty string) error {
 	// First, check if the actor exists and get it
 	sys.RLock()
 	actor, exists := sys.actoridmap[id]
 	sys.RUnlock()
 
-	if !exists {
-		return fmt.Errorf("[braid.system] actor %s not found", id)
+	if exists {
+		// Call Exit on the actor
+		actor.Exit()
+
+		// Remove the actor from the map
+		sys.Lock()
+		delete(sys.actoridmap, id)
+		sys.Unlock()
 	}
 
-	// Call Exit on the actor
-	actor.Exit()
-
-	// Remove the actor from the map
-	sys.Lock()
-	delete(sys.actoridmap, id)
-	sys.Unlock()
-
 	// Unregister from the address book
-	err := sys.addressbook.Unregister(context.TODO(), id, sys.factory.Get(actor.Type()).Weight)
+	ac := sys.factory.Get(ty)
+	if ac == nil {
+		return fmt.Errorf("[braid.system] unregister actor id %v unknown type %v", id, ty)
+	}
+
+	err := sys.addressbook.Unregister(context.TODO(), id, sys.factory.Get(ty).Weight)
 	if err != nil {
 		// Log the error, but don't return it as the actor has already been removed locally
 		log.WarnF("[braid.system] Failed to unregister actor %s from address book: %v", id, err)
@@ -178,11 +185,11 @@ func (sys *NormalSystem) Actors() []core.IActor {
 	return actors
 }
 
-func (sys *NormalSystem) Call(tar router.Target, msg *router.MsgWrapper) error {
+func (sys *NormalSystem) Call(tar router.Target, mw *msg.Wrapper) error {
 	// Set message header information
-	msg.Req.Header.Event = tar.Ev
-	msg.Req.Header.TargetActorID = tar.ID
-	msg.Req.Header.TargetActorType = tar.Ty
+	mw.Req.Header.Event = tar.Ev
+	mw.Req.Header.TargetActorID = tar.ID
+	mw.Req.Header.TargetActorType = tar.Ty
 
 	var info core.AddressInfo
 	var actor core.IActor
@@ -191,35 +198,38 @@ func (sys *NormalSystem) Call(tar router.Target, msg *router.MsgWrapper) error {
 	if sys.trac != nil {
 		span, err := sys.trac.GetSpan(span.SystemCall)
 		if err == nil {
-			msg.Ctx = span.Begin(msg.Ctx)
-			fmt.Println(msg.Req.Header.PrevActorType, "=>", tar.Ty)
+			mw.Ctx = span.Begin(mw.Ctx)
 
 			span.SetTag("actor", tar.Ty)
 			span.SetTag("event", tar.Ev)
 			span.SetTag("id", tar.ID)
 
-			defer span.End(msg.Ctx)
+			defer span.End(mw.Ctx)
 		}
+	}
+
+	if tar.ID == "" {
+		return fmt.Errorf("[braid.system] call unknown target id")
 	}
 
 	switch tar.ID {
 	case def.SymbolWildcard:
-		info, err = sys.addressbook.GetWildcardActor(msg.Ctx, tar.Ty)
+		info, err = sys.addressbook.GetWildcardActor(mw.Ctx, tar.Ty)
 		// Check if the wildcard actor is local
 		sys.RLock()
 		actor, ok := sys.actoridmap[info.ActorId]
 		sys.RUnlock()
 		if ok {
-			return sys.handleLocalCall(actor, msg)
+			return sys.localCall(actor, mw)
 		}
 	case def.SymbolLocalFirst:
-		actor, info, err = sys.findLocalOrWildcardActor(msg.Ctx, tar.Ty)
+		actor, info, err = sys.findLocalOrWildcardActor(mw.Ctx, tar.Ty)
 		if err != nil {
 			return err
 		}
 		if actor != nil {
 			// Local call
-			return sys.handleLocalCall(actor, msg)
+			return sys.localCall(actor, mw)
 		}
 	default:
 		// First, check if it's a local call
@@ -228,19 +238,24 @@ func (sys *NormalSystem) Call(tar router.Target, msg *router.MsgWrapper) error {
 		sys.RUnlock()
 
 		if ok {
-			return sys.handleLocalCall(actorp, msg)
+			return sys.localCall(actorp, mw)
 		}
 
 		// If not local, get from addressbook
-		info, err = sys.addressbook.GetByID(msg.Ctx, tar.ID)
+		info, err = sys.addressbook.GetByID(mw.Ctx, tar.ID)
 	}
 
 	if err != nil {
-		return err
+		return fmt.Errorf("[braid.system] call id %v ty %v err %w", tar.ID, tar.Ty, err)
+	}
+
+	if info.Ip == sys.nodeIP && info.Port == sys.nodePort {
+		log.WarnF("[braid.system] call err actorTy %v actorID %v call ev %v self-call", tar.Ty, tar.ID, tar.Ev)
+		return ErrSelfCall
 	}
 
 	// At this point, we know it's a remote call
-	return sys.handleRemoteCall(msg.Ctx, info, msg)
+	return sys.handleRemoteCall(mw.Ctx, info, mw)
 }
 
 func (sys *NormalSystem) findLocalOrWildcardActor(ctx context.Context, ty string) (core.IActor, core.AddressInfo, error) {
@@ -258,75 +273,114 @@ func (sys *NormalSystem) findLocalOrWildcardActor(ctx context.Context, ty string
 	return nil, info, err
 }
 
-func (sys *NormalSystem) handleLocalCall(actorp core.IActor, msg *router.MsgWrapper) error {
-	root := msg.Wg.Count() == 0
+func (sys *NormalSystem) localCall(actorp core.IActor, mw *msg.Wrapper) error {
+	root := mw.Wg.Count() == 0
 	if root {
-		msg.Done = make(chan struct{})
+		mw.Done = make(chan struct{})
 		ready := make(chan struct{})
 		go func() {
 			<-ready // Wait for Received to complete
-			msg.Wg.Wait()
-			close(msg.Done)
+			mw.Wg.Wait()
+			close(mw.Done)
 		}()
 
-		if err := actorp.Received(msg); err != nil {
+		if err := actorp.Received(mw); err != nil {
 			close(ready) // Ensure the ready channel is closed even in case of an error
 			return err
 		}
 		close(ready) // Notify the goroutine that Received has completed
 
 		select {
-		case <-msg.Done:
+		case <-mw.Done:
 			return nil
-		case <-msg.Ctx.Done():
-			return fmt.Errorf("[braid.system] actor %v message %v processing timed out", msg.Req.Header.TargetActorID, msg.Req.Header.Event)
+		case <-mw.Ctx.Done():
+			return fmt.Errorf("[braid.system] actor %v message %v processing timed out", mw.Req.Header.TargetActorID, mw.Req.Header.Event)
 		}
 	} else {
-		return actorp.Received(msg)
+		return actorp.Received(mw)
 	}
 }
 
-func (sys *NormalSystem) handleRemoteCall(ctx context.Context, addrinfo core.AddressInfo, msg *router.MsgWrapper) error {
+func (sys *NormalSystem) handleRemoteCall(ctx context.Context, addrinfo core.AddressInfo, mw *msg.Wrapper) error {
 	res := &router.RouteRes{}
 	err := sys.client.CallWait(ctx,
 		fmt.Sprintf("%s:%d", addrinfo.Ip, addrinfo.Port),
 		"/router.Acceptor/routing",
-		&router.RouteReq{Msg: msg.Req},
+		&router.RouteReq{Msg: mw.Req},
 		res)
 
 	if err != nil {
 		return err
 	}
 
-	msg.Res = res.Msg
+	mw.Res = res.Msg
 	return nil
 }
 
-func (sys *NormalSystem) Send(tar router.Target, msg *router.MsgWrapper) error {
+func (sys *NormalSystem) Send(tar router.Target, mw *msg.Wrapper) error {
 	// Set message header information
-	msg.Req.Header.Event = tar.Ev
-	msg.Req.Header.TargetActorID = tar.ID
-	msg.Req.Header.TargetActorType = tar.Ty
+	mw.Req.Header.Event = tar.Ev
+	mw.Req.Header.TargetActorID = tar.ID
+	mw.Req.Header.TargetActorType = tar.Ty
 
-	sys.RLock()
-	actor, isLocal := sys.actoridmap[tar.ID]
-	sys.RUnlock()
+	var info core.AddressInfo
+	var actor core.IActor
+	var err error
 
-	if isLocal {
-		// For local actors, use Received directly
-		return actor.Received(msg)
+	if tar.ID == "" {
+		return fmt.Errorf("[braid.system] send unknown target id")
 	}
 
-	// For remote actors, get address info
-	info, err := sys.addressbook.GetByID(msg.Ctx, tar.ID)
+	switch tar.ID {
+	case def.SymbolWildcard:
+		info, err = sys.addressbook.GetWildcardActor(mw.Ctx, tar.Ty)
+		// Check if the wildcard actor is local
+		sys.RLock()
+		actor, ok := sys.actoridmap[info.ActorId]
+		sys.RUnlock()
+		if ok {
+			return actor.Received(mw)
+		}
+	case def.SymbolLocalFirst:
+		actor, info, err = sys.findLocalOrWildcardActor(mw.Ctx, tar.Ty)
+		if err != nil {
+			return err
+		}
+		if actor != nil {
+			return actor.Received(mw)
+		}
+	default:
+		// First, check if it's a local call
+		sys.RLock()
+		actorp, ok := sys.actoridmap[tar.ID]
+		sys.RUnlock()
+
+		if ok {
+			return actorp.Received(mw)
+		}
+
+		// If not local, get from addressbook
+		info, err = sys.addressbook.GetByID(mw.Ctx, tar.ID)
+	}
+
 	if err != nil {
+		fmt.Errorf("[braid.system] send id %v ty %v err %w", tar.ID, tar.Ty, err)
 		return err
 	}
 
-	return sys.client.Call(msg.Ctx,
+	if info.Ip == sys.nodeIP && info.Port == sys.nodePort {
+		log.WarnF("[braid.system] send err actorTy %v actorID %v call ev %v self-call", tar.Ty, tar.ID, tar.Ev)
+		return ErrSelfCall
+	}
+
+	return sys.handleRemoteSend(info, mw)
+}
+
+func (sys *NormalSystem) handleRemoteSend(info core.AddressInfo, mw *msg.Wrapper) error {
+	return sys.client.Call(mw.Ctx,
 		fmt.Sprintf("%s:%d", info.Ip, info.Port),
 		"/router.Acceptor/routing",
-		&router.RouteReq{Msg: msg.Req},
+		&router.RouteReq{Msg: mw.Req},
 		nil) // We don't need the response for Send
 }
 

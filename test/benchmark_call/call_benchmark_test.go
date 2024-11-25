@@ -11,9 +11,10 @@ import (
 	"github.com/google/uuid"
 	"github.com/pojol/braid/3rd/redis"
 	"github.com/pojol/braid/core"
-	"github.com/pojol/braid/core/cluster/node"
+	"github.com/pojol/braid/core/node"
 	"github.com/pojol/braid/def"
 	"github.com/pojol/braid/router"
+	"github.com/pojol/braid/router/msg"
 	"github.com/pojol/braid/test/mockdata"
 	"golang.org/x/exp/rand"
 )
@@ -115,17 +116,15 @@ func Benchmark2Node1wActor2Jump(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		randomIndex := rand.Intn(len(actorjump1arr))
 
+		m := msg.NewBuilder(context.TODO())
+		m.WithReqCustomFields(msg.Attr{Key: "next", Value: actorjump2arr[randomIndex]})
+
 		nodes[0].System().Call(
 			router.Target{
 				ID: actorjump1arr[randomIndex],
 				Ty: def.MockActorEntity,
 				Ev: "print",
-			},
-			&router.MsgWrapper{Ctx: context.TODO(), Req: &router.Message{Header: &router.Header{
-				Custom: map[string]string{
-					"next": actorjump2arr[randomIndex],
-				},
-			}}})
+			}, m.Build())
 	}
 }
 

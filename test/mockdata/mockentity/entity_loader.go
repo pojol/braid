@@ -1,4 +1,4 @@
-package actor
+package mockentity
 
 import (
 	"bytes"
