@@ -4,7 +4,9 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/pojol/braid?style=flat-square)](https://goreportcard.com/report/github.com/pojol/braid)
 [![Demo](https://img.shields.io/badge/demo-braid--demo-brightgreen?style=flat-square)](https://github.com/pojol/braid-demo)
 [![Documentation](https://img.shields.io/badge/Documentation-Available-brightgreen)](https://pojol.github.io/braid/#/)
+<!--
 [![Discord](https://img.shields.io/discord/1210543471593791488?color=7289da&label=Discord&logo=discord&style=flat-square)](https://discord.gg/yXJgTrkWxT)
+-->
 
 [![image.png](https://i.postimg.cc/BbvzLhfN/image.png)](https://postimg.cc/Vr3g2W6b)
 
@@ -21,7 +23,7 @@
 $ go install github.com/pojol/braid-cli@latest
 
 # 2. Using the CLI to Generate a New Empty Project
-$ braid-cli new "you-project-name"
+$ braid-cli new "you-project-name" v0.0.1
 
 # 3. Creating .go Files from Actor Template Configurations
 $ cd you-project-name/template
