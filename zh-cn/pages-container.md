@@ -58,12 +58,12 @@ actor_types:
   #  port: "8008"
 ```
 
-* **Unique** - 表示这个 actor 是否只能在当前节点注册一个，比如 control actor 控制器一个节点一个就已经满足需求了
-* **Weight** - actor 权重值， 在 braid 中我们需要设计一个权重体系，用于负载均衡； 这个值表示当前 actor 在 node 中的权重数量
+* **unique** - 表示这个 actor 是否只能在当前节点注册一个，比如 control actor 控制器一个节点一个就已经满足需求了
+* **weight** - actor 权重值， 在 braid 中我们需要设计一个权重体系，用于负载均衡； 这个值表示当前 actor 在 node 中的权重数量
 [node权重](#权重)
-* **Limit** - 表示当前节点在集群中的可注册总数，如果为0则表示无限制； 这个字段可以控制系统的负载能力，另外也可以通过设置 1 将 actor 设置为全局唯一
-* **Category** - "core" (基础能力), "static" (静态actor), "dynamic" (动态actor)
-* **Options** - actor 的可选项， 如 http 的对外端口，或者心跳的路径配置 /heartbeat 等
+* **limit** - 表示当前节点在集群中的可注册总数，如果为0则表示无限制； 这个字段可以控制系统的负载能力，另外也可以通过设置 1 将 actor 设置为全局唯一
+* **dynamic** 标记为dynamic的actor将不会被node启动时构建
+* **options** - actor 的可选项， 如 http 的对外端口，或者心跳的路径配置 /heartbeat 等
 
 </br>
 
@@ -92,30 +92,17 @@ if err != nil {
 }
 
 // 将 actor 配置对象注册到 actor factory 中
-factory := actors.BuildActorFactory(actorTypes)
+factory := actors.BuildActorFactory(nodeCfg.Actors)
+loader := actors.BuildDefaultActorLoader(factory)
 
 // 创建一个节点，并传入 system
 nod := node.BuildProcessWithOption(
-		core.WithSystem(
-			node.BuildSystemWithOption(nodeCfg.ID, factory),
-		),
-	)
-
-// 注册 actor 到本节点中
-// 注: 
-// - 基础能力 actor 如果注册失败会导致 panic
-// - 静态 actor 因为 limit 或 unique 等字段导致注册失败会直接跳过
-// - 动态 actor 不会在启动阶段注册
-for _, regActor := range nodeCfg.ActorOpts {
-    builder := nod.System().Loader(regActor.Name).WithID(nodeCfg.ID + "_" + regActor.Name)
-    for key, val := range regActor.Options {
-        builder.WithOpt(key, val)
-    }
-    _, err = builder.Build()
-    if err != nil {
-        panic(err.Error())
-    }
-}
+  core.WithSystem(
+    core.NodeWithID(nodeCfg.ID),
+    core.NodeWithLoader(loader),
+    core.NodeWithFactory(factory),
+  ),
+)
 
 // 初始化节点
 err = nod.Init()

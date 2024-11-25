@@ -47,23 +47,19 @@ Note: The specific configuration settings should be adjusted based on stress tes
 actor_types:
   # WebSocket acceptor
   # for accepting WebSocket connections
-  # options:
-  #   - port: WebSocket server port
 - name: "WEBSOCKET_ACCEPTOR"
   unique: true
   weight: 800
-  limit: 1
-  category: "core"
-  # options:
-  #  port: "8008"
+  options:
+   port: "8008"
 ```
 
-* **Unique** - Indicates whether only one of this actor can be registered on the current node. For example, one control actor per node is sufficient.
-* **Weight** - Actor weight value. In braid, we need to design a weight system for load balancing; this value represents the weight quantity of the current actor in the node.
+* **unique** - Indicates whether only one of this actor can be registered on the current node. For example, one control actor per node is sufficient.
+* **weight** - Actor weight value. In braid, we need to design a weight system for load balancing; this value represents the weight quantity of the current actor in the node.
 [Node Weight](#weight)
-* **Limit** - Indicates the total number that can be registered in the cluster for the current node. If 0, it means unlimited. This field can control the system's load capacity, and by setting it to 1, the actor can be set as globally unique.
-* **Category** - "core" (basic capability), "static" (static actor), or "dynamic" (dynamic actor)
-* **Options** - Optional items for the actor, such as the external port for HTTP, or heartbeat path configuration /heartbeat, etc.
+* **limit** - Indicates the total number that can be registered in the cluster for the current node. If 0, it means unlimited. This field can control the system's load capacity, and by setting it to 1, the actor can be set as globally unique.
+* **dynamic** Dynamic-marked actors are not built during node startup
+* **options** - Optional items for the actor, such as the external port for HTTP, or heartbeat path configuration /heartbeat, etc.
 
 </br>
 
@@ -92,30 +88,17 @@ if err != nil {
 }
 
 // Register actor configuration objects to the actor factory
-factory := actors.BuildActorFactory(actorTypes)
+factory := actors.BuildActorFactory(nodeCfg.Actors)
+loader := actors.BuildDefaultActorLoader(factory)
 
 // Create a node and pass in the system
 nod := node.BuildProcessWithOption(
-		core.WithSystem(
-			node.BuildSystemWithOption(nodeCfg.ID, factory),
-		),
-	)
-
-// Register actors to this node
-// Note: 
-// - Failure to register basic capability actors will cause a panic
-// - Static actors will be skipped if registration fails due to limit or unique fields
-// - Dynamic actors will not be registered during the startup phase
-for _, regActor := range nodeCfg.ActorOpts {
-    builder := nod.System().Loader(regActor.Name).WithID(nodeCfg.ID + "_" + regActor.Name)
-    for key, val := range regActor.Options {
-        builder.WithOpt(key, val)
-    }
-    _, err = builder.Build()
-    if err != nil {
-        panic(err.Error())
-    }
-}
+  core.WithSystem(
+    core.NodeWithID(nodeCfg.ID),
+    core.NodeWithLoader(loader),
+    core.NodeWithFactory(factory),
+  ),
+)
 
 // Initialize the node
 err = nod.Init()

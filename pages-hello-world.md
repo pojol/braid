@@ -10,7 +10,7 @@ $ go install github.com/pojol/braid-cli@latest
 
 2. Using the CLI to Generate a New Empty Project
 ```bash
-$ braid-cli new "you-project-name"
+$ braid-cli new "you-project-name" v0.0.1
 ```
 
 3. Creating .go Files from Actor Template Configurations
@@ -21,7 +21,7 @@ $ go generate
 
 4. Navigate to the services directory, then try to build and run the demo
 ```bash
-$ cd you-project-name/services/demo-1
+$ cd you-project-name/node
 $ go run main.go
 ```
 
@@ -31,13 +31,19 @@ $ go run main.go
 ├── actors      # Directory for user-designed actors
 ├── template    # Configuration directory
 ├── constant    # Constants directory
-├── server      # Main file directory for services, mainly used to configure various service parameters and startup items
+    ├── fields  # Used to mark various unique key-value mappings 
+                # (actorid, sessionid, roomid, etc.)
+├── node        # Main file directory for services
+                # mainly used to configure service parameters and startup items
 ├── errcode     # Error code directory
-├── chains      # Message handling function directory
+├── handlers    # Message handling function directory
 ├── middleware  # Common middleware directory
-└── states          # State directory (it's recommended that states have unified serialization, such as protobuf, msgpack, json, etc.)
-    ├── commproto   # Common structures, such as items, mail, etc., across services, even across languages and tools (backend management)
+└── states      # State directory 
+                # (recommended to use unified serialization: protobuf, msgpack, json, etc.)
+    ├── commproto   # Common structures across services
+                    # (items, mail, etc., shared across languages and tools)
     ├── gameproto   # Game communication protocol
-    ├── chat        # Chat state module, defines data structures and implements some calculation functions provided by the data structures
+    ├── chat        # Chat state module
+                    # defines data structures and calculation functions
     └── user        # User module (entity)
 ```

@@ -35,7 +35,7 @@ func MakeChatRecved(ctx core.ActorContext) core.IChain {
 
   return &actor.DefaultChain{
       Before: []actor.EventHandler{middleware.MessageUnpack(unpackCfg)},
-      Handler: func(mw *router.MsgWrapper) error {
+      Handler: func(mw *msg.Wrapper) error {
 
       req := unpackCfg.Msg.(*gameproto.ChatSendReq)
       state := ctx.GetValue(ChatStateType{}).(*chat.State)

@@ -46,6 +46,7 @@ func (a *UserActor) Init(ctx context.Context) {
 
     // 2. Fill state into context for easy access in events
 	a.Context().WithValue(events.UserStateType{}, a.entity) 
+    
 }
 
 // events_user_base.go
@@ -53,7 +54,7 @@ type UserStateType struct{} // 1. Define state type in context
 
 func MkOperatorXXX(ctx core.ActorContext) core.IChain {
     return &actor.DefaultChain{
-		Handler: func(mw *router.MsgWrapper) error {
+		Handler: func(mw *msg.Wrapper) error {
 
             // 3. Extract state for various modifications and calculations
 			state := ctx.GetValue(UserStateType{}).(*user.EntityWrapper)
@@ -70,7 +71,7 @@ func MkOperatorXXX(ctx core.ActorContext) core.IChain {
 ```go
 func MkOperatorXXX(ctx core.ActorContext) core.IChain {
     return &actor.DefaultChain{
-		Handler: func(mw *router.MsgWrapper) error {
+		Handler: func(mw *msg.Wrapper) error {
 
             // Extract state for various modifications and calculations
 			state := ctx.GetValue(UserStateType{}).(*user.EntityWrapper)
@@ -105,11 +106,11 @@ func MkOperatorXXX(ctx core.ActorContext) core.IChain {
 func MKCheckRoomState(ctx core.ActorContext) core.IChain {
 
     return &actor.DefaultChain{
-        Handler: func(mw *router.MsgWrapper) error {
+        Handler: func(mw *msg.Wrapper) error {
 
             state := ctx.GetValue(RoomStateType{}).(*room.RoomWrapper)
 
-            mw.req.opt.WithValue(user.ROOM_ID, "new_value")
+            mw.ToBuilder().WithReqCustomFields(fields.ROOM_ID(new_value))
 
             // Use blocking operation
             // Get the target actor's id through the room's state
@@ -127,7 +128,7 @@ func MKCheckRoomState(ctx core.ActorContext) core.IChain {
 func MKChangeUserState(ctx core.ActorContext) core.IChain {
 
     return &actor.DefaultChain{
-        Handler: func(mw *router.MsgWrapper) error {
+        Handler: func(mw *msg.Wrapper) error {
 
             state := ctx.GetValue(UserStateType{}).(*user.EntityWrapper)
 

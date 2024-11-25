@@ -33,7 +33,6 @@ func (a *UserActor) Init(ctx context.Context) {
 		panic(fmt.Errorf("load user actor err %v", err.Error()))
 	}
 }
-
 ```
 
 </br>
@@ -52,7 +51,7 @@ type UserStateType struct{} // 1. 定义 state 在 context 中的类型
 
 func MkOperatorXXX(ctx core.ActorContext) core.IChain {
     return &actor.DefaultChain{
-		Handler: func(mw *router.MsgWrapper) error {
+		Handler: func(mw *msg.Wrapper) error {
 
             // 3. 提取 state 用于各种修改和计算
 			state := ctx.GetValue(UserStateType{}).(*user.EntityWrapper)
@@ -69,7 +68,7 @@ func MkOperatorXXX(ctx core.ActorContext) core.IChain {
 ```go
 func MkOperatorXXX(ctx core.ActorContext) core.IChain {
     return &actor.DefaultChain{
-		Handler: func(mw *router.MsgWrapper) error {
+		Handler: func(mw *msg.Wrapper) error {
 
             // 提取 state 用于各种修改和计算
 			state := ctx.GetValue(UserStateType{}).(*user.EntityWrapper)
@@ -104,11 +103,11 @@ func MkOperatorXXX(ctx core.ActorContext) core.IChain {
 func MKCheckRoomState(ctx core.ActorContext) core.IChain {
 
     return &actor.DefaultChain{
-        Handler: func(mw *router.MsgWrapper) error {
+        Handler: func(mw *msg.Wrapper) error {
 
             state := ctx.GetValue(RoomStateType{}).(*room.RoomWrapper)
 
-            mw.req.opt.WithValue(user.ROOM_ID, "new_value")
+            mw.ToBuilder().WithReqCustomFields(fields.ROOM_ID(new_value))
 
             // 使用阻塞操作
             // 通过 room 的 state 获取到目标 actor 的 id
@@ -126,7 +125,7 @@ func MKCheckRoomState(ctx core.ActorContext) core.IChain {
 func MKChangeUserState(ctx core.ActorContext) core.IChain {
 
     return &actor.DefaultChain{
-        Handler: func(mw *router.MsgWrapper) error {
+        Handler: func(mw *msg.Wrapper) error {
 
             state := ctx.GetValue(UserStateType{}).(*user.EntityWrapper)
 

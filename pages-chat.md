@@ -116,7 +116,7 @@ func MakeChatSendCmd(ctx core.ActorContext) core.IChain {
 
 	return &actor.DefaultChain{
 		Before: []actor.EventHandler{middleware.MessageUnpack(unpackCfg)},
-		Handler: func(mw *router.MsgWrapper) error {
+		Handler: func(mw *msg.Wrapper) error {
 
 			req := unpackCfg.Msg.(*gameproto.ChatSendReq)
 
@@ -145,7 +145,7 @@ func MakeChatRecved(ctx core.ActorContext) core.IChain {
 
 	return &actor.DefaultChain{
 		Before: []actor.EventHandler{middleware.MessageUnpack(unpackCfg)},
-		Handler: func(mw *router.MsgWrapper) error {
+		Handler: func(mw *msg.Wrapper) error {
 
 			req := unpackCfg.Msg.(*gameproto.ChatSendReq)
 			state := ctx.GetValue(ChatStateType{}).(*chat.State)
@@ -213,7 +213,7 @@ a.Sys.Loader(config.ACTOR_PRIVATE_CHAT).
 ```go
 func MakeChatStoreMessage(ctx core.ActorContext) core.IChain {
 	return &actor.DefaultChain{
-		Handler: func(mw *router.MsgWrapper) error {
+		Handler: func(mw *msg.Wrapper) error {
 
             offlineMsg := mw.req.msg
 

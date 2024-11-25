@@ -17,7 +17,7 @@ type UserStateType struct{}
 func MakeUserUseItem(ctx core.ActorContext) core.IChain {
 
 	return &actor.DefaultChain{
-		Handler: func(mw *router.MsgWrapper) error {
+		Handler: func(mw *msg.Wrapper) error {
 
 			state := ctx.GetValue(UserStateType{}).(*user.EntityWrapper)
 
@@ -84,7 +84,7 @@ func HttpHello(ctx core.ActorContext) core.IChain {
 
 	return &actor.DefaultChain{
 		Before: []actor.EventHandler{middleware.MessageUnpack(unpackCfg)},
-		Handler: func(mw *router.MsgWrapper) error {
+		Handler: func(mw *msg.Wrapper) error {
 
 			req := unpackCfg.Msg.(*gameproto.HelloReq)
 
@@ -105,7 +105,7 @@ type MessageUnpackCfg[T any] struct {
 }
 
 func MessageUnpack[T any](cfg *MessageUnpackCfg[T]) actor.EventHandler {
-	return func(msg *router.MsgWrapper) error {
+	return func(msg *msg.Wrapper) error {
 		var msgInstance proto.Message
 		msgType := reflect.TypeOf(cfg.MsgTy)
 
