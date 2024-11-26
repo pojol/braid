@@ -22,7 +22,7 @@
 $ go install github.com/pojol/braid-cli@latest
 
 # 2. Using the CLI to Generate a New Empty Project
-$ braid-cli new "you-project-name" v0.0.1
+$ braid-cli new "you-project-name" v0.1.1
 
 # 3. Creating .go Files from Actor Template Configurations
 $ cd you-project-name/template
