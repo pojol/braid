@@ -71,15 +71,12 @@ func buildSystemWithOption(nodId, nodeIp string, nodePort int, loader core.IActo
 		if err != nil {
 			panic(fmt.Errorf("[braid.system] new acceptor err %v", err.Error()))
 		}
+
+		// run grpc acceptor
+		sys.acceptor.server.Run()
 	}
 
 	return sys
-}
-
-func (sys *NormalSystem) Update() {
-	if sys.nodePort != 0 && sys.acceptor != nil {
-		sys.acceptor.Update()
-	}
 }
 
 func (sys *NormalSystem) Loader(ty string) core.IActorBuilder {
@@ -90,7 +87,7 @@ func (sys *NormalSystem) AddressBook() core.IAddressBook {
 	return sys.addressbook
 }
 
-func (sys *NormalSystem) Register(builder core.IActorBuilder) (core.IActor, error) {
+func (sys *NormalSystem) Register(ctx context.Context, builder core.IActorBuilder) (core.IActor, error) {
 
 	if builder.GetID() == "" || builder.GetType() == "" {
 		return nil, fmt.Errorf("[braid.system] register actor id %v type %v parm err", builder.GetID(), builder.GetType())
@@ -132,6 +129,7 @@ func (sys *NormalSystem) Register(builder core.IActorBuilder) (core.IActor, erro
 	var actor core.IActor
 	if builder.GetConstructor() != nil {
 		actor = builder.GetConstructor()(builder)
+		actor.Init(ctx)
 	} else {
 		panic(fmt.Errorf("[braid.system] actor %v register err, constructor is nil", builder.GetType()))
 	}
@@ -364,8 +362,7 @@ func (sys *NormalSystem) Send(tar router.Target, mw *msg.Wrapper) error {
 	}
 
 	if err != nil {
-		fmt.Errorf("[braid.system] send id %v ty %v err %w", tar.ID, tar.Ty, err)
-		return err
+		return fmt.Errorf("[braid.system] send id %v ty %v err %w", tar.ID, tar.Ty, err)
 	}
 
 	if info.Ip == sys.nodeIP && info.Port == sys.nodePort {

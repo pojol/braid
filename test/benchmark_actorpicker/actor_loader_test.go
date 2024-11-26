@@ -70,8 +70,6 @@ func TestMain(m *testing.M) {
 			if err != nil {
 				panic(fmt.Errorf("node init err %v", err.Error()))
 			}
-
-			nod.Update()
 		}()
 	}
 	time.Sleep(time.Second)
@@ -158,8 +156,6 @@ func TestPicker(b *testing.T) {
 	if err != nil {
 		panic(fmt.Errorf("node init err %v", err.Error()))
 	}
-
-	nod.Update()
 
 	time.Sleep(time.Second)
 

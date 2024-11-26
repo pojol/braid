@@ -2,10 +2,9 @@ package actor
 
 import (
 	"context"
-	"errors"
 	"fmt"
+	"reflect"
 	"runtime/debug"
-	"sync"
 	"sync/atomic"
 	"time"
 
@@ -18,190 +17,11 @@ import (
 	"github.com/pojol/braid/router/msg"
 )
 
-// Future represents an asynchronous operation
-type Future struct {
-	result    *msg.Wrapper
-	err       error
-	done      chan struct{}
-	callbacks []func(mw *msg.Wrapper)
-	mutex     sync.Mutex
-}
-
-func NewFuture() *Future {
-	return &Future{
-		done: make(chan struct{}),
-	}
-}
-
-func (f *Future) Then(callback func(mw *msg.Wrapper)) core.IFuture {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if f.IsCompleted() {
-		go callback(f.result)
-		return NewFuture()
-	}
-
-	newFuture := NewFuture()
-	f.callbacks = append(f.callbacks, func(mw *msg.Wrapper) {
-		callback(mw)
-		newFuture.Complete(mw)
-	})
-
-	return newFuture
-}
-
-func (f *Future) Complete(result *msg.Wrapper) {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-
-	if f.IsCompleted() {
-		return // 已经完成
-	}
-
-	f.result = result
-	close(f.done)
-
-	for _, callback := range f.callbacks {
-		go callback(f.result)
-	}
-	f.callbacks = nil
-}
-
-func (f *Future) IsCompleted() bool {
-	select {
-	case <-f.done:
-		return true
-	default:
-		return false
-	}
-}
-
-type reenterMessage struct {
-	action EventHandler
-	msg    interface{}
-}
-
 type RecoveryFunc func(interface{})
 type EventHandler func(*msg.Wrapper) error
 
 type systemKey struct{}
 type actorKey struct{}
-
-type actorContext struct {
-	ctx context.Context
-}
-
-func (ac *actorContext) Call(tar router.Target, mw *msg.Wrapper) error {
-	actor, ok := ac.ctx.Value(actorKey{}).(core.IActor)
-	if !ok {
-		panic(errors.New("the actor instance does not exist in the ActorContext"))
-	}
-
-	return actor.Call(tar, mw)
-}
-
-func (ac *actorContext) CallBy(id string, ev string, mw *msg.Wrapper) error {
-	actor, ok := ac.ctx.Value(actorKey{}).(core.IActor)
-	if !ok {
-		panic(errors.New("the actor instance does not exist in the ActorContext"))
-	}
-
-	if id == "" || ev == "" {
-		panic(errors.New("callby parm err"))
-	}
-
-	return actor.Call(router.Target{ID: id, Ev: ev}, mw)
-}
-
-func (ac *actorContext) ID() string {
-	actor, ok := ac.ctx.Value(actorKey{}).(core.IActor)
-	if !ok {
-		panic(errors.New("the actor instance does not exist in the ActorContext"))
-	}
-
-	return actor.ID()
-}
-
-func (ac *actorContext) Type() string {
-	actor, ok := ac.ctx.Value(actorKey{}).(core.IActor)
-	if !ok {
-		panic(errors.New("the actor instance does not exist in the ActorContext"))
-	}
-
-	return actor.Type()
-}
-
-func (ac *actorContext) ReenterCall(ctx context.Context, tar router.Target, mw *msg.Wrapper) core.IFuture {
-	actor, ok := ac.ctx.Value(actorKey{}).(core.IActor)
-	if !ok {
-		panic(errors.New("the actor instance does not exist in the ActorContext"))
-	}
-
-	return actor.ReenterCall(ctx, tar, mw)
-}
-
-func (ac *actorContext) Send(tar router.Target, mw *msg.Wrapper) error {
-	sys, ok := ac.ctx.Value(systemKey{}).(core.ISystem)
-	if !ok {
-		panic(errors.New("the system instance does not exist in the ActorContext"))
-	}
-
-	return sys.Send(tar, mw)
-}
-
-func (ac *actorContext) Unregister(id, ty string) error {
-	sys, ok := ac.ctx.Value(systemKey{}).(core.ISystem)
-	if !ok {
-		panic(errors.New("the system instance does not exist in the ActorContext"))
-	}
-
-	return sys.Unregister(id, ty)
-}
-
-func (ac *actorContext) Pub(topic string, msg *router.Message) error {
-	sys, ok := ac.ctx.Value(systemKey{}).(core.ISystem)
-	if !ok {
-		panic(errors.New("the system instance does not exist in the ActorContext"))
-	}
-
-	return sys.Pub(topic, msg)
-}
-
-func (ac *actorContext) AddressBook() core.IAddressBook {
-	sys, ok := ac.ctx.Value(systemKey{}).(core.ISystem)
-	if !ok {
-		panic(errors.New("the system instance does not exist in the ActorContext"))
-	}
-
-	return sys.AddressBook()
-}
-
-func (ac *actorContext) System() core.ISystem {
-	sys, ok := ac.ctx.Value(systemKey{}).(core.ISystem)
-	if !ok {
-		panic(errors.New("the system instance does not exist in the ActorContext"))
-	}
-
-	return sys
-}
-
-func (ac *actorContext) Loader(actorType string) core.IActorBuilder {
-	sys, ok := ac.ctx.Value(systemKey{}).(core.ISystem)
-	if !ok {
-		panic(errors.New("the system instance does not exist in the ActorContext"))
-	}
-
-	return sys.Loader(actorType)
-}
-
-func (ac *actorContext) WithValue(key, value interface{}) {
-	ac.ctx = context.WithValue(ac.ctx, key, value)
-}
-
-func (ac *actorContext) GetValue(key interface{}) interface{} {
-	return ac.ctx.Value(key)
-}
 
 type Runtime struct {
 	Id           string
@@ -246,6 +66,8 @@ func (a *Runtime) Init(ctx context.Context) {
 
 	a.tw = timewheel.New(100*time.Millisecond, 100) // 100个槽位，每个槽位10ms
 	a.lastTick = time.Now()
+
+	go a.update()
 }
 
 func defaultRecovery(r interface{}) {
@@ -410,7 +232,7 @@ func (a *Runtime) ReenterCall(ctx context.Context, tar router.Target, rmw *msg.W
 	return reenterFuture
 }
 
-func (a *Runtime) Update() {
+func (a *Runtime) update() {
 	ticker := time.NewTicker(a.tw.Interval())
 	defer ticker.Stop()
 
@@ -433,7 +255,7 @@ func (a *Runtime) Update() {
 
 			mw, ok := msgInterface.(*msg.Wrapper)
 			if !ok {
-				fmt.Println(a.Id, "Received non-Message type")
+				log.WarnF("actor %v received non-Message type %v", a.Id, reflect.TypeOf(msgInterface))
 				continue
 			}
 

@@ -12,7 +12,7 @@ import (
 type CreateFunc func(IActorBuilder) IActor
 
 type ISystem interface {
-	Register(IActorBuilder) (IActor, error)
+	Register(context.Context, IActorBuilder) (IActor, error)
 	Unregister(id, ty string) error
 
 	Actors() []IActor
@@ -39,7 +39,6 @@ type ISystem interface {
 
 	AddressBook() IAddressBook
 
-	Update()
 	Exit(*sync.WaitGroup)
 }
 

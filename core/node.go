@@ -10,7 +10,6 @@ import "github.com/pojol/braid/lib/tracer"
 
 type INode interface {
 	Init(...NodeOption) error
-	Update()
 	WaitClose()
 
 	ID() string

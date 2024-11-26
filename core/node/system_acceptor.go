@@ -71,10 +71,6 @@ func NewAcceptor(sys core.ISystem, port int) (*Acceptor, error) {
 	return a, nil
 }
 
-func (acceptor *Acceptor) Update() {
-	acceptor.server.Run()
-}
-
 func (acceptor *Acceptor) Exit() {
 	acceptor.server.Close()
 }

@@ -95,11 +95,10 @@ func mockEntity(id string) core.ISystem {
 		core.NodeWithLoader(loader),
 	)
 
-	loader.Builder("MockUserActor", nod.System()).WithID(id).Register()
+	loader.Builder("MockUserActor", nod.System()).WithID(id).Register(context.TODO())
 
 	for _, a := range nod.System().Actors() {
 		a.Init(context.TODO())
-		go a.Update()
 	}
 
 	return nod.System()

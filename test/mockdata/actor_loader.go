@@ -77,7 +77,7 @@ func (al *DefaultActorLoader) AssignToNode(node core.INode) {
 
 		builder.WithID(node.ID() + "_" + actor.ID)
 
-		_, err := builder.Register()
+		_, err := builder.Register(context.TODO())
 		if err != nil {
 			log.InfoF("assign to node build actor %s err %v", actor.Name, err)
 		}

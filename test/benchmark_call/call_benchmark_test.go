@@ -85,12 +85,11 @@ func setupBenchmark() {
 					actorjump2arr = append(actorjump2arr, aid)
 				}
 
-				node.System().Loader("MockClacActor").WithID(aid).Register()
+				node.System().Loader("MockClacActor").WithID(aid).Register(context.TODO())
 			}
 		}
 
 		node.Init()
-		node.Update()
 
 		nodes = append(nodes, node)
 	}
