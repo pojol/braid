@@ -47,13 +47,12 @@ func TestReenterCall(t *testing.T) {
 
 	// build
 	var err error
-	_, err = nod.System().Loader("MockClacActor").WithID("clac-1").Register()
+	_, err = nod.System().Loader("MockClacActor").WithID("clac-1").Register(context.TODO())
 	assert.Equal(t, err, nil)
-	_, err = nod.System().Loader("MockClacActor").WithID("clac-2").Register()
+	_, err = nod.System().Loader("MockClacActor").WithID("clac-2").Register(context.TODO())
 	assert.Equal(t, err, nil)
 
 	nod.Init()
-	nod.Update()
 
 	time.Sleep(time.Second)
 

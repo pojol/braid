@@ -73,7 +73,6 @@ func TestActorTimer(t *testing.T) {
 	)
 
 	nod.Init()
-	nod.Update()
 
 	time.Sleep(time.Second * 10)
 }

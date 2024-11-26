@@ -53,20 +53,7 @@ func (pn *process) Init(opts ...core.NodeOption) error {
 
 	pn.p.Loader.AssignToNode(pn)
 
-	for _, a := range pn.sys.Actors() {
-		a.Init(context.TODO())
-	}
-
 	return nil
-}
-
-func (pn *process) Update() {
-
-	pn.sys.Update()
-
-	for _, a := range pn.sys.Actors() {
-		go a.Update()
-	}
 }
 
 func (pn *process) WaitClose() {

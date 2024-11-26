@@ -98,9 +98,6 @@ type IActor interface {
 	//  succ: Callback function for successful subscription
 	SubscriptionEvent(topic string, channel string, succ func(), opts ...pubsub.TopicOption) error
 
-	// Update is the main loop of the Actor, running in a separate goroutine
-	Update()
-
 	// Call sends an event to another actor
 	Call(tar router.Target, mw *msg.Wrapper) error
 
@@ -141,7 +138,7 @@ type IActorBuilder interface {
 	WithOpt(string, string) IActorBuilder
 
 	// ---
-	Register() (IActor, error)
+	Register(context.Context) (IActor, error)
 	Picker() error
 }
 

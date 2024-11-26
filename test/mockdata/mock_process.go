@@ -36,14 +36,6 @@ func (pn *ProcessNode) Init(opts ...core.NodeOption) error {
 	return nil
 }
 
-func (pn *ProcessNode) Update() {
-	pn.Sys.Update()
-
-	for _, a := range pn.Sys.Actors() {
-		go a.Update()
-	}
-}
-
 func (pn *ProcessNode) WaitClose() {
 	ch := make(chan os.Signal, 1)
 	signal.Notify(ch, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)

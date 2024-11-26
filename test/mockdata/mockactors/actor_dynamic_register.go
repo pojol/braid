@@ -44,16 +44,12 @@ func (a *dynamicRegisterActor) Init(ctx context.Context) {
 					builder.WithOpt(k, v.(string))
 				}
 
-				actor, err := builder.Register()
+				_, err = builder.Register(mw.Ctx)
 				if err != nil {
 					return err
 				}
 
 				mw.Req.Header.PrevActorType = "MockDynamicRegister"
-
-				actor.Init(mw.Ctx)
-				go actor.Update()
-
 				return nil
 			},
 		}
