@@ -30,7 +30,7 @@ $ cd you-project-name/template
 $ go generate
 
 # 4. Navigate to the services directory, then try to build and run the demo
-$ cd you-project-name/services/demo-1
+$ cd you-project-name/node
 $ go run main.go
 ```
 
