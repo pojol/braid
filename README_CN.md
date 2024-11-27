@@ -118,6 +118,34 @@ user.SubscriptionEvent("offline_messages", a.Id, func() {
 }, pubsub.WithTTL(time.Hour*24*30))
 ```
 
+<div style="display: flex; align-items: center; margin: 1em 0;">
+  <div style="flex-grow: 1; height: 1px; background-color: #ccc;"></div>
+  <div style="margin: 0 10px; font-weight: bold; color: #666;">测试机器人</div>
+  <div style="flex-grow: 1; height: 1px; background-color: #ccc;"></div>
+</div>
+
+### 4. 通过测试机器人验证 braid 提供的服务器接口
+> 使用上面的脚手架工程
+
+```shell
+$ cd you-project-name/testbots
+
+# 1. 运行机器人服务器
+$ go run main.go
+
+# 2. 下载 gobot 编辑器（最新版本
+https://github.com/pojol/gobot/releases
+
+# 3. 运行 gobot 编辑器
+$ run gobot_editor_[ver].exe or .dmg
+
+# 4. 进入到 bots 页签
+# 5. 选中机器人，点击 load 加载 testbot
+# 6. 点击左下角按钮，构建机器人实例
+# 7. 点击单步运行按钮，查看机器人和 braid 服务器交互情形
+```
+
+[![image.png](https://i.postimg.cc/LX5gbV34/image.png)](https://postimg.cc/xJrdkMZB)
 
 ---
 

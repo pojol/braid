@@ -121,6 +121,34 @@ user.SubscriptionEvent("offline_messages", a.Id, func() {
 }, pubsub.WithTTL(time.Hour*24*30))
 ```
 
+<div style="display: flex; align-items: center; margin: 1em 0;">
+  <div style="flex-grow: 1; height: 1px; background-color: #ccc;"></div>
+  <div style="margin: 0 10px; font-weight: bold; color: #666;">Testing Robot</div>
+  <div style="flex-grow: 1; height: 1px; background-color: #ccc;"></div>
+</div>
+
+### 4. Game Server Verification Using Test Bot
+> Use the project built with scaffold above
+
+```shell
+$ cd you-project-name/testbots
+
+# 1. Launch Bot service
+$ go run main.go
+
+# 2. Download gobot editor #latest
+https://github.com/pojol/gobot/releases
+
+# 3. Launch Bot editor
+$ run gobot_editor_[ver].exe or .dmg
+
+# 4. Go to Bots tab
+# 5. Click Load button to load the bot
+# 6. Click bottom-left Create Bot button to create instance
+# 7. Click Run to the Next button to execute the bot step by step. Monitor the bot-server interaction in the right preview window
+```
+
+[![image.png](https://i.postimg.cc/LX5gbV34/image.png)](https://postimg.cc/xJrdkMZB)
 
 ---
 
