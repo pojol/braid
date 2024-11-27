@@ -142,9 +142,10 @@ https://github.com/pojol/gobot/releases
 $ run gobot_editor_[ver].exe or .dmg
 
 # 4. 进入到 bots 页签
-# 5. 选中机器人，点击 load 加载 testbot
-# 6. 点击左下角按钮，构建机器人实例
-# 7. 点击单步运行按钮，查看机器人和 braid 服务器交互情形
+# 5. 将 testbots 目录中的 testbot.bh 文件拖拽到 bots 页面中
+# 6. 选中 testbot 机器人，点击 load 加载 testbot
+# 7. 点击左下角按钮，构建机器人实例
+# 8. 点击单步运行按钮，查看机器人和 braid 服务器交互情形
 ```
 
 [![image.png](https://i.postimg.cc/LX5gbV34/image.png)](https://postimg.cc/xJrdkMZB)

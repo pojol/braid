@@ -146,8 +146,9 @@ $ run gobot_editor_[ver].exe or .dmg
 
 # 4. Go to Bots tab
 # 5. Click Load button to load the bot
-# 6. Click bottom-left Create Bot button to create instance
-# 7. Click Run to the Next button to execute the bot step by step. Monitor the bot-server interaction in the right preview window
+# 6. Drag the testbot.bh file from the testbots directory to the bots page
+# 7. Click bottom-left Create Bot button to create instance
+# 8. Click Run to the Next button to execute the bot step by step. Monitor the bot-server interaction in the right preview window
 ```
 
 [![image.png](https://i.postimg.cc/LX5gbV34/image.png)](https://postimg.cc/xJrdkMZB)
