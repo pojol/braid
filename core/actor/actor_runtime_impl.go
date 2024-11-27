@@ -13,7 +13,6 @@ import (
 	"github.com/pojol/braid/lib/mpsc"
 	"github.com/pojol/braid/lib/pubsub"
 	"github.com/pojol/braid/lib/timewheel"
-	"github.com/pojol/braid/router"
 	"github.com/pojol/braid/router/msg"
 )
 
@@ -127,7 +126,7 @@ func (a *Runtime) SubscriptionEvent(topic string, channel string, succ func(), o
 	return nil
 }
 
-func (a *Runtime) Call(tar router.Target, mw *msg.Wrapper) error {
+func (a *Runtime) Call(idOrSymbol, actorType, event string, mw *msg.Wrapper) error {
 
 	if mw.Req.Header.OrgActorID == "" { // Only record the original sender
 		mw.Req.Header.OrgActorID = a.Id
@@ -137,7 +136,7 @@ func (a *Runtime) Call(tar router.Target, mw *msg.Wrapper) error {
 	// Updated to the latest value on each call
 	mw.Req.Header.PrevActorType = a.Ty
 
-	return a.Sys.Call(tar, mw)
+	return a.Sys.Call(idOrSymbol, actorType, event, mw)
 }
 
 func (a *Runtime) Received(mw *msg.Wrapper) error {
@@ -150,7 +149,7 @@ func (a *Runtime) Received(mw *msg.Wrapper) error {
 	return nil
 }
 
-func (a *Runtime) ReenterCall(ctx context.Context, tar router.Target, rmw *msg.Wrapper) core.IFuture {
+func (a *Runtime) ReenterCall(ctx context.Context, idOrSymbol, actorType, event string, rmw *msg.Wrapper) core.IFuture {
 	future := NewFuture()
 
 	// 准备消息头
@@ -170,7 +169,7 @@ func (a *Runtime) ReenterCall(ctx context.Context, tar router.Target, rmw *msg.W
 		defer cancel()
 
 		// 执行异步调用
-		err := a.Sys.Call(tar, rmw)
+		err := a.Sys.Call(idOrSymbol, actorType, event, rmw)
 		if err != nil {
 			future.Complete(rmw)
 			return

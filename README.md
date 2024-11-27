@@ -18,14 +18,16 @@
 * Development Focus: No need to consider underlying architecture like services or clusters; concentrate on game logic.
 
 ### 1. Quick Start
-> Install the scaffold project using the braid-cli tool
+> Install the scaffold project using the braid-cli tool 
+
+> A minimal working game server that serves as your starting point with braid
 
 ```shell
 # 1. Install CLI Tool
 $ go install github.com/pojol/braid-cli@latest
 
 # 2. Using the CLI to Generate a New Empty Project 
-$ braid-cli new "you-project-name" v0.1.2
+$ braid-cli new "you-project-name" v0.1.3
 
 # 3. Creating .go Files from Actor Template Configurations
 $ cd you-project-name/template

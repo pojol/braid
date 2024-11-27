@@ -13,7 +13,6 @@ import (
 	"github.com/pojol/braid/core"
 	"github.com/pojol/braid/core/node"
 	"github.com/pojol/braid/def"
-	"github.com/pojol/braid/router"
 	"github.com/pojol/braid/router/msg"
 	"github.com/pojol/braid/test/mockdata"
 	"golang.org/x/exp/rand"
@@ -119,11 +118,9 @@ func Benchmark2Node1wActor2Jump(b *testing.B) {
 		m.WithReqCustomFields(msg.Attr{Key: "next", Value: actorjump2arr[randomIndex]})
 
 		nodes[0].System().Call(
-			router.Target{
-				ID: actorjump1arr[randomIndex],
-				Ty: def.MockActorEntity,
-				Ev: "print",
-			}, m.Build())
+			actorjump1arr[randomIndex],
+			def.MockActorEntity,
+			"print", m.Build())
 	}
 }
 

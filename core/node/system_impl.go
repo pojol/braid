@@ -183,11 +183,11 @@ func (sys *NormalSystem) Actors() []core.IActor {
 	return actors
 }
 
-func (sys *NormalSystem) Call(tar router.Target, mw *msg.Wrapper) error {
+func (sys *NormalSystem) Call(idOrSymbol, actorType, event string, mw *msg.Wrapper) error {
 	// Set message header information
-	mw.Req.Header.Event = tar.Ev
-	mw.Req.Header.TargetActorID = tar.ID
-	mw.Req.Header.TargetActorType = tar.Ty
+	mw.Req.Header.Event = event
+	mw.Req.Header.TargetActorID = idOrSymbol
+	mw.Req.Header.TargetActorType = actorType
 
 	var info core.AddressInfo
 	var actor core.IActor
@@ -198,21 +198,21 @@ func (sys *NormalSystem) Call(tar router.Target, mw *msg.Wrapper) error {
 		if err == nil {
 			mw.Ctx = span.Begin(mw.Ctx)
 
-			span.SetTag("actor", tar.Ty)
-			span.SetTag("event", tar.Ev)
-			span.SetTag("id", tar.ID)
+			span.SetTag("actor", actorType)
+			span.SetTag("event", event)
+			span.SetTag("id", idOrSymbol)
 
 			defer span.End(mw.Ctx)
 		}
 	}
 
-	if tar.ID == "" {
+	if idOrSymbol == "" {
 		return fmt.Errorf("[braid.system] call unknown target id")
 	}
 
-	switch tar.ID {
+	switch idOrSymbol {
 	case def.SymbolWildcard:
-		info, err = sys.addressbook.GetWildcardActor(mw.Ctx, tar.Ty)
+		info, err = sys.addressbook.GetWildcardActor(mw.Ctx, actorType)
 		// Check if the wildcard actor is local
 		sys.RLock()
 		actor, ok := sys.actoridmap[info.ActorId]
@@ -221,7 +221,7 @@ func (sys *NormalSystem) Call(tar router.Target, mw *msg.Wrapper) error {
 			return sys.localCall(actor, mw)
 		}
 	case def.SymbolLocalFirst:
-		actor, info, err = sys.findLocalOrWildcardActor(mw.Ctx, tar.Ty)
+		actor, info, err = sys.findLocalOrWildcardActor(mw.Ctx, actorType)
 		if err != nil {
 			return err
 		}
@@ -232,7 +232,7 @@ func (sys *NormalSystem) Call(tar router.Target, mw *msg.Wrapper) error {
 	default:
 		// First, check if it's a local call
 		sys.RLock()
-		actorp, ok := sys.actoridmap[tar.ID]
+		actorp, ok := sys.actoridmap[idOrSymbol]
 		sys.RUnlock()
 
 		if ok {
@@ -240,15 +240,15 @@ func (sys *NormalSystem) Call(tar router.Target, mw *msg.Wrapper) error {
 		}
 
 		// If not local, get from addressbook
-		info, err = sys.addressbook.GetByID(mw.Ctx, tar.ID)
+		info, err = sys.addressbook.GetByID(mw.Ctx, idOrSymbol)
 	}
 
 	if err != nil {
-		return fmt.Errorf("[braid.system] call id %v ty %v err %w", tar.ID, tar.Ty, err)
+		return fmt.Errorf("[braid.system] call id %v ty %v err %w", idOrSymbol, actorType, err)
 	}
 
 	if info.Ip == sys.nodeIP && info.Port == sys.nodePort {
-		log.WarnF("[braid.system] call err actorTy %v actorID %v call ev %v self-call", tar.Ty, tar.ID, tar.Ev)
+		log.WarnF("[braid.system] call err actorTy %v actorID %v call ev %v self-call", actorType, idOrSymbol, event)
 		return ErrSelfCall
 	}
 
@@ -315,23 +315,23 @@ func (sys *NormalSystem) handleRemoteCall(ctx context.Context, addrinfo core.Add
 	return nil
 }
 
-func (sys *NormalSystem) Send(tar router.Target, mw *msg.Wrapper) error {
+func (sys *NormalSystem) Send(idOrSymbol, actorType, event string, mw *msg.Wrapper) error {
 	// Set message header information
-	mw.Req.Header.Event = tar.Ev
-	mw.Req.Header.TargetActorID = tar.ID
-	mw.Req.Header.TargetActorType = tar.Ty
+	mw.Req.Header.Event = event
+	mw.Req.Header.TargetActorID = idOrSymbol
+	mw.Req.Header.TargetActorType = actorType
 
 	var info core.AddressInfo
 	var actor core.IActor
 	var err error
 
-	if tar.ID == "" {
+	if idOrSymbol == "" {
 		return fmt.Errorf("[braid.system] send unknown target id")
 	}
 
-	switch tar.ID {
+	switch idOrSymbol {
 	case def.SymbolWildcard:
-		info, err = sys.addressbook.GetWildcardActor(mw.Ctx, tar.Ty)
+		info, err = sys.addressbook.GetWildcardActor(mw.Ctx, actorType)
 		// Check if the wildcard actor is local
 		sys.RLock()
 		actor, ok := sys.actoridmap[info.ActorId]
@@ -340,7 +340,7 @@ func (sys *NormalSystem) Send(tar router.Target, mw *msg.Wrapper) error {
 			return actor.Received(mw)
 		}
 	case def.SymbolLocalFirst:
-		actor, info, err = sys.findLocalOrWildcardActor(mw.Ctx, tar.Ty)
+		actor, info, err = sys.findLocalOrWildcardActor(mw.Ctx, actorType)
 		if err != nil {
 			return err
 		}
@@ -350,7 +350,7 @@ func (sys *NormalSystem) Send(tar router.Target, mw *msg.Wrapper) error {
 	default:
 		// First, check if it's a local call
 		sys.RLock()
-		actorp, ok := sys.actoridmap[tar.ID]
+		actorp, ok := sys.actoridmap[idOrSymbol]
 		sys.RUnlock()
 
 		if ok {
@@ -358,15 +358,15 @@ func (sys *NormalSystem) Send(tar router.Target, mw *msg.Wrapper) error {
 		}
 
 		// If not local, get from addressbook
-		info, err = sys.addressbook.GetByID(mw.Ctx, tar.ID)
+		info, err = sys.addressbook.GetByID(mw.Ctx, idOrSymbol)
 	}
 
 	if err != nil {
-		return fmt.Errorf("[braid.system] send id %v ty %v err %w", tar.ID, tar.Ty, err)
+		return fmt.Errorf("[braid.system] send id %v ty %v err %w", idOrSymbol, actorType, err)
 	}
 
 	if info.Ip == sys.nodeIP && info.Port == sys.nodePort {
-		log.WarnF("[braid.system] send err actorTy %v actorID %v call ev %v self-call", tar.Ty, tar.ID, tar.Ev)
+		log.WarnF("[braid.system] send err actorTy %v actorID %v call ev %v self-call", actorType, idOrSymbol, event)
 		return ErrSelfCall
 	}
 

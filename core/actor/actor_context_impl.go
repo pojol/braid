@@ -13,26 +13,13 @@ type actorContext struct {
 	ctx context.Context
 }
 
-func (ac *actorContext) Call(tar router.Target, mw *msg.Wrapper) error {
+func (ac *actorContext) Call(idOrSymbol, actorType, event string, mw *msg.Wrapper) error {
 	actor, ok := ac.ctx.Value(actorKey{}).(core.IActor)
 	if !ok {
 		panic(errors.New("the actor instance does not exist in the ActorContext"))
 	}
 
-	return actor.Call(tar, mw)
-}
-
-func (ac *actorContext) CallBy(id string, ev string, mw *msg.Wrapper) error {
-	actor, ok := ac.ctx.Value(actorKey{}).(core.IActor)
-	if !ok {
-		panic(errors.New("the actor instance does not exist in the ActorContext"))
-	}
-
-	if id == "" || ev == "" {
-		panic(errors.New("callby parm err"))
-	}
-
-	return actor.Call(router.Target{ID: id, Ev: ev}, mw)
+	return actor.Call(idOrSymbol, actorType, event, mw)
 }
 
 func (ac *actorContext) ID() string {
@@ -53,22 +40,22 @@ func (ac *actorContext) Type() string {
 	return actor.Type()
 }
 
-func (ac *actorContext) ReenterCall(ctx context.Context, tar router.Target, mw *msg.Wrapper) core.IFuture {
+func (ac *actorContext) ReenterCall(ctx context.Context, idOrSymbol, actorType, event string, mw *msg.Wrapper) core.IFuture {
 	actor, ok := ac.ctx.Value(actorKey{}).(core.IActor)
 	if !ok {
 		panic(errors.New("the actor instance does not exist in the ActorContext"))
 	}
 
-	return actor.ReenterCall(ctx, tar, mw)
+	return actor.ReenterCall(ctx, idOrSymbol, actorType, event, mw)
 }
 
-func (ac *actorContext) Send(tar router.Target, mw *msg.Wrapper) error {
+func (ac *actorContext) Send(idOrSymbol, actorType, event string, mw *msg.Wrapper) error {
 	sys, ok := ac.ctx.Value(systemKey{}).(core.ISystem)
 	if !ok {
 		panic(errors.New("the system instance does not exist in the ActorContext"))
 	}
 
-	return sys.Send(tar, mw)
+	return sys.Send(idOrSymbol, actorType, event, mw)
 }
 
 func (ac *actorContext) Unregister(id, ty string) error {

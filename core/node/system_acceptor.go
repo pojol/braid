@@ -88,11 +88,10 @@ func (s *listen) Routing(ctx context.Context, req *router.RouteReq) (*router.Rou
 
 	mw.Req.Header.PrevActorType = "GrpcAcceptor"
 
-	err := s.sys.Call(router.Target{
-		ID: req.Msg.Header.TargetActorID,
-		Ty: req.Msg.Header.TargetActorType,
-		Ev: req.Msg.Header.Event,
-	}, mw)
+	err := s.sys.Call(
+		req.Msg.Header.TargetActorID,
+		req.Msg.Header.TargetActorType,
+		req.Msg.Header.Event, mw)
 
 	if err != nil {
 		log.InfoF("listen routing %v err %v", req.Msg.Header.Event, err.Error())

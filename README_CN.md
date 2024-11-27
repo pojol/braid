@@ -17,12 +17,14 @@
 ### 1. 快速开始
 > 使用 braid-cli 工具安装脚手架项目
 
+> 一个最小可工作游戏服务器，作为您使用 Braid 的起点
+
 ```shell
 # 1. Install CLI Tool
 $ go install github.com/pojol/braid-cli@latest
 
 # 2. Using the CLI to Generate a New Empty Project
-$ braid-cli new "you-project-name" v0.1.2
+$ braid-cli new "you-project-name" v0.1.3
 
 # 3. Creating .go Files from Actor Template Configurations
 $ cd you-project-name/template

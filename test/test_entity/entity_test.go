@@ -13,7 +13,6 @@ import (
 	"github.com/pojol/braid/core"
 	"github.com/pojol/braid/core/node"
 	"github.com/pojol/braid/lib/log"
-	"github.com/pojol/braid/router"
 	"github.com/pojol/braid/router/msg"
 	"github.com/pojol/braid/test/mockdata"
 	"github.com/pojol/braid/test/mockdata/mockactors"
@@ -116,7 +115,7 @@ func TestEntityLoad(t *testing.T) {
 	sys := mockEntity(id)
 
 	m := msg.NewBuilder(context.TODO()).Build()
-	sys.Call(router.Target{ID: id, Ty: ty, Ev: "entity_test"}, m)
+	sys.Call(id, ty, "entity_test", m)
 
 	assert.Equal(t, m.Err, nil)
 	assert.Equal(t, msg.GetResField[string](m, "code"), "200")

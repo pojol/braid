@@ -14,22 +14,41 @@ type IChain interface {
 }
 
 type ActorContext interface {
-	// Call 使用 actor 自身发起的 call 调用
-	Call(tar router.Target, mw *msg.Wrapper) error
-	CallBy(id string, ev string, mw *msg.Wrapper) error
+	// Call performs a blocking call to target actor
+	//
+	// Parameters:
+	//   - idOrSymbol: target actorID, or routing rule symbol to target actor
+	//   - actorType: type of actor, obtained from actor template
+	//   - event: event name to be handled
+	//   - mw: message wrapper for routing
+	Call(idOrSymbol, actorType, event string, mw *msg.Wrapper) error
 
-	// ReenterCall 使用 actor 自身发起的 ReenterCall 调用
-	ReenterCall(ctx context.Context, tar router.Target, mw *msg.Wrapper) IFuture
+	// ReenterCall performs a reentrant call
+	//
+	// Parameters:
+	//   - ctx: context for the call
+	//   - idOrSymbol: target actorID, or routing rule symbol to target actor
+	//   - actorType: type of actor, obtained from actor template
+	//   - event: event name to be handled
+	//   - mw: message wrapper for routing
+	ReenterCall(ctx context.Context, idOrSymbol, actorType, event string, mw *msg.Wrapper) IFuture
 
-	// Send sends an event to another actor
-	// Asynchronous call semantics, does not block the current goroutine, used for long-running RPC calls
-	Send(tar router.Target, mw *msg.Wrapper) error
+	// Send performs an asynchronous call
+	//
+	// Parameters:
+	//   - idOrSymbol: target actorID, or routing rule symbol to target actor
+	//   - actorType: type of actor, obtained from actor template
+	//   - event: event name to be handled
+	//   - mw: message wrapper for routing
+	Send(idOrSymbol, actorType, event string, mw *msg.Wrapper) error
 
 	// Pub semantics for pubsub, used to publish messages to an actor's message cache queue
 	Pub(topic string, msg *router.Message) error
 
-	// AddressBook 管理全局actor地址的对象，通常由 system 控制调用
+	// AddressBook actor 地址管理对象
 	AddressBook() IAddressBook
+
+	//
 	System() ISystem
 
 	// Loader returns the actor loader
@@ -99,9 +118,9 @@ type IActor interface {
 	SubscriptionEvent(topic string, channel string, succ func(), opts ...pubsub.TopicOption) error
 
 	// Call sends an event to another actor
-	Call(tar router.Target, mw *msg.Wrapper) error
+	Call(idOrSymbol, actorType, event string, mw *msg.Wrapper) error
 
-	ReenterCall(ctx context.Context, tar router.Target, mw *msg.Wrapper) IFuture
+	ReenterCall(ctx context.Context, idOrSymbol, actorType, event string, mw *msg.Wrapper) IFuture
 
 	Context() ActorContext
 

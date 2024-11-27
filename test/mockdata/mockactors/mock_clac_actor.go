@@ -33,11 +33,8 @@ func (a *MockClacActor) Init(ctx context.Context) {
 		return &actor.DefaultChain{
 			Handler: func(mw *msg.Wrapper) error {
 
-				a.Call(router.Target{
-					ID: "mockentity",
-					Ty: def.MockActorEntity,
-					Ev: "print",
-				}, &msg.Wrapper{Ctx: context.TODO(), Req: &router.Message{Header: &router.Header{}}})
+				a.Call("mockentity", def.MockActorEntity, "print",
+					&msg.Wrapper{Ctx: context.TODO(), Req: &router.Message{Header: &router.Header{}}})
 
 				return nil
 			},
@@ -63,7 +60,7 @@ func MakeEvReenter(actorCtx core.ActorContext) core.IChain {
 
 			// Initiate an asynchronous re-entrant call
 			// 发起一次异步可重入调用
-			future := actorCtx.ReenterCall(mw.Ctx, router.Target{ID: "clac-2", Ty: def.MockActorEntity, Ev: "clac"}, mw)
+			future := actorCtx.ReenterCall(mw.Ctx, "clac-2", def.MockActorEntity, "clac", mw)
 
 			// Register callback functions to handle the result after the asynchronous call completes. Note:
 			//  1. The Then method itself is a synchronous call, returning immediately.

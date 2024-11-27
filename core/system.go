@@ -21,11 +21,11 @@ type ISystem interface {
 
 	// Call sends an event to another actor
 	// Synchronous call semantics (actual implementation is asynchronous, each call is in a separate goroutine)
-	Call(tar router.Target, mw *msg.Wrapper) error
+	Call(idOrSymbol, actorType, event string, mw *msg.Wrapper) error
 
 	// Send sends an event to another actor
 	// Asynchronous call semantics, does not block the current goroutine, used for long-running RPC calls
-	Send(tar router.Target, mw *msg.Wrapper) error
+	Send(idOrSymbol, actorType, event string, mw *msg.Wrapper) error
 
 	// Pub semantics for pubsub, used to publish messages to an actor's message cache queue
 	Pub(topic string, m *router.Message) error
