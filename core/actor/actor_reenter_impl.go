@@ -10,7 +10,6 @@ import (
 // Future represents an asynchronous operation
 type Future struct {
 	result    *msg.Wrapper
-	err       error
 	done      chan struct{}
 	callbacks []func(mw *msg.Wrapper)
 	mutex     sync.Mutex

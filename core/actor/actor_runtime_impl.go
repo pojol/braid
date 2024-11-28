@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"reflect"
 	"runtime/debug"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -12,7 +13,6 @@ import (
 	"github.com/pojol/braid/lib/log"
 	"github.com/pojol/braid/lib/mpsc"
 	"github.com/pojol/braid/lib/pubsub"
-	"github.com/pojol/braid/lib/timewheel"
 	"github.com/pojol/braid/router/msg"
 )
 
@@ -34,8 +34,9 @@ type Runtime struct {
 	chains       map[string]core.IChain
 	recovery     RecoveryFunc
 
-	tw       *timewheel.TimeWheel
-	lastTick time.Time
+	timers    map[core.ITimer]struct{}
+	timerChan chan core.ITimer
+	timerWg   sync.WaitGroup // 用于等待所有 timer goroutine 退出
 
 	actorCtx *actorContext
 }
@@ -63,8 +64,8 @@ func (a *Runtime) Init(ctx context.Context) {
 	a.actorCtx.ctx = context.WithValue(a.actorCtx.ctx, systemKey{}, a.Sys)
 	a.actorCtx.ctx = context.WithValue(a.actorCtx.ctx, actorKey{}, a)
 
-	a.tw = timewheel.New(100*time.Millisecond, 100) // 100个槽位，每个槽位10ms
-	a.lastTick = time.Now()
+	a.timers = make(map[core.ITimer]struct{})
+	a.timerChan = make(chan core.ITimer, 1024)
 
 	go a.update()
 }
@@ -91,17 +92,45 @@ func (a *Runtime) RegisterEvent(ev string, chainFunc func(ctx core.ActorContext)
 //	interval: Time interval between executions (in milliseconds). If 0, executes only once
 //	f: Callback function
 //	args: Arguments for the callback function
-func (a *Runtime) RegisterTimer(dueTime int64, interval int64, f func(interface{}) error, args interface{}) *timewheel.Timer {
-	return a.tw.AddTimer(
+func (a *Runtime) RegisterTimer(dueTime int64, interval int64, f func(interface{}) error, args interface{}) core.ITimer {
+	info := NewTimerInfo(
 		time.Duration(dueTime)*time.Millisecond,
 		time.Duration(interval)*time.Millisecond,
-		f,
-		args,
-	)
+		f, args)
+
+	a.timers[info] = struct{}{}
+	a.timerWg.Add(1)
+
+	go func() {
+		defer a.timerWg.Done()
+
+		for {
+			select {
+			case <-info.timer.C:
+				a.timerChan <- info
+
+				if info.interval > 0 {
+					info.Reset(0)
+				} else {
+					a.RemoveTimer(info)
+					return
+				}
+			case <-a.shutdownCh:
+				return
+			}
+		}
+	}()
+
+	return info
 }
 
-func (a *Runtime) RemoveTimer(t *timewheel.Timer) {
-	a.tw.RemoveTimer(t)
+func (a *Runtime) RemoveTimer(t core.ITimer) {
+	if t == nil {
+		return
+	}
+
+	t.Stop()
+	delete(a.timers, t)
 }
 
 // SubscriptionEvent subscribes to a message
@@ -232,9 +261,6 @@ func (a *Runtime) ReenterCall(ctx context.Context, idOrSymbol, actorType, event 
 }
 
 func (a *Runtime) update() {
-	ticker := time.NewTicker(a.tw.Interval())
-	defer ticker.Stop()
-
 	checkClose := func() {
 		for !a.q.Empty() || !a.reenterQueue.Empty() {
 			time.Sleep(10 * time.Millisecond)
@@ -246,9 +272,13 @@ func (a *Runtime) update() {
 
 	for {
 		select {
-		case <-ticker.C:
-			a.tw.Tick()
-			a.lastTick = time.Now()
+		case timerInfo, ok := <-a.timerChan:
+			if !ok {
+				return // channel closed
+			}
+			if err := timerInfo.Execute(); err != nil {
+				log.WarnF("actor %v timer callback error: %v", a.Id, err)
+			}
 		case <-a.q.C:
 			msgInterface := a.q.Pop()
 
@@ -305,6 +335,11 @@ func (a *Runtime) Exit() {
 	close(a.shutdownCh) // 发送关闭信号
 	<-a.closeCh         // 等待所有消息处理完毕
 
-	a.tw.Shutdown()
+	for t := range a.timers {
+		a.RemoveTimer(t)
+	}
+	a.timerWg.Wait()
+	close(a.timerChan)
+
 	log.InfoF("[braid.actor] %s has exited", a.Id)
 }

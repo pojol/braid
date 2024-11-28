@@ -2,9 +2,9 @@ package core
 
 import (
 	"context"
+	"time"
 
 	"github.com/pojol/braid/lib/pubsub"
-	"github.com/pojol/braid/lib/timewheel"
 	"github.com/pojol/braid/router"
 	"github.com/pojol/braid/router/msg"
 )
@@ -23,7 +23,7 @@ type ActorContext interface {
 	//   - mw: message wrapper for routing
 	Call(idOrSymbol, actorType, event string, mw *msg.Wrapper) error
 
-	// ReenterCall performs a reentrant call
+	// ReenterCall performs a reentrant(asynchronous) call
 	//
 	// Parameters:
 	//   - ctx: context for the call
@@ -86,6 +86,29 @@ type IFuture interface {
 	Then(func(*msg.Wrapper)) IFuture
 }
 
+// ITimer 定时器接口
+type ITimer interface {
+	// Stop 停止定时器
+	// 返回是否成功停止（如果定时器已经被触发或停止，返回 false）
+	Stop() bool
+
+	// Reset 重置定时器
+	// interval: 新的时间间隔（如果为0，使用原有间隔）
+	// 返回是否成功重置
+	Reset(interval time.Duration) bool
+
+	// IsActive 检查定时器是否活跃
+	IsActive() bool
+
+	// Interval 获取当前的时间间隔
+	Interval() time.Duration
+
+	// NextTrigger 获取下次触发时间
+	NextTrigger() time.Time
+
+	Execute() error
+}
+
 // IActor is an abstraction of threads (goroutines). In a Node (process),
 // 1 to N actors execute specific business logic.
 //
@@ -108,7 +131,8 @@ type IActor interface {
 	//  interval: time between each tick
 	//  f: callback function
 	//  args: can be used to pass the actor entity to the timer callback
-	RegisterTimer(dueTime int64, interval int64, f func(interface{}) error, args interface{}) *timewheel.Timer
+	RegisterTimer(dueTime int64, interval int64, f func(interface{}) error, args interface{}) ITimer
+	RemoveTimer(t ITimer)
 
 	// SubscriptionEvent subscribes to a message
 	//  If this is the first subscription to this topic, opts will take effect (you can set some options for the topic, such as ttl)
