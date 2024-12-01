@@ -8,7 +8,6 @@ require (
 	github.com/alicebob/miniredis/v2 v2.33.0
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang-jwt/jwt v3.2.2+incompatible
-	github.com/golang/protobuf v1.5.4
 	github.com/google/uuid v1.6.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0
 	github.com/lestrrat-go/file-rotatelogs v2.4.0+incompatible
@@ -16,12 +15,10 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/redis/go-redis/v9 v9.6.1
 	github.com/stretchr/testify v1.9.0
-	github.com/tryvium-travels/memongo v0.12.0
 	github.com/uber/jaeger-client-go v2.30.0+incompatible
 	github.com/uber/jaeger-lib v2.4.1+incompatible
 	go.mongodb.org/mongo-driver v1.16.1
 	go.uber.org/zap v1.18.1
-	golang.org/x/exp v0.0.0-20191030013958-a1ab85dbe136
 	golang.org/x/sync v0.7.0
 	golang.org/x/time v0.5.0
 	google.golang.org/grpc v1.65.0
@@ -29,7 +26,6 @@ require (
 
 require (
 	github.com/HdrHistogram/hdrhistogram-go v1.1.2 // indirect
-	github.com/acobaugh/osrelease v0.0.0-20181218015638-a93a0a55a249 // indirect
 	github.com/alicebob/gopher-json v0.0.0-20200520072559-a9ecdc9d1d3a // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
@@ -42,7 +38,6 @@ require (
 	github.com/montanaflynn/stats v0.7.1 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/rogpeppe/go-internal v1.12.0 // indirect
-	github.com/spf13/afero v1.6.0 // indirect
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
 	github.com/xdg-go/scram v1.1.2 // indirect
 	github.com/xdg-go/stringprep v1.0.4 // indirect

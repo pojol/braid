@@ -151,6 +151,7 @@ $ run gobot_editor_[ver].exe or .dmg
 # 8. Click Run to the Next button to execute the bot step by step. Monitor the bot-server interaction in the right preview window
 ```
 
+[Gobot](https://github.com/pojol/gobot)
 [![image.png](https://i.postimg.cc/LX5gbV34/image.png)](https://postimg.cc/xJrdkMZB)
 
 ---

@@ -148,6 +148,7 @@ $ run gobot_editor_[ver].exe or .dmg
 # 8. 点击单步运行按钮，查看机器人和 braid 服务器交互情形
 ```
 
+[测试机器人 Gobot](https://github.com/pojol/gobot)
 [![image.png](https://i.postimg.cc/LX5gbV34/image.png)](https://postimg.cc/xJrdkMZB)
 
 ---
