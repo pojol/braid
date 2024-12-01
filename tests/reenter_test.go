@@ -9,6 +9,7 @@ import (
 	"github.com/pojol/braid/core"
 	"github.com/pojol/braid/core/node"
 	"github.com/pojol/braid/router/msg"
+	"github.com/pojol/braid/tests/mock"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -22,9 +23,9 @@ func TestReenter(t *testing.T) {
 
 	// build
 	var err error
-	_, err = nod.System().Loader(mockaName).WithID(mockaName).Register(context.TODO())
+	_, err = nod.System().Loader("mocka").WithID("mocka").Register(context.TODO())
 	assert.Equal(t, err, nil)
-	_, err = nod.System().Loader(reenterActorName).WithID(reenterActorName).Register(context.TODO())
+	_, err = nod.System().Loader("mockb").WithID("mockb").Register(context.TODO())
 	assert.Equal(t, err, nil)
 
 	nod.Init()
@@ -34,26 +35,37 @@ func TestReenter(t *testing.T) {
 		wg.Wait()
 	}()
 
+	time.Sleep(time.Second)
+
 	t.Run("Normal Case", func(t *testing.T) {
-		calcValue = 0
-		err := nod.System().Call(reenterActorName, reenterActorName, "reenter",
+		mock.RecenterCalcValue = 0
+		err := nod.System().Call("mocka", "mocka", "reenter",
 			msg.NewBuilder(context.TODO()).Build())
 		assert.Nil(t, err)
 		time.Sleep(time.Second)
-		assert.Equal(t, int32(8), calcValue) // (2 + 2) * 2
+		assert.Equal(t, int32(8), mock.RecenterCalcValue) // (2 + 2) * 2
 	})
 
-	/*
-		t.Run("Timeout Case", func(t *testing.T) {
-			calcValue = 0
+	t.Run("Timeout Case", func(t *testing.T) {
 
-			ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-			defer cancel() // 确保资源被释放
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer cancel()
 
-			err := nod.System().Call(reenterActorName, reenterActorName, "timeout", msg.NewBuilder(ctx).Build())
-			assert.NotNil(t, err)                                        // 应该返回actor不存在错误
-			assert.Contains(t, err.Error(), "context deadline exceeded") // 验证是否是超时错误
+		m := msg.NewBuilder(ctx).Build()
 
-		})
-	*/
+		nod.System().Call("mocka", "mocka", "timeout", m)
+		time.Sleep(time.Second * 4)
+		assert.NotNil(t, m.Err) // 应该返回actor不存在错误
+	})
+
+	t.Run("Timeout chain", func(t *testing.T) {
+		mock.RecenterCalcValue = 0
+
+		err := nod.System().Call("mocka", "mocka", "chain", msg.NewBuilder(context.TODO()).Build())
+		assert.Nil(t, err)
+
+		assert.Nil(t, err)
+		time.Sleep(time.Second)
+		assert.Equal(t, int32(18), mock.RecenterCalcValue) // ((2 + 2) * 2) + 10
+	})
 }

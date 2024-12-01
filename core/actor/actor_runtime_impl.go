@@ -178,49 +178,67 @@ func (a *Runtime) Received(mw *msg.Wrapper) error {
 	return nil
 }
 
-func (a *Runtime) ReenterCall(ctx context.Context, idOrSymbol, actorType, event string, rmw *msg.Wrapper) core.IFuture {
-	future := NewFuture()
-
-	// 准备消息头
+func (a *Runtime) ReenterCall(idOrSymbol, actorType, event string, rmw *msg.Wrapper) core.IFuture {
 	if rmw.Req.Header.OrgActorID == "" {
 		rmw.Req.Header.OrgActorID = a.Id
 		rmw.Req.Header.OrgActorType = a.Ty
 	}
 	rmw.Req.Header.PrevActorType = a.Ty
 
-	// 创建一个带有取消功能的新 context
-	ctxWithCancel, cancel := context.WithCancel(ctx)
+	reenterFuture := NewFuture()
+	callFuture := NewFuture()
 
-	// 创建一个 channel 来通知调用完成
-	done := make(chan struct{})
+	deadline, ok := rmw.Ctx.Deadline()
+	var timeout time.Duration
+	if ok {
+		timeout = time.Until(deadline)
+	} else {
+		timeout = 30 * time.Second
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+
+	go func() {
+		select {
+		case <-rmw.Ctx.Done():
+			log.WarnF("[ReenterCall] Context canceled: %v", rmw.Ctx.Err())
+			cancel()
+
+			errWrapper := &msg.Wrapper{
+				Ctx: rmw.Ctx,
+				Err: rmw.Ctx.Err(),
+			}
+
+			reenterFuture.Complete(errWrapper)
+		case <-callFuture.done:
+		}
+	}()
 
 	go func() {
 		defer cancel()
+		log.InfoF("[ReenterCall] Starting call to %s.%s", actorType, event)
 
-		// 执行异步调用
-		err := a.Sys.Call(idOrSymbol, actorType, event, rmw)
+		swappedWrapper := msg.Swap(rmw)
+		swappedWrapper.Ctx = ctx
+
+		err := a.Sys.Call(idOrSymbol, actorType, event, swappedWrapper)
 		if err != nil {
-			future.Complete(rmw)
+			callFuture.Complete(&msg.Wrapper{
+				Ctx: ctx,
+				Err: err,
+			})
 			return
 		}
 
-		// 等待消息处理完成或上下文取消
-		select {
-		case <-ctxWithCancel.Done():
-			rmw.Err = ctxWithCancel.Err()
-		case <-rmw.Done:
-			// 消息处理完成
-		}
-
-		future.Complete(rmw)
+		callFuture.Complete(swappedWrapper)
 	}()
 
-	// 创建一个新的 Future 用于重入
-	reenterFuture := NewFuture()
+	// 设置回调，将处理放入重入队列
+	callFuture.Then(func(ret *msg.Wrapper) {
 
-	future.Then(func(ret *msg.Wrapper) {
 		reenterMsg := &reenterMessage{
 			action: func(mw *msg.Wrapper) error {
+
 				defer func() {
 					if r := recover(); r != nil {
 						log.ErrorF("panic in ReenterCall: %v", r)
@@ -241,21 +259,9 @@ func (a *Runtime) ReenterCall(ctx context.Context, idOrSymbol, actorType, event 
 			},
 			msg: ret,
 		}
+
 		a.reenterQueue.Push(reenterMsg)
 	})
-
-	// 监听 context 取消
-	go func() {
-		select {
-		case <-ctx.Done():
-			cancel()
-			if !future.IsCompleted() {
-				future.Complete(rmw)
-			}
-		case <-done:
-			// 调用已完成，不需要做任何事
-		}
-	}()
 
 	return reenterFuture
 }
@@ -294,7 +300,6 @@ func (a *Runtime) update() {
 						a.recovery(r)
 					}
 
-					// 通知调用者消息处理完成
 					mw.Wg.Done()
 				}()
 

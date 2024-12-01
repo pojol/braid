@@ -292,7 +292,13 @@ func (sys *NormalSystem) localCall(actorp core.IActor, mw *msg.Wrapper) error {
 		case <-mw.Done:
 			return nil
 		case <-mw.Ctx.Done():
-			return fmt.Errorf("[braid.system] actor %v message %v processing timed out", mw.Req.Header.TargetActorID, mw.Req.Header.Event)
+			timeoutErr := fmt.Errorf("[braid.system] actor %v message %v processing timed out",
+				mw.Req.Header.TargetActorID, mw.Req.Header.Event)
+			if mw.Err != nil {
+				timeoutErr = fmt.Errorf("%w: %v", mw.Err, timeoutErr)
+			}
+			mw.Err = timeoutErr
+			return timeoutErr
 		}
 	} else {
 		return actorp.Received(mw)

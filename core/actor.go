@@ -26,12 +26,11 @@ type ActorContext interface {
 	// ReenterCall performs a reentrant(asynchronous) call
 	//
 	// Parameters:
-	//   - ctx: context for the call
 	//   - idOrSymbol: target actorID, or routing rule symbol to target actor
 	//   - actorType: type of actor, obtained from actor template
 	//   - event: event name to be handled
 	//   - mw: message wrapper for routing
-	ReenterCall(ctx context.Context, idOrSymbol, actorType, event string, mw *msg.Wrapper) IFuture
+	ReenterCall(idOrSymbol, actorType, event string, mw *msg.Wrapper) IFuture
 
 	// Send performs an asynchronous call
 	//
@@ -86,26 +85,27 @@ type IFuture interface {
 	Then(func(*msg.Wrapper)) IFuture
 }
 
-// ITimer 定时器接口
+// ITimer interface for timer operations
 type ITimer interface {
-	// Stop 停止定时器
-	// 返回是否成功停止（如果定时器已经被触发或停止，返回 false）
+	// Stop stops the timer
+	// Returns false if the timer has already been triggered or stopped
 	Stop() bool
 
-	// Reset 重置定时器
-	// interval: 新的时间间隔（如果为0，使用原有间隔）
-	// 返回是否成功重置
+	// Reset resets the timer
+	// interval: new interval duration (if 0, uses the existing interval)
+	// Returns whether the reset was successful
 	Reset(interval time.Duration) bool
 
-	// IsActive 检查定时器是否活跃
+	// IsActive checks if the timer is active
 	IsActive() bool
 
-	// Interval 获取当前的时间间隔
+	// Interval gets the current interval duration
 	Interval() time.Duration
 
-	// NextTrigger 获取下次触发时间
+	// NextTrigger gets the next trigger time
 	NextTrigger() time.Time
 
+	// Execute executes the timer callback
 	Execute() error
 }
 
@@ -144,7 +144,7 @@ type IActor interface {
 	// Call sends an event to another actor
 	Call(idOrSymbol, actorType, event string, mw *msg.Wrapper) error
 
-	ReenterCall(ctx context.Context, idOrSymbol, actorType, event string, mw *msg.Wrapper) IFuture
+	ReenterCall(idOrSymbol, actorType, event string, mw *msg.Wrapper) IFuture
 
 	Context() ActorContext
 

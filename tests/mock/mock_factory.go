@@ -45,6 +45,33 @@ func BuildActorFactory() *MockActorFactory {
 		Options:             make(map[string]string),
 	}
 
+	factory.Constructors["mocka"] = &core.ActorConstructor{
+		ID:          "mocka",
+		Name:        "mocka",
+		Weight:      100,
+		Constructor: newMockA,
+		NodeUnique:  true,
+		Dynamic:     true,
+	}
+
+	factory.Constructors["mockb"] = &core.ActorConstructor{
+		ID:          "mockb",
+		Name:        "mockb",
+		Weight:      100,
+		Constructor: newMockB,
+		NodeUnique:  true,
+		Dynamic:     true,
+	}
+
+	factory.Constructors["mockc"] = &core.ActorConstructor{
+		ID:          "mockc",
+		Name:        "mockc",
+		Weight:      100,
+		Constructor: newMockC,
+		NodeUnique:  true,
+		Dynamic:     true,
+	}
+
 	return factory
 }
 

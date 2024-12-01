@@ -40,13 +40,13 @@ func (ac *actorContext) Type() string {
 	return actor.Type()
 }
 
-func (ac *actorContext) ReenterCall(ctx context.Context, idOrSymbol, actorType, event string, mw *msg.Wrapper) core.IFuture {
+func (ac *actorContext) ReenterCall(idOrSymbol, actorType, event string, mw *msg.Wrapper) core.IFuture {
 	actor, ok := ac.ctx.Value(actorKey{}).(core.IActor)
 	if !ok {
 		panic(errors.New("the actor instance does not exist in the ActorContext"))
 	}
 
-	return actor.ReenterCall(ctx, idOrSymbol, actorType, event, mw)
+	return actor.ReenterCall(idOrSymbol, actorType, event, mw)
 }
 
 func (ac *actorContext) Send(idOrSymbol, actorType, event string, mw *msg.Wrapper) error {

@@ -47,6 +47,18 @@ func NewBuilder(ctx context.Context) *MsgBuilder {
 	}
 }
 
+func Swap(mw *Wrapper) *Wrapper {
+	return &Wrapper{
+		Ctx: mw.Ctx,
+		// 交换 Req 和 Res
+		Req: mw.Req,
+		Res: mw.Res,
+		// 重置同步原语
+		Wg:   warpwaitgroup.WrapWaitGroup{},
+		Done: make(chan struct{}),
+	}
+}
+
 func (b *MsgBuilder) WithReqHeader(h *router.Header) *MsgBuilder {
 	if b.wrapper.Req.Header != nil && h != nil {
 		// Copy fields from the input header to existing header
