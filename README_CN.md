@@ -112,7 +112,7 @@ user.RegisterTimer(0, 1000, func(ctx core.ActorContext) error {
 ```
 > 订阅消息（mq
 ```go
-user.SubscriptionEvent("offline_messages", a.Id, func() {
+user.SubscriptionEvent(events.EvChatMessageStore, a.Id, func() {
 
     // After successful subscription, bind a handler function for the message
     a.RegisterEvent(events.EvChatMessageStore, events.MakeChatStoreMessage)
