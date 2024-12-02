@@ -9,6 +9,7 @@ import (
 	"github.com/pojol/braid/core"
 	"github.com/pojol/braid/core/actor"
 	"github.com/pojol/braid/def"
+	"github.com/pojol/braid/lib/log"
 	"github.com/pojol/braid/router/msg"
 )
 
@@ -62,6 +63,17 @@ func (ra *mockActorA) Init(ctx context.Context) {
 		}
 	})
 
+	ra.SubscriptionEvent(ra.Id, "offline_msg", func() {
+		ra.RegisterEvent("offline_msg", func(ctx core.ActorContext) core.IChain {
+			return &actor.DefaultChain{
+				Handler: func(w *msg.Wrapper) error {
+					log.InfoF("recv offline_msg %s", string(w.Req.Body))
+					return nil
+				},
+			}
+		})
+	})
+
 	ra.RegisterEvent("chain", func(ctx core.ActorContext) core.IChain {
 		return &actor.DefaultChain{
 			Handler: func(w *msg.Wrapper) error {
@@ -101,19 +113,23 @@ func (ra *mockActorA) Init(ctx context.Context) {
 					bconfirmmsg := msg.NewBuilder(w.Ctx).WithReqCustomFields(def.TransactionID(transactionID)).Build()
 					err = ctx.Call("mockb", "mockb", "tcc_confirm", bconfirmmsg)
 					if err != nil {
-						err = ctx.Pub("mockb_tcc_confirm", bconfirmmsg.Req)
-						if err != nil {
-							fmt.Println("???")
-						}
+						/*
+							err = ctx.Pub("mockb_tcc_confirm", bconfirmmsg.Req)
+							if err != nil {
+								fmt.Println("???")
+							}
+						*/
 					}
 
 					cconfirmmsg := msg.NewBuilder(w.Ctx).WithReqCustomFields(def.TransactionID(transactionID)).Build()
 					err = ctx.Call("mockc", "mockc", "tcc_confirm", cconfirmmsg)
 					if err != nil {
-						err = ctx.Pub("mockc_tcc_confirm", cconfirmmsg.Req)
-						if err != nil {
-							fmt.Println("???")
-						}
+						/*
+							err = ctx.Pub("mockc_tcc_confirm", cconfirmmsg.Req)
+							if err != nil {
+								fmt.Println("???")
+							}
+						*/
 					}
 				} else {
 					fmt.Println("tcc call err", "b", bsucc, "c", csucc)
