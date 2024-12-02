@@ -9,6 +9,7 @@ import (
 	"github.com/pojol/braid/core"
 	"github.com/pojol/braid/lib/grpc"
 	"github.com/pojol/braid/lib/log"
+	"github.com/pojol/braid/lib/warpwaitgroup"
 	"github.com/pojol/braid/router"
 	"github.com/pojol/braid/router/msg"
 
@@ -78,6 +79,9 @@ func (acceptor *Acceptor) Exit() {
 // acceptor routing
 func (s *listen) Routing(ctx context.Context, req *router.RouteReq) (*router.RouteRes, error) {
 	res := &router.RouteRes{}
+
+	ctx = context.WithValue(ctx, msg.WaitGroupKey{}, &warpwaitgroup.WrapWaitGroup{})
+
 	mw := &msg.Wrapper{
 		Ctx: ctx,
 		Req: req.Msg,
