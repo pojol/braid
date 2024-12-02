@@ -14,7 +14,7 @@ import (
 
 func TestCall(t *testing.T) {
 	nod := node.BuildProcessWithOption(
-		core.NodeWithID("test-reenter-1"),
+		core.NodeWithID("test-call-1"),
 		core.NodeWithLoader(loader),
 		core.NodeWithFactory(factory),
 	)
@@ -47,7 +47,7 @@ func TestCall(t *testing.T) {
 
 func TestTCCSucc(t *testing.T) {
 	nod := node.BuildProcessWithOption(
-		core.NodeWithID("test-reenter-1"),
+		core.NodeWithID("test-tcc-1"),
 		core.NodeWithLoader(loader),
 		core.NodeWithFactory(factory),
 	)
