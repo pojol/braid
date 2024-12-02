@@ -58,6 +58,8 @@ func TestTCCSucc(t *testing.T) {
 	assert.Equal(t, err, nil)
 	_, err = nod.System().Loader("mockb").WithID("mockb").Register(context.TODO())
 	assert.Equal(t, err, nil)
+	_, err = nod.System().Loader("mockc").WithID("mockc").Register(context.TODO())
+	assert.Equal(t, err, nil)
 
 	nod.Init()
 	defer func() {

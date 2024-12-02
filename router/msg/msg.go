@@ -17,7 +17,6 @@ type Wrapper struct {
 	Ctx context.Context
 	Err error
 
-	Wg   warpwaitgroup.WrapWaitGroup
 	Done chan struct{} // Used for synchronization
 }
 
@@ -31,6 +30,8 @@ func newMessage(uid string) *router.Message {
 	return m
 }
 
+type WaitGroupKey struct{}
+
 // MsgWrapperBuilder used to build MsgWrapper
 type MsgBuilder struct {
 	wrapper *Wrapper
@@ -38,6 +39,13 @@ type MsgBuilder struct {
 
 func NewBuilder(ctx context.Context) *MsgBuilder {
 	uid := uuid.NewString()
+
+	if wc, ok := ctx.Value(WaitGroupKey{}).(*warpwaitgroup.WrapWaitGroup); ok {
+		ctx = context.WithValue(ctx, WaitGroupKey{}, wc)
+	} else {
+		ctx = context.WithValue(ctx, WaitGroupKey{}, &warpwaitgroup.WrapWaitGroup{})
+	}
+
 	return &MsgBuilder{
 		wrapper: &Wrapper{
 			Ctx: ctx,
@@ -48,13 +56,14 @@ func NewBuilder(ctx context.Context) *MsgBuilder {
 }
 
 func Swap(mw *Wrapper) *Wrapper {
+
+	ctx := context.WithValue(mw.Ctx, WaitGroupKey{}, &warpwaitgroup.WrapWaitGroup{})
+
 	return &Wrapper{
-		Ctx: mw.Ctx,
+		Ctx: ctx,
 		// 交换 Req 和 Res
-		Req: mw.Req,
-		Res: mw.Res,
-		// 重置同步原语
-		Wg:   warpwaitgroup.WrapWaitGroup{},
+		Req:  mw.Req,
+		Res:  mw.Res,
 		Done: make(chan struct{}),
 	}
 }
@@ -180,6 +189,13 @@ func (mw *Wrapper) ToBuilder() *MsgBuilder {
 }
 
 ////////
+
+func (mw *Wrapper) GetWg() *warpwaitgroup.WrapWaitGroup {
+	if wc, ok := mw.Ctx.Value(WaitGroupKey{}).(*warpwaitgroup.WrapWaitGroup); ok {
+		return wc
+	}
+	return nil
+}
 
 func (mw *Wrapper) GetReqCustomMap() (map[string]any, error) {
 	if len(mw.Req.Header.Custom) == 0 {

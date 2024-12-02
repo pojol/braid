@@ -170,7 +170,7 @@ func (a *Runtime) Call(idOrSymbol, actorType, event string, mw *msg.Wrapper) err
 
 func (a *Runtime) Received(mw *msg.Wrapper) error {
 
-	mw.Wg.Add(1)
+	mw.GetWg().Add(1)
 	if atomic.LoadInt32(&a.closed) == 0 { // 并不是所有的actor都需要处理退出信号
 		a.q.Push(mw)
 	}
@@ -219,7 +219,7 @@ func (a *Runtime) ReenterCall(idOrSymbol, actorType, event string, rmw *msg.Wrap
 		log.InfoF("[ReenterCall] Starting call to %s.%s", actorType, event)
 
 		swappedWrapper := msg.Swap(rmw)
-		swappedWrapper.Ctx = ctx
+		//swappedWrapper.Ctx = ctx
 
 		err := a.Sys.Call(idOrSymbol, actorType, event, swappedWrapper)
 		if err != nil {
@@ -300,7 +300,7 @@ func (a *Runtime) update() {
 						a.recovery(r)
 					}
 
-					mw.Wg.Done()
+					mw.GetWg().Done()
 				}()
 
 				if chain, ok := a.chains[mw.Req.Header.Event]; ok {

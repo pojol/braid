@@ -115,26 +115,11 @@ func (ra *mockActorA) Init(ctx context.Context) {
 							fmt.Println("???")
 						}
 					}
-				} else { // rollback
-					bcancelmsg := msg.NewBuilder(w.Ctx).WithReqCustomFields(def.TransactionID(transactionID)).Build()
-					err = ctx.Call("mockb", "mockb", "tcc_cancel", bcancelmsg)
-					if err != nil {
-						err = ctx.Pub("mockc_tcc_cancel", bcancelmsg.Req)
-						if err != nil {
-							fmt.Println("???")
-						}
-					}
-
-					ccancelmsg := msg.NewBuilder(w.Ctx).WithReqCustomFields(def.TransactionID(transactionID)).Build()
-					err = ctx.Call("mockc", "mockc", "tcc_cancel", ccancelmsg)
-					if err != nil {
-						err = ctx.Pub("mockc_tcc_cancel", ccancelmsg.Req)
-						if err != nil {
-							fmt.Println("???")
-						}
-					}
+				} else {
+					fmt.Println("tcc call err", "b", bsucc, "c", csucc)
 				}
 
+				fmt.Println("mock a tcc_succ end")
 				return nil
 			},
 		}

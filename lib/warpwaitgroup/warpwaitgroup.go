@@ -1,7 +1,6 @@
 package warpwaitgroup
 
 import (
-	"fmt"
 	"sync"
 	"sync/atomic"
 )
@@ -17,8 +16,7 @@ type WrapWaitGroup struct {
 func (w *WrapWaitGroup) Add(delta int) {
 	atomic.AddInt32(&w.counter, int32(delta))
 
-	fmt.Printf("%p cnt %v\n", w, atomic.LoadInt32(&w.counter))
-
+	//fmt.Printf("%p cnt %v\n", w, atomic.LoadInt32(&w.counter))
 	w.wg.Add(delta)
 }
 

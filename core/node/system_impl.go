@@ -272,13 +272,14 @@ func (sys *NormalSystem) findLocalOrWildcardActor(ctx context.Context, ty string
 }
 
 func (sys *NormalSystem) localCall(actorp core.IActor, mw *msg.Wrapper) error {
-	root := mw.Wg.Count() == 0
+
+	root := mw.GetWg().Count() == 0
 	if root {
 		mw.Done = make(chan struct{})
 		ready := make(chan struct{})
 		go func() {
 			<-ready // Wait for Received to complete
-			mw.Wg.Wait()
+			mw.GetWg().Wait()
 			close(mw.Done)
 		}()
 
