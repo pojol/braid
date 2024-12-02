@@ -5,7 +5,6 @@ import (
 	"errors"
 
 	"github.com/pojol/braid/core"
-	"github.com/pojol/braid/router"
 	"github.com/pojol/braid/router/msg"
 )
 
@@ -67,13 +66,13 @@ func (ac *actorContext) Unregister(id, ty string) error {
 	return sys.Unregister(id, ty)
 }
 
-func (ac *actorContext) Pub(topic string, msg *router.Message) error {
+func (ac *actorContext) Pub(topic, event string, body []byte) error {
 	sys, ok := ac.ctx.Value(systemKey{}).(core.ISystem)
 	if !ok {
 		panic(errors.New("the system instance does not exist in the ActorContext"))
 	}
 
-	return sys.Pub(topic, msg)
+	return sys.Pub(topic, event, body)
 }
 
 func (ac *actorContext) AddressBook() core.IAddressBook {

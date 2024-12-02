@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/pojol/braid/lib/pubsub"
-	"github.com/pojol/braid/router"
 	"github.com/pojol/braid/router/msg"
 )
 
@@ -42,7 +41,7 @@ type ActorContext interface {
 	Send(idOrSymbol, actorType, event string, mw *msg.Wrapper) error
 
 	// Pub semantics for pubsub, used to publish messages to an actor's message cache queue
-	Pub(topic string, msg *router.Message) error
+	Pub(topic string, event string, body []byte) error
 
 	// AddressBook actor 地址管理对象
 	AddressBook() IAddressBook

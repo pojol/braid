@@ -388,11 +388,8 @@ func (sys *NormalSystem) handleRemoteSend(info core.AddressInfo, mw *msg.Wrapper
 		nil) // We don't need the response for Send
 }
 
-func (sys *NormalSystem) Pub(topic string, msg *router.Message) error {
-
-	sys.ps.GetTopic(topic).Pub(context.TODO(), msg)
-
-	return nil
+func (sys *NormalSystem) Pub(topic string, event string, body []byte) error {
+	return sys.ps.GetTopic(topic).Pub(context.TODO(), event, body)
 }
 
 func (sys *NormalSystem) Sub(topic string, channel string, opts ...pubsub.TopicOption) (*pubsub.Channel, error) {

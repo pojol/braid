@@ -5,7 +5,6 @@ import (
 	"sync"
 
 	"github.com/pojol/braid/lib/pubsub"
-	"github.com/pojol/braid/router"
 	"github.com/pojol/braid/router/msg"
 )
 
@@ -28,7 +27,7 @@ type ISystem interface {
 	Send(idOrSymbol, actorType, event string, mw *msg.Wrapper) error
 
 	// Pub semantics for pubsub, used to publish messages to an actor's message cache queue
-	Pub(topic string, m *router.Message) error
+	Pub(topic string, event string, body []byte) error
 
 	// Sub listens to messages in a channel within a specific topic
 	//  opts can be used to set initial values on first listen, such as setting the TTL for messages in this topic

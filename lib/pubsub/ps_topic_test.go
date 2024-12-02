@@ -6,7 +6,6 @@ import (
 
 	"github.com/alicebob/miniredis/v2"
 	thdredis "github.com/pojol/braid/3rd/redis"
-	"github.com/pojol/braid/router"
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
 )
@@ -49,15 +48,7 @@ func TestTopicPub(t *testing.T) {
 
 	topic := &Topic{topic: "test_topic"}
 
-	msg := &router.Message{
-		Header: &router.Header{
-			ID:    "*", // 使用 "*" 让 Redis 自动生成 ID
-			Event: "test_event",
-		},
-		Body: []byte("test message"),
-	}
-
-	err = topic.Pub(context.Background(), msg)
+	err = topic.Pub(context.Background(), "test_event", []byte("test message"))
 	assert.NoError(t, err)
 
 	// 验证消息是否被正确添加到 Redis
