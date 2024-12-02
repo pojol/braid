@@ -1,5 +1,5 @@
-# Braid A Lightweight Actor Framework Simplifying Game Development
-> Braid is an innovative serverless game framework driven by the Actor model at its core. It achieves intelligent load management through a unified addressing system, allowing developers to focus on designing and implementing Actors without the need to concern themselves with complex distributed system components.
+# Braid: A Lightweight Actor Framework for Game Development
+> Braid is an innovative serverless game framework powered by the Actor model. It achieves intelligent load management through a unified addressing system, allowing developers to focus on designing and implementing Actors without the need to concern themselves with complex distributed system components.
 
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/pojol/braid?style=flat-square)](https://goreportcard.com/report/github.com/pojol/braid)
@@ -13,20 +13,18 @@
 [中文](https://github.com/pojol/braid/blob/master/README_CN.md)
 
 ### Features
-* Actor-Centric: The framework is essentially a collection of Actors, simplifying distributed logic.
+* Actor-Centric: Built around a pure Actor model, simplifying distributed logic.
 * Automatic Load Balancing: Intelligent resource allocation through the addressing system.
 * Development Focus: No need to consider underlying architecture like services or clusters; concentrate on game logic.
 
 ### 1. Quick Start
-> Install the scaffold project using the braid-cli tool 
-
-> A minimal working game server that serves as your starting point with braid
+> Install and set up a minimal working game server using the braid-cli tool
 
 ```shell
 # 1. Install CLI Tool
 $ go install github.com/pojol/braid-cli@latest
 
-# 2. Using the CLI to Generate a New Empty Project 
+# 2. Generate a New Project 
 $ braid-cli new "you-project-name" v0.1.3
 
 # 3. Creating .go Files from Actor Template Configurations
@@ -39,7 +37,7 @@ $ go run main.go
 ```
 
 ### 2. Create a new actor and load it into the cluster
-> Write node.yaml to register actor templates to nodes (containers)
+> Register actors to nodes by configuring `node.yaml`
 
 ```yaml
 actors:
@@ -75,7 +73,7 @@ case template.USER:
 ```
 
 ### 3. Implement logic for the actor
-> Note: All handling functions (events, timers) registered in the actor are processed synchronously. Users do not need to concern themselves with asynchronous logic within the actor.
+> Note: All handling functions (events, timers) registered in an actor are processed synchronously. Users do not need to concern themselves with asynchronous logic within the actor.
 
 > Bind event handler
 ```go
@@ -129,7 +127,7 @@ user.SubscriptionEvent(events.EvChatMessageStore, a.Id, func() {
   <div style="flex-grow: 1; height: 1px; background-color: #ccc;"></div>
 </div>
 
-### 4. Game Server Verification Using Test Bot
+### 4. Testing with Bot Framework
 > Use the project built with scaffold above
 
 ```shell
