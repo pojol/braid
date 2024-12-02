@@ -50,8 +50,9 @@ func BuildActorFactory() *MockActorFactory {
 		Name:        "mocka",
 		Weight:      100,
 		Constructor: newMockA,
-		NodeUnique:  true,
+		NodeUnique:  false,
 		Dynamic:     true,
+		Options:     make(map[string]string),
 	}
 
 	factory.Constructors["mockb"] = &core.ActorConstructor{
@@ -59,8 +60,9 @@ func BuildActorFactory() *MockActorFactory {
 		Name:        "mockb",
 		Weight:      100,
 		Constructor: newMockB,
-		NodeUnique:  true,
+		NodeUnique:  false,
 		Dynamic:     true,
+		Options:     make(map[string]string),
 	}
 
 	factory.Constructors["mockc"] = &core.ActorConstructor{
@@ -68,8 +70,9 @@ func BuildActorFactory() *MockActorFactory {
 		Name:        "mockc",
 		Weight:      100,
 		Constructor: newMockC,
-		NodeUnique:  true,
+		NodeUnique:  false,
 		Dynamic:     true,
+		Options:     make(map[string]string),
 	}
 
 	return factory

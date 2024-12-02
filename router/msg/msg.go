@@ -167,7 +167,6 @@ func (b *MsgBuilder) WithResCustomFieldsMap(data map[string]any) *MsgBuilder {
 		b.wrapper.Err = fmt.Errorf("marshal request body failed: %w", err)
 		return b
 	}
-	fmt.Println(b.wrapper.Res.Header, "res custom", string(byt))
 	b.wrapper.Res.Header.Custom = byt
 
 	return b
