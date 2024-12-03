@@ -1,4 +1,4 @@
-package benchmarkactorloader
+package tests
 
 import (
 	"context"
@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net"
 	"strconv"
-	"sync/atomic"
 	"testing"
 	"time"
 
@@ -15,8 +14,7 @@ import (
 	"github.com/pojol/braid/core/node"
 	"github.com/pojol/braid/def"
 	"github.com/pojol/braid/lib/log"
-	"github.com/pojol/braid/test/mockdata"
-	"github.com/pojol/braid/test/mockdata/mockactors"
+	"github.com/pojol/braid/tests/mock"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -31,53 +29,6 @@ func getFreePort() (int, error) {
 	}
 	defer l.Close()
 	return l.Addr().(*net.TCPAddr).Port, nil
-}
-
-func TestMain(m *testing.M) {
-	// 设置代码，只运行一次
-	slog, _ := log.NewServerLogger("BenchmarkPicker")
-	log.SetSLog(slog)
-	defer log.Sync()
-
-	trdredis.BuildClientWithOption(
-		trdredis.WithAddr("redis://127.0.0.1:6379/0"),
-		trdredis.WithPoolSize(1024),
-		trdredis.WithPoolTimeout(time.Second*10),
-		trdredis.WithMinIdle(100),
-	)
-
-	// clean cache
-	trdredis.FlushAll(context.Background())
-
-	for i := 0; i < 20; i++ {
-		i := i // 创建一个新的变量来捕获循环变量
-		go func() {
-			factory := mockdata.BuildActorFactory()
-			loader := mockdata.BuildDefaultActorLoader(factory)
-
-			nodid := "1000_" + strconv.Itoa(i)
-			p, _ := getFreePort()
-
-			nod := node.BuildProcessWithOption(
-				core.NodeWithID(nodid),
-				core.NodeWithWeight(10000),
-				core.NodeWithLoader(loader),
-				core.NodeWithFactory(factory),
-				core.NodeWithPort(p),
-			)
-
-			err := nod.Init()
-			if err != nil {
-				panic(fmt.Errorf("node init err %v", err.Error()))
-			}
-
-			nod.Update()
-		}()
-	}
-	time.Sleep(time.Second)
-
-	m.Run()
-	// 清理资源
 }
 
 func makeNodeKey(nodid string) string {
@@ -138,10 +89,36 @@ func printWeight() error {
 	return nil
 }
 
-func TestPicker(b *testing.T) {
+func TestDynamicPicker(t *testing.T) {
+	for i := 0; i < 20; i++ {
+		i := i // 创建一个新的变量来捕获循环变量
+		go func() {
+			factory := mock.BuildActorFactory()
+			loader := mock.BuildDefaultActorLoader(factory)
 
-	factory := mockdata.BuildActorFactory()
-	loader := mockdata.BuildDefaultActorLoader(factory)
+			nodid := "1000_" + strconv.Itoa(i)
+			p, _ := getFreePort()
+
+			nod := node.BuildProcessWithOption(
+				core.NodeWithID(nodid),
+				core.NodeWithWeight(10000),
+				core.NodeWithLoader(loader),
+				core.NodeWithFactory(factory),
+				core.NodeWithPort(p),
+			)
+
+			err := nod.Init()
+			if err != nil {
+				panic(fmt.Errorf("node init err %v", err.Error()))
+			}
+		}()
+	}
+	time.Sleep(time.Second)
+
+	////////////////////////////////////////////////////////////////////////////////////
+
+	factory := mock.BuildActorFactory()
+	loader := mock.BuildDefaultActorLoader(factory)
 
 	nodid := "1000_x"
 	p, _ := getFreePort()
@@ -159,19 +136,16 @@ func TestPicker(b *testing.T) {
 		panic(fmt.Errorf("node init err %v", err.Error()))
 	}
 
-	nod.Update()
-
 	time.Sleep(time.Second)
 
 	for i := 0; i < 5000; i++ {
-		err = nod.System().Loader("MockClacActor").Picker()
+		err = nod.System().Loader("mocka").WithID(nodid + "_" + strconv.Itoa(i)).Picker()
 		if err != nil {
-			b.Logf("picker err %v", err.Error())
+			t.Logf("picker err %v", err.Error())
 		}
 	}
 
-	time.Sleep(time.Second * 20)
-	b.Logf("total register count %v", atomic.LoadInt32(&mockactors.GlobalCreateCnt))
+	time.Sleep(time.Second * 10)
 
 	// 再看下分布情况
 	printWeight()

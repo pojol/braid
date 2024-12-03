@@ -1,6 +1,8 @@
 package actor
 
 import (
+	"context"
+
 	"github.com/pojol/braid/core"
 )
 
@@ -69,8 +71,8 @@ func (p *ActorLoaderBuilder) GetConstructor() core.CreateFunc {
 	return p.Constructor
 }
 
-func (p *ActorLoaderBuilder) Register() (core.IActor, error) {
-	return p.ISystem.Register(p)
+func (p *ActorLoaderBuilder) Register(ctx context.Context) (core.IActor, error) {
+	return p.ISystem.Register(ctx, p)
 }
 
 func (p *ActorLoaderBuilder) Picker() error {

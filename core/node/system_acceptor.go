@@ -9,6 +9,7 @@ import (
 	"github.com/pojol/braid/core"
 	"github.com/pojol/braid/lib/grpc"
 	"github.com/pojol/braid/lib/log"
+	"github.com/pojol/braid/lib/warpwaitgroup"
 	"github.com/pojol/braid/router"
 	"github.com/pojol/braid/router/msg"
 
@@ -71,10 +72,6 @@ func NewAcceptor(sys core.ISystem, port int) (*Acceptor, error) {
 	return a, nil
 }
 
-func (acceptor *Acceptor) Update() {
-	acceptor.server.Run()
-}
-
 func (acceptor *Acceptor) Exit() {
 	acceptor.server.Close()
 }
@@ -82,6 +79,9 @@ func (acceptor *Acceptor) Exit() {
 // acceptor routing
 func (s *listen) Routing(ctx context.Context, req *router.RouteReq) (*router.RouteRes, error) {
 	res := &router.RouteRes{}
+
+	ctx = context.WithValue(ctx, msg.WaitGroupKey{}, &warpwaitgroup.WrapWaitGroup{})
+
 	mw := &msg.Wrapper{
 		Ctx: ctx,
 		Req: req.Msg,
@@ -92,11 +92,10 @@ func (s *listen) Routing(ctx context.Context, req *router.RouteReq) (*router.Rou
 
 	mw.Req.Header.PrevActorType = "GrpcAcceptor"
 
-	err := s.sys.Call(router.Target{
-		ID: req.Msg.Header.TargetActorID,
-		Ty: req.Msg.Header.TargetActorType,
-		Ev: req.Msg.Header.Event,
-	}, mw)
+	err := s.sys.Call(
+		req.Msg.Header.TargetActorID,
+		req.Msg.Header.TargetActorType,
+		req.Msg.Header.Event, mw)
 
 	if err != nil {
 		log.InfoF("listen routing %v err %v", req.Msg.Header.Event, err.Error())

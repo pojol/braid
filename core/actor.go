@@ -2,10 +2,9 @@ package core
 
 import (
 	"context"
+	"time"
 
 	"github.com/pojol/braid/lib/pubsub"
-	"github.com/pojol/braid/lib/timewheel"
-	"github.com/pojol/braid/router"
 	"github.com/pojol/braid/router/msg"
 )
 
@@ -14,22 +13,40 @@ type IChain interface {
 }
 
 type ActorContext interface {
-	// Call 使用 actor 自身发起的 call 调用
-	Call(tar router.Target, mw *msg.Wrapper) error
-	CallBy(id string, ev string, mw *msg.Wrapper) error
+	// Call performs a blocking call to target actor
+	//
+	// Parameters:
+	//   - idOrSymbol: target actorID, or routing rule symbol to target actor
+	//   - actorType: type of actor, obtained from actor template
+	//   - event: event name to be handled
+	//   - mw: message wrapper for routing
+	Call(idOrSymbol, actorType, event string, mw *msg.Wrapper) error
 
-	// ReenterCall 使用 actor 自身发起的 ReenterCall 调用
-	ReenterCall(ctx context.Context, tar router.Target, mw *msg.Wrapper) IFuture
+	// ReenterCall performs a reentrant(asynchronous) call
+	//
+	// Parameters:
+	//   - idOrSymbol: target actorID, or routing rule symbol to target actor
+	//   - actorType: type of actor, obtained from actor template
+	//   - event: event name to be handled
+	//   - mw: message wrapper for routing
+	ReenterCall(idOrSymbol, actorType, event string, mw *msg.Wrapper) IFuture
 
-	// Send sends an event to another actor
-	// Asynchronous call semantics, does not block the current goroutine, used for long-running RPC calls
-	Send(tar router.Target, mw *msg.Wrapper) error
+	// Send performs an asynchronous call
+	//
+	// Parameters:
+	//   - idOrSymbol: target actorID, or routing rule symbol to target actor
+	//   - actorType: type of actor, obtained from actor template
+	//   - event: event name to be handled
+	//   - mw: message wrapper for routing
+	Send(idOrSymbol, actorType, event string, mw *msg.Wrapper) error
 
 	// Pub semantics for pubsub, used to publish messages to an actor's message cache queue
-	Pub(topic string, msg *router.Message) error
+	Pub(topic string, event string, body []byte) error
 
-	// AddressBook 管理全局actor地址的对象，通常由 system 控制调用
+	// AddressBook actor 地址管理对象
 	AddressBook() IAddressBook
+
+	//
 	System() ISystem
 
 	// Loader returns the actor loader
@@ -67,6 +84,30 @@ type IFuture interface {
 	Then(func(*msg.Wrapper)) IFuture
 }
 
+// ITimer interface for timer operations
+type ITimer interface {
+	// Stop stops the timer
+	// Returns false if the timer has already been triggered or stopped
+	Stop() bool
+
+	// Reset resets the timer
+	// interval: new interval duration (if 0, uses the existing interval)
+	// Returns whether the reset was successful
+	Reset(interval time.Duration) bool
+
+	// IsActive checks if the timer is active
+	IsActive() bool
+
+	// Interval gets the current interval duration
+	Interval() time.Duration
+
+	// NextTrigger gets the next trigger time
+	NextTrigger() time.Time
+
+	// Execute executes the timer callback
+	Execute() error
+}
+
 // IActor is an abstraction of threads (goroutines). In a Node (process),
 // 1 to N actors execute specific business logic.
 //
@@ -89,7 +130,8 @@ type IActor interface {
 	//  interval: time between each tick
 	//  f: callback function
 	//  args: can be used to pass the actor entity to the timer callback
-	RegisterTimer(dueTime int64, interval int64, f func(interface{}) error, args interface{}) *timewheel.Timer
+	RegisterTimer(dueTime int64, interval int64, f func(interface{}) error, args interface{}) ITimer
+	RemoveTimer(t ITimer)
 
 	// SubscriptionEvent subscribes to a message
 	//  If this is the first subscription to this topic, opts will take effect (you can set some options for the topic, such as ttl)
@@ -98,13 +140,10 @@ type IActor interface {
 	//  succ: Callback function for successful subscription
 	SubscriptionEvent(topic string, channel string, succ func(), opts ...pubsub.TopicOption) error
 
-	// Update is the main loop of the Actor, running in a separate goroutine
-	Update()
-
 	// Call sends an event to another actor
-	Call(tar router.Target, mw *msg.Wrapper) error
+	Call(idOrSymbol, actorType, event string, mw *msg.Wrapper) error
 
-	ReenterCall(ctx context.Context, tar router.Target, mw *msg.Wrapper) IFuture
+	ReenterCall(idOrSymbol, actorType, event string, mw *msg.Wrapper) IFuture
 
 	Context() ActorContext
 
@@ -141,7 +180,7 @@ type IActorBuilder interface {
 	WithOpt(string, string) IActorBuilder
 
 	// ---
-	Register() (IActor, error)
+	Register(context.Context) (IActor, error)
 	Picker() error
 }
 

@@ -2,9 +2,10 @@
 > Braid 是一个以 Actor 模型为核心驱动的创新型无服务器游戏框架。它通过统一的寻址系统实现自动负载管理，使开发者能够专注于设计和实现，而无需关心复杂的分布式系统组件。
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/pojol/braid?style=flat-square)](https://goreportcard.com/report/github.com/pojol/braid)
-[![Demo](https://img.shields.io/badge/demo-braid--demo-brightgreen?style=flat-square)](https://github.com/pojol/braid-demo)
 [![Documentation](https://img.shields.io/badge/Documentation-Available-brightgreen)](https://pojol.github.io/braid/#/)
+<!--
 [![Discord](https://img.shields.io/discord/1210543471593791488?color=7289da&label=Discord&logo=discord&style=flat-square)](https://discord.gg/yXJgTrkWxT)
+-->
 
 [![image.png](https://i.postimg.cc/BbvzLhfN/image.png)](https://postimg.cc/Vr3g2W6b)
 
@@ -16,19 +17,21 @@
 ### 1. 快速开始
 > 使用 braid-cli 工具安装脚手架项目
 
+> 一个最小可工作游戏服务器，作为您使用 Braid 的起点
+
 ```shell
 # 1. Install CLI Tool
 $ go install github.com/pojol/braid-cli@latest
 
 # 2. Using the CLI to Generate a New Empty Project
-$ braid-cli new "you-project-name"
+$ braid-cli new "you-project-name" v0.1.3
 
 # 3. Creating .go Files from Actor Template Configurations
 $ cd you-project-name/template
 $ go generate
 
 # 4. Navigate to the services directory, then try to build and run the demo
-$ cd you-project-name/services/demo-1
+$ cd you-project-name/node
 $ go run main.go
 ```
 
@@ -109,7 +112,7 @@ user.RegisterTimer(0, 1000, func(ctx core.ActorContext) error {
 ```
 > 订阅消息（mq
 ```go
-user.SubscriptionEvent("offline_messages", a.Id, func() {
+user.SubscriptionEvent(events.EvChatMessageStore, a.Id, func() {
 
     // After successful subscription, bind a handler function for the message
     a.RegisterEvent(events.EvChatMessageStore, events.MakeChatStoreMessage)
@@ -117,6 +120,36 @@ user.SubscriptionEvent("offline_messages", a.Id, func() {
 }, pubsub.WithTTL(time.Hour*24*30))
 ```
 
+<div style="display: flex; align-items: center; margin: 1em 0;">
+  <div style="flex-grow: 1; height: 1px; background-color: #ccc;"></div>
+  <div style="margin: 0 10px; font-weight: bold; color: #666;">测试机器人</div>
+  <div style="flex-grow: 1; height: 1px; background-color: #ccc;"></div>
+</div>
+
+### 4. 通过测试机器人验证 braid 提供的服务器接口
+> 使用上面的脚手架工程
+
+```shell
+$ cd you-project-name/testbots
+
+# 1. 运行机器人服务器
+$ go run main.go
+
+# 2. 下载 gobot 编辑器（最新版本
+https://github.com/pojol/gobot/releases
+
+# 3. 运行 gobot 编辑器
+$ run gobot_editor_[ver].exe or .dmg
+
+# 4. 进入到 bots 页签
+# 5. 将 testbots 目录中的 testbot.bh 文件拖拽到 bots 页面中
+# 6. 选中 testbot 机器人，点击 load 加载 testbot
+# 7. 点击左下角按钮，构建机器人实例
+# 8. 点击单步运行按钮，查看机器人和 braid 服务器交互情形
+```
+
+[测试机器人 Gobot](https://github.com/pojol/gobot)
+[![image.png](https://i.postimg.cc/LX5gbV34/image.png)](https://postimg.cc/xJrdkMZB)
 
 ---
 

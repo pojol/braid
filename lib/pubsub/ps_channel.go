@@ -98,9 +98,10 @@ func (c *Channel) addHandlers(queue *mpsc.Queue) {
 			mb := msg.NewBuilder(context.TODO()).
 				WithReqHeader(&router.Header{ID: recvmsg.Header.ID, Event: recvmsg.Header.Event}).
 				WithReqBody(recvmsg.Body).Build()
+			mb.GetWg().Add(1)
 			queue.Push(mb)
 
-			pipe.XAck(context.TODO(), c.topic, c.channel, recvmsg.Header.Event)
+			pipe.XAck(context.TODO(), c.topic, c.channel, recvmsg.Header.ID)
 			pipe.XDel(context.TODO(), c.topic, recvmsg.Header.ID)
 
 			_, err := pipe.Exec(context.TODO())

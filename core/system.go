@@ -5,14 +5,13 @@ import (
 	"sync"
 
 	"github.com/pojol/braid/lib/pubsub"
-	"github.com/pojol/braid/router"
 	"github.com/pojol/braid/router/msg"
 )
 
 type CreateFunc func(IActorBuilder) IActor
 
 type ISystem interface {
-	Register(IActorBuilder) (IActor, error)
+	Register(context.Context, IActorBuilder) (IActor, error)
 	Unregister(id, ty string) error
 
 	Actors() []IActor
@@ -21,14 +20,14 @@ type ISystem interface {
 
 	// Call sends an event to another actor
 	// Synchronous call semantics (actual implementation is asynchronous, each call is in a separate goroutine)
-	Call(tar router.Target, mw *msg.Wrapper) error
+	Call(idOrSymbol, actorType, event string, mw *msg.Wrapper) error
 
 	// Send sends an event to another actor
 	// Asynchronous call semantics, does not block the current goroutine, used for long-running RPC calls
-	Send(tar router.Target, mw *msg.Wrapper) error
+	Send(idOrSymbol, actorType, event string, mw *msg.Wrapper) error
 
 	// Pub semantics for pubsub, used to publish messages to an actor's message cache queue
-	Pub(topic string, m *router.Message) error
+	Pub(topic string, event string, body []byte) error
 
 	// Sub listens to messages in a channel within a specific topic
 	//  opts can be used to set initial values on first listen, such as setting the TTL for messages in this topic
@@ -39,7 +38,6 @@ type ISystem interface {
 
 	AddressBook() IAddressBook
 
-	Update()
 	Exit(*sync.WaitGroup)
 }
 

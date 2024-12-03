@@ -15,6 +15,8 @@ type WrapWaitGroup struct {
 // Add 添加 delta 到 WaitGroup 计数器并更新内部计数器。
 func (w *WrapWaitGroup) Add(delta int) {
 	atomic.AddInt32(&w.counter, int32(delta))
+
+	//fmt.Printf("%p cnt %v\n", w, atomic.LoadInt32(&w.counter))
 	w.wg.Add(delta)
 }
 

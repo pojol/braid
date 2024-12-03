@@ -13,9 +13,8 @@ import (
 	"github.com/pojol/braid/core/node"
 	"github.com/pojol/braid/def"
 	"github.com/pojol/braid/lib/log"
-	"github.com/pojol/braid/router"
 	"github.com/pojol/braid/router/msg"
-	"github.com/pojol/braid/test/mockdata"
+	"github.com/pojol/braid/tests/mock"
 )
 
 func TestMain(m *testing.M) {
@@ -74,7 +73,7 @@ func TestScript(t *testing.T) {
 	redis.BuildClientWithOption(redis.WithAddr("redis://127.0.0.1:6379/0"))
 	redis.FlushAll(context.TODO()) // clean cache
 
-	factory := mockdata.BuildActorFactory()
+	factory := mock.BuildActorFactory()
 	factory.Constructors["MockScriptActor"] = &core.ActorConstructor{
 		ID:                  "MockScriptActor",
 		Name:                "MockScriptActor",
@@ -85,7 +84,7 @@ func TestScript(t *testing.T) {
 		Dynamic:             false,
 		Options:             make(map[string]string),
 	}
-	loader := mockdata.BuildDefaultActorLoader(factory)
+	loader := mock.BuildDefaultActorLoader(factory)
 
 	nod := node.BuildProcessWithOption(
 		core.NodeWithID("test-script-1"),
@@ -94,11 +93,10 @@ func TestScript(t *testing.T) {
 	)
 
 	nod.Init()
-	nod.Update()
 
 	time.Sleep(time.Second)
 
-	nod.System().Call(router.Target{ID: def.SymbolLocalFirst, Ty: "MockScriptActor", Ev: "test_script"},
+	nod.System().Call(def.SymbolLocalFirst, "MockScriptActor", "test_script",
 		msg.NewBuilder(context.Background()).WithReqCustomFields(msg.Attr{Key: "test", Value: "hello braid script"}).Build(),
 	)
 

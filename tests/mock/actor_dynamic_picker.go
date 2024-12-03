@@ -1,4 +1,4 @@
-package mockactors
+package mock
 
 import (
 	"context"
@@ -8,7 +8,6 @@ import (
 	"github.com/pojol/braid/core"
 	"github.com/pojol/braid/core/actor"
 	"github.com/pojol/braid/def"
-	"github.com/pojol/braid/router"
 	"github.com/pojol/braid/router/msg"
 	"golang.org/x/time/rate"
 )
@@ -50,7 +49,7 @@ func (a *dynamicPickerActor) Init(ctx context.Context) {
 				msgbuild := mw.ToBuilder().WithReqCustomFields(msg.Attr{Key: "actor_id", Value: nodeaddr.Node + "_" + actor_ty + "_" + uuid.NewString()})
 
 				// dispatcher to picker node
-				return ctx.Call(router.Target{ID: nodeaddr.Node + "_" + "MockDynamicRegister", Ty: "MockDynamicRegister", Ev: "MockDynamicRegister"}, msgbuild.Build())
+				return ctx.Call(nodeaddr.Node+"_"+"MockDynamicRegister", "MockDynamicRegister", "MockDynamicRegister", msgbuild.Build())
 			},
 		}
 	})

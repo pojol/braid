@@ -8,7 +8,6 @@ import (
 
 	thdredis "github.com/pojol/braid/3rd/redis"
 	"github.com/pojol/braid/lib/log"
-	"github.com/pojol/braid/router"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -68,21 +67,16 @@ func newTopic(name string, mgr *Pubsub, opts ...TopicOption) *Topic {
 	return rt
 }
 
-func (rt *Topic) Pub(ctx context.Context, msg *router.Message) error {
+func (rt *Topic) Pub(ctx context.Context, event string, body []byte) error {
 
-	if msg == nil {
-		return fmt.Errorf("can't send empty msg to %v", rt.topic)
+	if event == "" {
+		return fmt.Errorf("cannot send a message without an event")
 	}
 
-	if msg.Header.ID == "" || msg.Header.Event == "" {
-		return fmt.Errorf("cannot send a message without an id or event")
-	}
-
-	// 这里应该包装下
 	_, err := thdredis.XAdd(ctx, &redis.XAddArgs{
 		Stream: rt.topic,
-		ID:     msg.Header.ID,
-		Values: []string{"msg", string(msg.Body), "event", msg.Header.Event},
+		ID:     "*",
+		Values: []string{"msg", string(body), "event", event},
 	}).Result()
 
 	return err

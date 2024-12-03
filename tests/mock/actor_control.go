@@ -1,4 +1,4 @@
-package mockactors
+package mock
 
 import (
 	"context"
