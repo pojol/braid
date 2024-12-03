@@ -2,7 +2,10 @@ package actor
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"reflect"
+	"strings"
 
 	"github.com/pojol/braid/router"
 	"github.com/pojol/braid/router/msg"
@@ -26,28 +29,26 @@ type ScriptHandler struct {
 // NewScriptHandler creates a new script handler
 func NewScriptHandler(scriptPath string) (*ScriptHandler, error) {
 	i := interp.New(interp.Options{
-		GoPath: "/path/to/your/scripts", // 设置脚本路径
+		GoPath: scriptPath, // 设置脚本路径
 	})
 
-	// 加载标准库
-	if err := i.Use(stdlib.Symbols); err != nil {
-		return nil, fmt.Errorf("failed to load stdlib: %w", err)
+	evalImport(i)
+
+	fileInfo, err := os.Stat(scriptPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to stat path %s: %w", scriptPath, err)
 	}
 
-	// 加载自定义符号（比如 Wrapper 等类型）
-	if err := i.Use(map[string]map[string]reflect.Value{
-		"github.com/pojol/braid/router/router": {
-			"Wrapper": reflect.ValueOf((*msg.Wrapper)(nil)),
-			"Message": reflect.ValueOf((*router.Message)(nil)),
-			"Header":  reflect.ValueOf((*router.Header)(nil)),
-		},
-	}); err != nil {
-		return nil, fmt.Errorf("failed to load custom symbols: %w", err)
-	}
-
-	// 加载脚本文件
-	if _, err := i.EvalPath(scriptPath); err != nil {
-		return nil, fmt.Errorf("failed to load script %s: %w", scriptPath, err)
+	if fileInfo.IsDir() {
+		// 如果是目录，遍历加载所有 .braid 文件
+		if err := loadScriptDir(i, scriptPath); err != nil {
+			return nil, err
+		}
+	} else {
+		// 如果是单个文件，直接加载
+		if _, err := i.EvalPath(scriptPath); err != nil {
+			return nil, fmt.Errorf("failed to load script %s: %w", scriptPath, err)
+		}
 	}
 
 	return &ScriptHandler{
@@ -56,25 +57,25 @@ func NewScriptHandler(scriptPath string) (*ScriptHandler, error) {
 	}, nil
 }
 
+func loadScriptDir(i *interp.Interpreter, dirPath string) error {
+	return filepath.Walk(dirPath, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if !info.IsDir() && strings.HasSuffix(path, ".script") {
+			if _, err := i.EvalPath(path); err != nil {
+				return fmt.Errorf("failed to load script %s: %w", path, err)
+			}
+		}
+		return nil
+	})
+}
+
 // NewScriptHandlerFromString creates a new script handler from string content
 func NewScriptHandlerFromString(content string) (*ScriptHandler, error) {
 	i := interp.New(interp.Options{})
 
-	// 只加载标准库
-	if err := i.Use(stdlib.Symbols); err != nil {
-		return nil, fmt.Errorf("failed to load stdlib: %w", err)
-	}
-
-	// 加载自定义符号
-	if err := i.Use(map[string]map[string]reflect.Value{
-		"github.com/pojol/braid/router/router": {
-			"Wrapper": reflect.ValueOf((*msg.Wrapper)(nil)),
-			"Message": reflect.ValueOf(&router.Message{}),
-			"Header":  reflect.ValueOf(&router.Header{}),
-		},
-	}); err != nil {
-		return nil, fmt.Errorf("failed to load custom symbols: %w", err)
-	}
+	evalImport(i)
 
 	// 直接从字符串加载脚本
 	if _, err := i.Eval(content); err != nil {
@@ -84,6 +85,28 @@ func NewScriptHandlerFromString(content string) (*ScriptHandler, error) {
 	return &ScriptHandler{
 		interpreter: i,
 	}, nil
+}
+
+func evalImport(i *interp.Interpreter) error {
+	// 加载标准库
+	if err := i.Use(stdlib.Symbols); err != nil {
+		return fmt.Errorf("failed to load stdlib: %w", err)
+	}
+
+	// 加载自定义符号
+	if err := i.Use(map[string]map[string]reflect.Value{
+		"github.com/pojol/braid/router/router": {
+			"Message": reflect.ValueOf((*router.Message)(nil)),
+			"Header":  reflect.ValueOf((*router.Header)(nil)),
+		},
+		"github.com/pojol/braid/router/msg": {
+			"Wrapper": reflect.ValueOf((*msg.Wrapper)(nil)),
+		},
+	}); err != nil {
+		return fmt.Errorf("failed to load custom symbols: %w", err)
+	}
+
+	return nil
 }
 
 // Execute runs the script handler

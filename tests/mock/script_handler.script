@@ -1,0 +1,9 @@
+package script
+
+// Execute handles the message
+func Execute(mw *msg.Wrapper) error {
+
+	fmt.Println(msg.GetReqField[string]("test"))
+
+	return nil
+}

@@ -1,9 +1,8 @@
-package testscript
+package tests
 
 import (
 	"context"
 	"fmt"
-	"os"
 	"testing"
 	"time"
 
@@ -12,19 +11,9 @@ import (
 	"github.com/pojol/braid/core/actor"
 	"github.com/pojol/braid/core/node"
 	"github.com/pojol/braid/def"
-	"github.com/pojol/braid/lib/log"
 	"github.com/pojol/braid/router/msg"
 	"github.com/pojol/braid/tests/mock"
 )
-
-func TestMain(m *testing.M) {
-	slog, _ := log.NewServerLogger("test")
-	log.SetSLog(slog)
-
-	defer log.Sync()
-
-	os.Exit(m.Run())
-}
 
 type MockScriptActor struct {
 	*actor.Runtime
@@ -36,29 +25,12 @@ func NewMockScriptActor(p core.IActorBuilder) core.IActor {
 	}
 }
 
-var scriptStr = `
-package main
-
-import (
-	"fmt"
-	"github.com/pojol/braid/router"
-)
-
-// Execute handles the message
-func Execute(msg *router.MsgWrapper) error {
-
-    fmt.Println(msg.Req.Header.Custom["test"])
-    
-	return nil
-}
-`
-
 func (sa *MockScriptActor) Init(ctx context.Context) {
 	sa.Runtime.Init(ctx)
 
 	sa.RegisterEvent("test_script", func(ctx core.ActorContext) core.IChain {
 
-		scriptHandler, err := actor.NewScriptHandlerFromString(scriptStr)
+		scriptHandler, err := actor.NewScriptHandler("mock")
 		if err != nil {
 			panic(fmt.Errorf("mock script actor registr script handler err %v", err.Error()))
 		}
