@@ -37,6 +37,18 @@ func (a *mockActorC) Init(ctx context.Context) {
 		}
 	})
 
+	a.RegisterEvent("test_block", func(ctx core.ActorContext) core.IChain {
+		return &actor.DefaultChain{
+			Handler: func(w *msg.Wrapper) error {
+
+				val := msg.GetReqField[int](w, "randvalue")
+				w.ToBuilder().WithResCustomFields(msg.Attr{Key: "randvalue", Value: val + 1})
+
+				return nil
+			},
+		}
+	})
+
 	a.RegisterEvent("tcc_succ", func(ctx core.ActorContext) core.IChain {
 		return &actor.DefaultChain{
 			Handler: func(w *msg.Wrapper) error {

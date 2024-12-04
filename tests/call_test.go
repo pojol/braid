@@ -2,6 +2,7 @@ package tests
 
 import (
 	"context"
+	"math/rand/v2"
 	"sync"
 	"testing"
 
@@ -42,6 +43,43 @@ func TestCall(t *testing.T) {
 
 		resval := msg.GetResField[string](m, "pong")
 		assert.Equal(t, resval, "pong")
+	})
+}
+
+func TestCallBlock(t *testing.T) {
+	nod := node.BuildProcessWithOption(
+		core.NodeWithID("test-call-block"),
+		core.NodeWithLoader(loader),
+		core.NodeWithFactory(factory),
+	)
+
+	// build
+	var err error
+	_, err = nod.System().Loader("mocka").WithID("mocka").Register(context.TODO())
+	assert.Equal(t, err, nil)
+	_, err = nod.System().Loader("mockb").WithID("mockb").Register(context.TODO())
+	assert.Equal(t, err, nil)
+	_, err = nod.System().Loader("mockc").WithID("mockc").Register(context.TODO())
+	assert.Equal(t, err, nil)
+
+	nod.Init()
+	defer func() {
+		wg := sync.WaitGroup{}
+		nod.System().Exit(&wg)
+		wg.Wait()
+	}()
+
+	// a (+1 -> b (+1 -> c (+1
+	t.Run("normal", func(t *testing.T) {
+		m := msg.NewBuilder(context.TODO())
+
+		r := rand.IntN(10)
+		m.WithReqCustomFields(msg.Attr{Key: "randvalue", Value: r})
+		err := nod.System().Call("mocka", "mocka", "test_block", m.Build())
+		assert.Equal(t, err, nil)
+
+		resval := msg.GetResField[int](m.Build(), "randvalue")
+		assert.Equal(t, resval, r+3)
 	})
 }
 
