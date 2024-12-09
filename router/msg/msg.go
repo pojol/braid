@@ -196,6 +196,10 @@ func (mw *Wrapper) GetWg() *warpwaitgroup.WrapWaitGroup {
 	return nil
 }
 
+// GetReqCustomMap gets the custom fields map from the message
+//
+// Note: The custom map is serialized using JSON, all value types need to be carefully converted
+// (e.g., numeric types like int will be serialized to float64 and need to be converted back manually)
 func (mw *Wrapper) GetReqCustomMap() (map[string]any, error) {
 	if len(mw.Req.Header.Custom) == 0 {
 		return nil, fmt.Errorf("empty request body")
@@ -225,18 +229,43 @@ func GetReqField[T any](msg *Wrapper, key string) T {
 		return typed
 	}
 
+	// Type assert the value
 	switch any(zero).(type) {
 	case int:
 		if f, ok := val.(float64); ok {
 			return any(int(f)).(T)
 		}
+	case uint:
+		if f, ok := val.(float64); ok {
+			return any(uint(f)).(T)
+		}
+	case int16:
+		if f, ok := val.(float64); ok {
+			return any(int16(f)).(T)
+		}
+	case uint16:
+		if f, ok := val.(float64); ok {
+			return any(uint16(f)).(T)
+		}
 	case int32:
 		if f, ok := val.(float64); ok {
 			return any(int32(f)).(T)
 		}
+	case uint32:
+		if f, ok := val.(float64); ok {
+			return any(uint32(f)).(T)
+		}
 	case int64:
 		if f, ok := val.(float64); ok {
 			return any(int64(f)).(T)
+		}
+	case uint64:
+		if f, ok := val.(float64); ok {
+			return any(uint64(f)).(T)
+		}
+	case float32:
+		if f, ok := val.(float64); ok {
+			return any(float32(f)).(T)
 		}
 	}
 
@@ -244,6 +273,10 @@ func GetReqField[T any](msg *Wrapper, key string) T {
 	return zero
 }
 
+// GetResCustomMap gets the custom fields map from the message
+//
+// Note: The custom map is serialized using JSON, all value types need to be carefully converted
+// (e.g., numeric types like int will be serialized to float64 and need to be converted back manually)
 func (mw *Wrapper) GetResCustomMap() (map[string]any, error) {
 	if len(mw.Res.Header.Custom) == 0 {
 		return nil, fmt.Errorf("empty resuest body")
@@ -279,13 +312,37 @@ func GetResField[T any](msg *Wrapper, key string) T {
 		if f, ok := val.(float64); ok {
 			return any(int(f)).(T)
 		}
+	case uint:
+		if f, ok := val.(float64); ok {
+			return any(uint(f)).(T)
+		}
+	case int16:
+		if f, ok := val.(float64); ok {
+			return any(int16(f)).(T)
+		}
+	case uint16:
+		if f, ok := val.(float64); ok {
+			return any(uint16(f)).(T)
+		}
 	case int32:
 		if f, ok := val.(float64); ok {
 			return any(int32(f)).(T)
 		}
+	case uint32:
+		if f, ok := val.(float64); ok {
+			return any(uint32(f)).(T)
+		}
 	case int64:
 		if f, ok := val.(float64); ok {
 			return any(int64(f)).(T)
+		}
+	case uint64:
+		if f, ok := val.(float64); ok {
+			return any(uint64(f)).(T)
+		}
+	case float32:
+		if f, ok := val.(float64); ok {
+			return any(float32(f)).(T)
 		}
 	}
 
