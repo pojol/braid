@@ -29,8 +29,8 @@ func (a *dynamicRegisterActor) Init(ctx context.Context) {
 
 			Handler: func(mw *msg.Wrapper) error {
 
-				actor_ty := msg.GetReqField[string](mw, def.KeyActorTy)
-				actor_id := msg.GetReqField[string](mw, def.KeyActorID)
+				actor_ty := msg.GetReqCustomField[string](mw, def.KeyActorTy)
+				actor_id := msg.GetReqCustomField[string](mw, def.KeyActorID)
 
 				builder := ctx.Loader(actor_ty)
 				builder.WithID(actor_id)

@@ -37,7 +37,7 @@ func (a *dynamicPickerActor) Init(ctx context.Context) {
 					return err
 				}
 
-				actor_ty := msg.GetReqField[string](mw, def.KeyActorTy)
+				actor_ty := msg.GetReqCustomField[string](mw, def.KeyActorTy)
 
 				// Select a node with low weight and relatively fewer registered actors of this type
 				nodeaddr, err := ctx.AddressBook().GetLowWeightNodeForActor(mw.Ctx, actor_ty)

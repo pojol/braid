@@ -32,7 +32,7 @@ func (a *mockActorB) Init(ctx context.Context) {
 		return &actor.DefaultChain{
 			Handler: func(w *msg.Wrapper) error {
 
-				val := msg.GetReqField[int](w, "calculateVal")
+				val := msg.GetReqCustomField[int](w, "calculateVal")
 				w.ToBuilder().WithResCustomFields(msg.Attr{Key: "calculateVal", Value: val + 2})
 
 				return nil
@@ -53,7 +53,7 @@ func (a *mockActorB) Init(ctx context.Context) {
 		return &actor.DefaultChain{
 			Handler: func(w *msg.Wrapper) error {
 
-				val := msg.GetReqField[int](w, "randvalue")
+				val := msg.GetReqCustomField[int](w, "randvalue")
 				w.ToBuilder().WithReqCustomFields(msg.Attr{Key: "randvalue", Value: val + 1})
 				ctx.Call("mockc", "mockc", "test_block", w)
 
@@ -66,7 +66,7 @@ func (a *mockActorB) Init(ctx context.Context) {
 		return &actor.DefaultChain{
 			Handler: func(w *msg.Wrapper) error {
 
-				transID := msg.GetReqField[string](w, def.KeyTranscationID)
+				transID := msg.GetReqCustomField[string](w, def.KeyTranscationID)
 				a.tcc.stateMap[transID] = &tccState{
 					originValue:  MockBTccValue,
 					currentValue: 111,
@@ -84,7 +84,7 @@ func (a *mockActorB) Init(ctx context.Context) {
 	a.RegisterEvent("tcc_confirm", func(ctx core.ActorContext) core.IChain {
 		return &actor.DefaultChain{
 			Handler: func(w *msg.Wrapper) error {
-				transID := msg.GetReqField[string](w, def.KeyTranscationID)
+				transID := msg.GetReqCustomField[string](w, def.KeyTranscationID)
 
 				if state, exists := a.tcc.stateMap[transID]; exists {
 					state.status = "confirmed"
@@ -99,7 +99,7 @@ func (a *mockActorB) Init(ctx context.Context) {
 	a.RegisterEvent("tcc_cancel", func(ctx core.ActorContext) core.IChain {
 		return &actor.DefaultChain{
 			Handler: func(w *msg.Wrapper) error {
-				transID := msg.GetReqField[string](w, def.KeyTranscationID)
+				transID := msg.GetReqCustomField[string](w, def.KeyTranscationID)
 
 				if state, exists := a.tcc.stateMap[transID]; exists {
 					MockBTccValue = state.originValue

@@ -37,7 +37,7 @@ func (ra *mockActorA) Init(ctx context.Context) {
 
 				future := ctx.ReenterCall("mockb", "mockb", "clac", w)
 				future.Then(func(w *msg.Wrapper) {
-					val := msg.GetResField[int](w, "calculateVal")
+					val := msg.GetResCustomField[int](w, "calculateVal")
 					atomic.CompareAndSwapInt32(&RecenterCalcValue, 0, int32(val*2))
 				})
 
@@ -83,7 +83,7 @@ func (ra *mockActorA) Init(ctx context.Context) {
 
 				future := ctx.ReenterCall("mockb", "mockb", "clac", w)
 				future.Then(func(w *msg.Wrapper) {
-					val := msg.GetResField[int](w, "calculateVal")
+					val := msg.GetResCustomField[int](w, "calculateVal")
 					atomic.CompareAndSwapInt32(&RecenterCalcValue, 0, int32(val*2))
 				}).Then(func(w *msg.Wrapper) {
 					atomic.AddInt32(&RecenterCalcValue, 10)
@@ -98,7 +98,7 @@ func (ra *mockActorA) Init(ctx context.Context) {
 		return &actor.DefaultChain{
 			Handler: func(w *msg.Wrapper) error {
 
-				val := msg.GetReqField[int](w, "randvalue")
+				val := msg.GetReqCustomField[int](w, "randvalue")
 				w.ToBuilder().WithReqCustomFields(msg.Attr{Key: "randvalue", Value: val + 1})
 				ctx.Call("mockb", "mockb", "test_block", w)
 

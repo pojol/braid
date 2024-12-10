@@ -2,14 +2,20 @@ package msg
 
 import (
 	"context"
-	"encoding/json"
-	fmt "fmt"
 
 	"github.com/google/uuid"
-	"github.com/pojol/braid/lib/log"
 	"github.com/pojol/braid/lib/warpwaitgroup"
 	"github.com/pojol/braid/router"
 )
+
+// Parm nsq config
+type WrapperParm struct {
+	CustomObjSerialize ICustomSerialize // default msg pack
+	CustomMapSerialize ICustomSerialize // default json
+}
+
+// Option config wraps
+type WrapperOption func(*WrapperParm)
 
 type Wrapper struct {
 	Req *router.Message // The proto-defined Message
@@ -17,6 +23,7 @@ type Wrapper struct {
 	Ctx context.Context
 	Err error
 
+	parm WrapperParm
 	Done chan struct{} // Used for synchronization
 }
 
@@ -37,8 +44,13 @@ type MsgBuilder struct {
 	wrapper *Wrapper
 }
 
-func NewBuilder(ctx context.Context) *MsgBuilder {
+func NewBuilder(ctx context.Context, opts ...WrapperOption) *MsgBuilder {
 	uid := uuid.NewString()
+
+	parm := WrapperParm{
+		CustomMapSerialize: &CustomJsonSerialize{},
+		CustomObjSerialize: &CustomObjectSerialize{},
+	}
 
 	if wc, ok := ctx.Value(WaitGroupKey{}).(*warpwaitgroup.WrapWaitGroup); ok {
 		ctx = context.WithValue(ctx, WaitGroupKey{}, wc)
@@ -48,9 +60,10 @@ func NewBuilder(ctx context.Context) *MsgBuilder {
 
 	return &MsgBuilder{
 		wrapper: &Wrapper{
-			Ctx: ctx,
-			Req: newMessage(uid),
-			Res: newMessage(uid),
+			parm: parm,
+			Ctx:  ctx,
+			Req:  newMessage(uid),
+			Res:  newMessage(uid),
 		},
 	}
 }
@@ -92,41 +105,6 @@ func (b *MsgBuilder) WithReqBody(byt []byte) *MsgBuilder {
 	return b
 }
 
-func (b *MsgBuilder) WithReqCustomFields(attrs ...Attr) *MsgBuilder {
-
-	data := make(map[string]any, len(attrs))
-
-	if len(b.wrapper.Req.Header.Custom) > 0 {
-		if err := json.Unmarshal(b.wrapper.Req.Header.Custom, &data); err != nil {
-			b.wrapper.Err = fmt.Errorf("unmarshal existing custom fields failed: %w", err)
-			return b
-		}
-	}
-
-	for _, attr := range attrs {
-		data[attr.Key] = attr.Value
-	}
-
-	return b.WithReqCustomFieldsMap(data)
-}
-
-func (b *MsgBuilder) WithReqCustomFieldsMap(data map[string]any) *MsgBuilder {
-
-	if err := isJSONSerializable(data); err != nil {
-		b.wrapper.Err = fmt.Errorf("invalid data structure: %w", err)
-		return b
-	}
-
-	byt, err := json.Marshal(data)
-	if err != nil {
-		b.wrapper.Err = fmt.Errorf("marshal request body failed: %w", err)
-		return b
-	}
-	b.wrapper.Req.Header.Custom = byt
-
-	return b
-}
-
 // WithRes set res header
 func (b *MsgBuilder) WithResHeader(h *router.Header) *MsgBuilder {
 	b.wrapper.Res.Header = h
@@ -135,40 +113,6 @@ func (b *MsgBuilder) WithResHeader(h *router.Header) *MsgBuilder {
 
 func (b *MsgBuilder) WithResBody(byt []byte) *MsgBuilder {
 	b.wrapper.Res.Body = byt
-	return b
-}
-
-func (b *MsgBuilder) WithResCustomFields(attrs ...Attr) *MsgBuilder {
-	data := make(map[string]any, len(attrs))
-
-	if len(b.wrapper.Res.Header.Custom) > 0 {
-		if err := json.Unmarshal(b.wrapper.Res.Header.Custom, &data); err != nil {
-			b.wrapper.Err = fmt.Errorf("unmarshal existing custom fields failed: %w", err)
-			return b
-		}
-	}
-
-	for _, attr := range attrs {
-		data[attr.Key] = attr.Value
-	}
-
-	return b.WithResCustomFieldsMap(data)
-}
-
-func (b *MsgBuilder) WithResCustomFieldsMap(data map[string]any) *MsgBuilder {
-
-	if err := isJSONSerializable(data); err != nil {
-		b.wrapper.Err = fmt.Errorf("invalid data structure: %w", err)
-		return b
-	}
-
-	byt, err := json.Marshal(data)
-	if err != nil {
-		b.wrapper.Err = fmt.Errorf("marshal request body failed: %w", err)
-		return b
-	}
-	b.wrapper.Res.Header.Custom = byt
-
 	return b
 }
 
@@ -194,158 +138,4 @@ func (mw *Wrapper) GetWg() *warpwaitgroup.WrapWaitGroup {
 		return wc
 	}
 	return nil
-}
-
-// GetReqCustomMap gets the custom fields map from the message
-//
-// Note: The custom map is serialized using JSON, all value types need to be carefully converted
-// (e.g., numeric types like int will be serialized to float64 and need to be converted back manually)
-func (mw *Wrapper) GetReqCustomMap() (map[string]any, error) {
-	if len(mw.Req.Header.Custom) == 0 {
-		return nil, fmt.Errorf("empty request body")
-	}
-	var data map[string]any
-	err := json.Unmarshal(mw.Req.Header.Custom, &data)
-	return data, err
-}
-
-func GetReqField[T any](msg *Wrapper, key string) T {
-	var zero T
-
-	data, err := msg.GetReqCustomMap()
-	if err != nil {
-		log.WarnF("[braid.router] get req body map err %v", err.Error())
-		return zero
-	}
-
-	val, ok := data[key]
-	if !ok {
-		log.WarnF("[braid.router] key %q not found in request body", key)
-		return zero
-	}
-
-	// Type assert the value
-	if typed, ok := val.(T); ok {
-		return typed
-	}
-
-	// Type assert the value
-	switch any(zero).(type) {
-	case int:
-		if f, ok := val.(float64); ok {
-			return any(int(f)).(T)
-		}
-	case uint:
-		if f, ok := val.(float64); ok {
-			return any(uint(f)).(T)
-		}
-	case int16:
-		if f, ok := val.(float64); ok {
-			return any(int16(f)).(T)
-		}
-	case uint16:
-		if f, ok := val.(float64); ok {
-			return any(uint16(f)).(T)
-		}
-	case int32:
-		if f, ok := val.(float64); ok {
-			return any(int32(f)).(T)
-		}
-	case uint32:
-		if f, ok := val.(float64); ok {
-			return any(uint32(f)).(T)
-		}
-	case int64:
-		if f, ok := val.(float64); ok {
-			return any(int64(f)).(T)
-		}
-	case uint64:
-		if f, ok := val.(float64); ok {
-			return any(uint64(f)).(T)
-		}
-	case float32:
-		if f, ok := val.(float64); ok {
-			return any(float32(f)).(T)
-		}
-	}
-
-	log.WarnF("[braid.router] type assertion failed for key %q: expected %T, got %T", key, zero, val)
-	return zero
-}
-
-// GetResCustomMap gets the custom fields map from the message
-//
-// Note: The custom map is serialized using JSON, all value types need to be carefully converted
-// (e.g., numeric types like int will be serialized to float64 and need to be converted back manually)
-func (mw *Wrapper) GetResCustomMap() (map[string]any, error) {
-	if len(mw.Res.Header.Custom) == 0 {
-		return nil, fmt.Errorf("empty resuest body")
-	}
-	var data map[string]any
-	err := json.Unmarshal(mw.Res.Header.Custom, &data)
-	return data, err
-}
-
-func GetResField[T any](msg *Wrapper, key string) T {
-	var zero T
-
-	data, err := msg.GetResCustomMap()
-	if err != nil {
-		log.WarnF("[braid.router] get res body map err %v", err.Error())
-		return zero
-	}
-
-	val, ok := data[key]
-	if !ok {
-		log.WarnF("[braid.router] key %q not found in response body", key)
-		return zero
-	}
-
-	// Type assert the value
-	if typed, ok := val.(T); ok {
-		return typed
-	}
-
-	// Type assert the value
-	switch any(zero).(type) {
-	case int:
-		if f, ok := val.(float64); ok {
-			return any(int(f)).(T)
-		}
-	case uint:
-		if f, ok := val.(float64); ok {
-			return any(uint(f)).(T)
-		}
-	case int16:
-		if f, ok := val.(float64); ok {
-			return any(int16(f)).(T)
-		}
-	case uint16:
-		if f, ok := val.(float64); ok {
-			return any(uint16(f)).(T)
-		}
-	case int32:
-		if f, ok := val.(float64); ok {
-			return any(int32(f)).(T)
-		}
-	case uint32:
-		if f, ok := val.(float64); ok {
-			return any(uint32(f)).(T)
-		}
-	case int64:
-		if f, ok := val.(float64); ok {
-			return any(int64(f)).(T)
-		}
-	case uint64:
-		if f, ok := val.(float64); ok {
-			return any(uint64(f)).(T)
-		}
-	case float32:
-		if f, ok := val.(float64); ok {
-			return any(float32(f)).(T)
-		}
-	}
-
-	log.WarnF("[braid.router] type assertion failed for key %q: expected %T, got %T", key, zero, val)
-	return zero
 }

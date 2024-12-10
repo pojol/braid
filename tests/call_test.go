@@ -41,7 +41,7 @@ func TestCall(t *testing.T) {
 		err := nod.System().Call("mockc", "mockc", "ping", m)
 		assert.Equal(t, err, nil)
 
-		resval := msg.GetResField[string](m, "pong")
+		resval := msg.GetResCustomField[string](m, "pong")
 		assert.Equal(t, resval, "pong")
 	})
 }
@@ -78,7 +78,7 @@ func TestCallBlock(t *testing.T) {
 		err := nod.System().Call("mocka", "mocka", "test_block", m.Build())
 		assert.Equal(t, err, nil)
 
-		resval := msg.GetResField[int](m.Build(), "randvalue")
+		resval := msg.GetResCustomField[int](m.Build(), "randvalue")
 		assert.Equal(t, resval, r+3)
 	})
 }

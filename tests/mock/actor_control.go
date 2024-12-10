@@ -26,8 +26,8 @@ func (a *controlActor) Init(ctx context.Context) {
 		return &actor.DefaultChain{
 			Handler: func(mw *msg.Wrapper) error {
 
-				actor_id := msg.GetReqField[string](mw, "actor_id")
-				actor_ty := msg.GetReqField[string](mw, "actor_ty")
+				actor_id := msg.GetReqCustomField[string](mw, "actor_id")
+				actor_ty := msg.GetReqCustomField[string](mw, "actor_ty")
 
 				err := ctx.Unregister(actor_id, actor_ty)
 				if err != nil {
