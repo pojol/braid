@@ -44,8 +44,6 @@ func makeNodeKey(nodid string) string {
 }
 
 func (ab *AddressBook) Register(ctx context.Context, ty, id string, weight int) error {
-
-	// check id
 	if id == "" || ty == "" {
 		return fmt.Errorf("actor id or type is empty")
 	}
@@ -56,13 +54,6 @@ func (ab *AddressBook) Register(ctx context.Context, ty, id string, weight int) 
 		return fmt.Errorf("actor id %v already registered", id)
 	}
 	ab.RUnlock()
-
-	mu := &dismutex.Mutex{Token: id}
-	err := mu.Lock(ctx, "[addressbook.register]")
-	if err != nil {
-		return fmt.Errorf("addressbook.register get distributed mutex err %v", err.Error())
-	}
-	defer mu.Unlock(ctx)
 
 	// serialize address info to json
 	addrJSON, _ := json.Marshal(core.AddressInfo{
@@ -92,8 +83,7 @@ func (ab *AddressBook) Register(ctx context.Context, ty, id string, weight int) 
 	pipe.HIncrBy(ctx, makeNodeKey(ab.NodeID), fmt.Sprintf("actor:%s", ty), int64(weight))
 	pipe.HIncrBy(ctx, makeNodeKey(ab.NodeID), "total_weight", int64(weight))
 
-	_, err = pipe.Exec(ctx)
-
+	_, err := pipe.Exec(ctx)
 	if err != nil {
 		return fmt.Errorf("redis pipeline exec err %v", err.Error())
 	}
@@ -109,13 +99,6 @@ func (ab *AddressBook) Unregister(ctx context.Context, id string, weight int) er
 	if id == "" {
 		return fmt.Errorf("actor id or type is empty")
 	}
-
-	mu := &dismutex.Mutex{Token: id}
-	err := mu.Lock(ctx, "[addressbook.unregister]")
-	if err != nil {
-		return fmt.Errorf("addressbook.unregister get distributed mutex err %v", err.Error())
-	}
-	defer mu.Unlock(ctx)
 
 	// get address info first
 	addrJSON, err := trdredis.HGet(ctx, def.RedisAddressbookIDField, id).Result()
@@ -333,12 +316,11 @@ func (ab *AddressBook) GetActorTypeCount(ctx context.Context, actorType string) 
 }
 
 func (ab *AddressBook) Clear(ctx context.Context) error {
-	mu := &dismutex.Mutex{Token: ab.NodeID}
-	err := mu.Lock(ctx, "[addressbook.register]")
+	mid, err := dismutex.Lock(ctx, ab.NodeID)
 	if err != nil {
 		return fmt.Errorf("addressbook.register get distributed mutex err %v", err.Error())
 	}
-	defer mu.Unlock(ctx)
+	defer dismutex.Unlock(ctx, ab.NodeID, mid)
 
 	// 获取该节点的所有 actor 信息
 	nodeKey := makeNodeKey(ab.NodeID)
