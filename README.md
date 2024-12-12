@@ -121,13 +121,16 @@ user.SubscriptionEvent(events.EvChatMessageStore, a.Id, func() {
 }, pubsub.WithTTL(time.Hour*24*30))
 ```
 
+### 4. Built-in Support for Jaeger Distributed Tracing
+[![image.png](https://i.postimg.cc/wTVhQhyM/image.png)](https://postimg.cc/XprGVBg6)
+
 <div style="display: flex; align-items: center; margin: 1em 0;">
   <div style="flex-grow: 1; height: 1px; background-color: #ccc;"></div>
   <div style="margin: 0 10px; font-weight: bold; color: #666;">Testing Robot</div>
   <div style="flex-grow: 1; height: 1px; background-color: #ccc;"></div>
 </div>
 
-### 4. Testing with Bot Framework
+### 5. Testing with Bot Framework
 > Use the project built with scaffold above
 
 ```shell

@@ -156,7 +156,7 @@ type IActorLoader interface {
 	Builder(string, ISystem) IActorBuilder
 
 	// Pick selects an appropriate node for the actor builder to register
-	Pick(IActorBuilder) error
+	Pick(context.Context, IActorBuilder) error
 
 	AssignToNode(INode)
 }
@@ -181,7 +181,7 @@ type IActorBuilder interface {
 
 	// ---
 	Register(context.Context) (IActor, error)
-	Picker() error
+	Picker(context.Context) error
 }
 
 type ActorConstructor struct {

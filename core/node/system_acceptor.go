@@ -6,9 +6,12 @@ import (
 	"runtime"
 	"strconv"
 
+	"github.com/opentracing/opentracing-go"
 	"github.com/pojol/braid/core"
 	"github.com/pojol/braid/lib/grpc"
 	"github.com/pojol/braid/lib/log"
+	"github.com/pojol/braid/lib/span"
+	"github.com/pojol/braid/lib/tracer"
 	"github.com/pojol/braid/lib/warpwaitgroup"
 	"github.com/pojol/braid/router"
 	"github.com/pojol/braid/router/msg"
@@ -52,7 +55,18 @@ func recoverHandler(r interface{}) error {
 	return fmt.Errorf("[GRPC-SERVER RECOVER] err: %v stack: %s", err, buf)
 }
 
-func NewAcceptor(sys core.ISystem, port int) (*Acceptor, error) {
+func NewAcceptor(sys core.ISystem, port int, trac tracer.ITracer) (*Acceptor, error) {
+
+	var unaryInterceptors []realgrpc.UnaryServerInterceptor
+
+	unaryInterceptors = append(unaryInterceptors,
+		grpc_recovery.UnaryServerInterceptor(grpc_recovery.WithRecoveryHandler(recoverHandler)))
+
+	if trac != nil && trac.GetTracing() != nil {
+		unaryInterceptors = append(unaryInterceptors,
+			span.ServerInterceptor(trac.GetTracing().(opentracing.Tracer)))
+	}
+
 	a := &Acceptor{
 		server: grpc.BuildServerWithOption(
 			grpc.WithServerListen(":"+strconv.Itoa(port)),
@@ -60,7 +74,7 @@ func NewAcceptor(sys core.ISystem, port int) (*Acceptor, error) {
 			grpc.ServerRegisterHandler(func(s *realgrpc.Server) {
 				router.RegisterAcceptorServer(s, &listen{sys: sys})
 			}),
-			grpc.ServerAppendUnaryInterceptors(grpc_recovery.UnaryServerInterceptor(grpc_recovery.WithRecoveryHandler(recoverHandler))),
+			grpc.ServerAppendUnaryInterceptors(unaryInterceptors...),
 		),
 	}
 

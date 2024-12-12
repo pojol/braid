@@ -75,6 +75,6 @@ func (p *ActorLoaderBuilder) Register(ctx context.Context) (core.IActor, error) 
 	return p.ISystem.Register(ctx, p)
 }
 
-func (p *ActorLoaderBuilder) Picker() error {
-	return p.IActorLoader.Pick(p) // Note: This method is asynchronous
+func (p *ActorLoaderBuilder) Picker(ctx context.Context) error {
+	return p.IActorLoader.Pick(ctx, p) // Note: This method is asynchronous
 }

@@ -6,6 +6,7 @@ import (
 	fmt "fmt"
 	"sync"
 
+	"github.com/opentracing/opentracing-go"
 	"github.com/pojol/braid/core"
 	"github.com/pojol/braid/core/addressbook"
 	"github.com/pojol/braid/def"
@@ -16,6 +17,7 @@ import (
 	"github.com/pojol/braid/lib/tracer"
 	"github.com/pojol/braid/router"
 	"github.com/pojol/braid/router/msg"
+	realgrpc "google.golang.org/grpc"
 )
 
 type NormalSystem struct {
@@ -53,8 +55,11 @@ func buildSystemWithOption(nodId, nodeIp string, nodePort int, loader core.IActo
 		panic("[braid.system] loader or factory is nil!")
 	}
 
-	// init grpc client
-	sys.client = grpc.BuildClientWithOption()
+	var unaryInterceptors []realgrpc.UnaryClientInterceptor
+	if trac != nil && trac.GetTracing() != nil {
+		unaryInterceptors = append(unaryInterceptors, span.ClientInterceptor(trac.GetTracing().(opentracing.Tracer)))
+	}
+	sys.client = grpc.BuildClientWithOption(grpc.ClientAppendUnaryInterceptors(unaryInterceptors...))
 	sys.loader = loader
 	sys.factory = factory
 
@@ -67,7 +72,7 @@ func buildSystemWithOption(nodId, nodeIp string, nodePort int, loader core.IActo
 	})
 
 	if sys.nodePort != 0 {
-		sys.acceptor, err = NewAcceptor(sys, sys.nodePort)
+		sys.acceptor, err = NewAcceptor(sys, sys.nodePort, trac)
 		if err != nil {
 			panic(fmt.Errorf("[braid.system] new acceptor err %v", err.Error()))
 		}
@@ -110,7 +115,7 @@ func (sys *NormalSystem) Register(ctx context.Context, builder core.IActorBuilde
 			}
 		}
 
-		cnt, err := sys.addressbook.GetActorTypeCount(context.TODO(), builder.GetType())
+		cnt, err := sys.addressbook.GetActorTypeCount(ctx, builder.GetType())
 		if err != nil {
 			return nil, fmt.Errorf("[barid.system] get type count err %v", err)
 		}
@@ -120,7 +125,7 @@ func (sys *NormalSystem) Register(ctx context.Context, builder core.IActorBuilde
 	}
 
 	// Register first, then build
-	err := sys.addressbook.Register(context.TODO(), builder.GetType(), builder.GetID(), builder.GetWeight())
+	err := sys.addressbook.Register(ctx, builder.GetType(), builder.GetID(), builder.GetWeight())
 	if err != nil {
 		return nil, err
 	}
@@ -198,8 +203,10 @@ func (sys *NormalSystem) Call(idOrSymbol, actorType, event string, mw *msg.Wrapp
 		if err == nil {
 			mw.Ctx = span.Begin(mw.Ctx)
 
-			span.SetTag("actor", actorType)
+			span.SetTag("orgActor", mw.Req.Header.OrgActorType)
+			span.SetTag("tarActor", actorType)
 			span.SetTag("event", event)
+			span.SetTag("method", "call")
 			span.SetTag("id", idOrSymbol)
 
 			defer span.End(mw.Ctx)
@@ -331,6 +338,21 @@ func (sys *NormalSystem) Send(idOrSymbol, actorType, event string, mw *msg.Wrapp
 	var info core.AddressInfo
 	var actor core.IActor
 	var err error
+
+	if sys.trac != nil {
+		span, err := sys.trac.GetSpan(span.SystemCall)
+		if err == nil {
+			mw.Ctx = span.Begin(mw.Ctx)
+
+			span.SetTag("orgActor", mw.Req.Header.OrgActorType)
+			span.SetTag("tarActor", actorType)
+			span.SetTag("event", event)
+			span.SetTag("method", "send")
+			span.SetTag("id", idOrSymbol)
+
+			defer span.End(mw.Ctx)
+		}
+	}
 
 	if idOrSymbol == "" {
 		return fmt.Errorf("[braid.system] send unknown target id")

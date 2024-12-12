@@ -82,9 +82,9 @@ func WithDialOptions(opts ...grpc.DialOption) ClientOption {
 	}
 }
 
-func ClientAppendUnaryInterceptors(interceptor grpc.UnaryClientInterceptor) ClientOption {
+func ClientAppendUnaryInterceptors(interceptor ...grpc.UnaryClientInterceptor) ClientOption {
 	return func(c *ClientParm) {
-		c.UnaryInterceptors = append(c.UnaryInterceptors, interceptor)
+		c.UnaryInterceptors = append(c.UnaryInterceptors, interceptor...)
 	}
 }
 

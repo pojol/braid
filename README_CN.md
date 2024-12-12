@@ -120,13 +120,17 @@ user.SubscriptionEvent(events.EvChatMessageStore, a.Id, func() {
 }, pubsub.WithTTL(time.Hour*24*30))
 ```
 
+### 4. 默认支持 jaeger 链路追踪
+[![image.png](https://i.postimg.cc/wTVhQhyM/image.png)](https://postimg.cc/XprGVBg6)
+
+
 <div style="display: flex; align-items: center; margin: 1em 0;">
   <div style="flex-grow: 1; height: 1px; background-color: #ccc;"></div>
   <div style="margin: 0 10px; font-weight: bold; color: #666;">测试机器人</div>
   <div style="flex-grow: 1; height: 1px; background-color: #ccc;"></div>
 </div>
 
-### 4. 通过测试机器人验证 braid 提供的服务器接口
+### 5. 通过测试机器人验证 braid 提供的服务器接口
 > 使用上面的脚手架工程
 
 ```shell

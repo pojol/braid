@@ -32,9 +32,9 @@ func WithServerGracefulStop() ServerOption {
 	}
 }
 
-func ServerAppendUnaryInterceptors(interceptor grpc.UnaryServerInterceptor) ServerOption {
+func ServerAppendUnaryInterceptors(interceptor ...grpc.UnaryServerInterceptor) ServerOption {
 	return func(c *ServerParm) {
-		c.UnaryInterceptors = append(c.UnaryInterceptors, interceptor)
+		c.UnaryInterceptors = append(c.UnaryInterceptors, interceptor...)
 	}
 }
 

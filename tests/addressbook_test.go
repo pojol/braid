@@ -139,7 +139,7 @@ func TestDynamicPicker(t *testing.T) {
 	time.Sleep(time.Second)
 
 	for i := 0; i < 5000; i++ {
-		err = nod.System().Loader("mocka").WithID(nodid + "_" + strconv.Itoa(i)).Picker()
+		err = nod.System().Loader("mocka").WithID(nodid + "_" + strconv.Itoa(i)).Picker(context.TODO())
 		if err != nil {
 			t.Logf("picker err %v", err.Error())
 		}

@@ -18,7 +18,7 @@ func BuildDefaultActorLoader(factory core.IActorFactory) core.IActorLoader {
 	return &DefaultActorLoader{factory: factory}
 }
 
-func (al *DefaultActorLoader) Pick(builder core.IActorBuilder) error {
+func (al *DefaultActorLoader) Pick(ctx context.Context, builder core.IActorBuilder) error {
 
 	msgbuild := msg.NewBuilder(context.TODO())
 
