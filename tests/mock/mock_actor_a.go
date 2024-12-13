@@ -63,15 +63,14 @@ func (ra *mockActorA) Init(ctx context.Context) {
 		}
 	})
 
-	ra.SubscriptionEvent(ra.Id, "offline_msg", func() {
-		ra.RegisterEvent("offline_msg", func(ctx core.ActorContext) core.IChain {
-			return &actor.DefaultChain{
-				Handler: func(w *msg.Wrapper) error {
-					log.InfoF("recv offline_msg %s", string(w.Req.Body))
-					return nil
-				},
-			}
-		})
+	ra.SubscriptionEvent(ra.Id, "offline_msg", func(ctx core.ActorContext) core.IChain {
+		return &actor.DefaultChain{
+			Handler: func(w *msg.Wrapper) error {
+				log.InfoF("recv offline_msg %s", string(w.Req.Body))
+
+				return nil
+			},
+		}
 	})
 
 	ra.RegisterEvent("chain", func(ctx core.ActorContext) core.IChain {

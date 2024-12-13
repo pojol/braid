@@ -137,8 +137,8 @@ type IActor interface {
 	//  If this is the first subscription to this topic, opts will take effect (you can set some options for the topic, such as ttl)
 	//  topic: A subject that contains a group of channels (e.g., if topic = offline messages, channel = actorId, then each actor can get its own offline messages in this topic)
 	//  channel: Represents different categories within a topic
-	//  succ: Callback function for successful subscription
-	SubscriptionEvent(topic string, channel string, succ func(), opts ...pubsub.TopicOption) error
+	//  createChainF: Callback function for successful subscription
+	SubscriptionEvent(topic string, channel string, createChainF func(ActorContext) IChain, opts ...pubsub.TopicOption) error
 
 	// Call sends an event to another actor
 	Call(idOrSymbol, actorType, event string, mw *msg.Wrapper) error

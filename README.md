@@ -113,12 +113,7 @@ user.RegisterTimer(0, 1000, func(ctx core.ActorContext) error {
 ```
 > Subscribe to messages and bind event handler
 ```go
-user.SubscriptionEvent(events.EvChatMessageStore, a.Id, func() {
-
-    // After successful subscription, bind a handler function for the message
-    a.RegisterEvent(events.EvChatMessageStore, events.MakeChatStoreMessage)
-    
-}, pubsub.WithTTL(time.Hour*24*30))
+user.SubscriptionEvent(events.EvChatMessageStore, a.Id, events.MakeChatStoreMessage, pubsub.WithTTL(time.Hour*24*30))
 ```
 
 ### 4. Built-in Support for Jaeger Distributed Tracing
