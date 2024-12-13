@@ -9,7 +9,6 @@ import (
 	"github.com/pojol/braid/core"
 	"github.com/pojol/braid/core/actor"
 	"github.com/pojol/braid/def"
-	"github.com/pojol/braid/lib/log"
 	"github.com/pojol/braid/router/msg"
 )
 
@@ -18,6 +17,9 @@ type mockActorA struct {
 }
 
 var RecenterCalcValue int32
+
+// 添加一个计数器
+var ReceivedMessageCount int64
 
 func newMockA(p core.IActorBuilder) core.IActor {
 	return &mockActorA{
@@ -66,8 +68,7 @@ func (ra *mockActorA) Init(ctx context.Context) {
 	ra.SubscriptionEvent(ra.Id, "offline_msg", func(ctx core.ActorContext) core.IChain {
 		return &actor.DefaultChain{
 			Handler: func(w *msg.Wrapper) error {
-				log.InfoF("recv offline_msg %s", string(w.Req.Body))
-
+				atomic.AddInt64(&ReceivedMessageCount, 1)
 				return nil
 			},
 		}

@@ -50,7 +50,7 @@ func (c *Channel) loop() {
 				Group:    c.channel,
 				Consumer: c.consumer,
 				Streams:  []string{c.topic, ">"},
-				Block:    100 * time.Millisecond,
+				Block:    10 * time.Millisecond,
 				Count:    10,
 			}).Val()
 
@@ -81,6 +81,7 @@ func (c *Channel) loop() {
 
 func (c *Channel) addHandlers(queue *mpsc.Queue) {
 	go func() {
+
 		for {
 			m, ok := <-c.msgCh.Get()
 			if !ok {
