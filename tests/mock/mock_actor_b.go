@@ -3,6 +3,7 @@ package mock
 import (
 	"context"
 	"fmt"
+	"sync/atomic"
 	"time"
 
 	"github.com/pojol/braid/core"
@@ -12,6 +13,7 @@ import (
 )
 
 var MockBTccValue = 11
+var BechmarkCallReceivedMessageCount int64
 
 type mockActorB struct {
 	*actor.Runtime
@@ -35,6 +37,15 @@ func (a *mockActorB) Init(ctx context.Context) {
 				val := msg.GetReqCustomField[int](w, "calculateVal")
 				w.ToBuilder().WithResCustomFields(msg.Attr{Key: "calculateVal", Value: val + 2})
 
+				return nil
+			},
+		}
+	})
+
+	a.RegisterEvent("call_benchmark", func(ctx core.ActorContext) core.IChain {
+		return &actor.DefaultChain{
+			Handler: func(w *msg.Wrapper) error {
+				atomic.AddInt64(&BechmarkCallReceivedMessageCount, 1)
 				return nil
 			},
 		}

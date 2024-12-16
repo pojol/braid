@@ -48,6 +48,15 @@ func (ra *mockActorA) Init(ctx context.Context) {
 		}
 	})
 
+	ra.RegisterEvent("call_benchmark", func(ctx core.ActorContext) core.IChain {
+		return &actor.DefaultChain{
+			Handler: func(w *msg.Wrapper) error {
+				ctx.Call("mockb", "mockb", "call_benchmark", w)
+				return nil
+			},
+		}
+	})
+
 	ra.RegisterEvent("timeout", func(ctx core.ActorContext) core.IChain {
 		return &actor.DefaultChain{
 			Handler: func(w *msg.Wrapper) error {
