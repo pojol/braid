@@ -111,3 +111,12 @@ $ run gobot_editor_[ver].exe or .dmg
 ---
 
 ### benchmark
+```shell
+goos: darwin
+goarch: amd64
+cpu: VirtualApple @ 2.50GHz
+```
+| Test Item | Node Count | Performance |
+|-----------|------------|-------------|
+| [dynamic-picker](https://github.com/pojol/braid/blob/master/tests/addressbook_test.go) | 10 | 500 actors/s |
+| [call](https://github.com/pojol/braid/blob/master/tests/call_benchmark_test.go) | 2 (a1 -> a2 -> b1) | 14000 calls/s |

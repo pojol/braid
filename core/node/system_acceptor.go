@@ -96,25 +96,19 @@ func (s *listen) Routing(ctx context.Context, req *router.RouteReq) (*router.Rou
 
 	ctx = context.WithValue(ctx, msg.WaitGroupKey{}, &warpwaitgroup.WrapWaitGroup{})
 
-	mw := &msg.Wrapper{
-		Ctx: ctx,
-		Req: req.Msg,
-		Res: &router.Message{
-			Header: &router.Header{},
-		},
-	}
-
-	mw.Req.Header.PrevActorType = "GrpcAcceptor"
+	routermsg := msg.NewBuilder(ctx).Build()
+	routermsg.Req = req.Msg
+	routermsg.Req.Header.PrevActorType = "GrpcAcceptor"
 
 	err := s.sys.Call(
 		req.Msg.Header.TargetActorID,
 		req.Msg.Header.TargetActorType,
-		req.Msg.Header.Event, mw)
+		req.Msg.Header.Event, routermsg)
 
 	if err != nil {
 		log.InfoF("listen routing %v err %v", req.Msg.Header.Event, err.Error())
 	}
 
-	res.Msg = mw.Res
+	res.Msg = routermsg.Res
 	return res, nil
 }

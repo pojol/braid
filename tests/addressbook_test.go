@@ -90,7 +90,7 @@ func printWeight() error {
 }
 
 func TestDynamicPicker(t *testing.T) {
-	for i := 0; i < 20; i++ {
+	for i := 0; i < 10; i++ {
 		i := i // 创建一个新的变量来捕获循环变量
 		go func() {
 			factory := mock.BuildActorFactory()

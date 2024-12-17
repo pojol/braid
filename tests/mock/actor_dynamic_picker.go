@@ -46,7 +46,7 @@ func (a *dynamicPickerActor) Init(ctx context.Context) {
 				}
 
 				// rename
-				msgbuild := mw.ToBuilder().WithReqCustomFields(msg.Attr{Key: "actor_id", Value: nodeaddr.Node + "_" + actor_ty + "_" + uuid.NewString()})
+				msgbuild := mw.ToBuilder().WithReqCustomFields(def.ActorID(nodeaddr.Node + "_" + actor_ty + "_" + uuid.NewString()))
 
 				// dispatcher to picker node
 				return ctx.Call(nodeaddr.Node+"_"+"MockDynamicRegister", "MockDynamicRegister", "MockDynamicRegister", msgbuild.Build())
