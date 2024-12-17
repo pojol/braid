@@ -58,13 +58,11 @@ func (a *chatChannelActor) Init(ctx context.Context) {
 
 	a.Context().WithValue(events.ChatStateType{}, a.state)
 
-	a.RegisterEvent(events.EvChatChannelReceived, events.MakeChatRecved)
-	a.RegisterEvent(events.EvChatChannelAddUser, events.MakeChatAddUser)
-	a.RegisterEvent(events.EvChatChannelRmvUser, events.MakeChatRemoveUser)
+	a.OnEvent(events.EvChatChannelReceived, events.MakeChatRecved)
+	a.OnEvent(events.EvChatChannelAddUser, events.MakeChatAddUser)
+	a.OnEvent(events.EvChatChannelRmvUser, events.MakeChatRemoveUser)
 
-	err := a.SubscriptionEvent(events.EvChatMessageStore, a.Id, func() {
-		a.RegisterEvent(events.EvChatMessageStore, events.MakeChatStoreMessage)
-	}, pubsub.WithTTL(time.Hour*24*30))
+	err := a.Sub(events.EvChatMessageStore, a.Id, events.MakeChatStoreMessage, pubsub.WithTTL(time.Hour*24*30))
 	if err != nil {
 		log.WarnF("actor %v ty %v subscription event %v err %v", a.Id, a.Ty, events.EvChatMessageStore, err.Error())
 	}

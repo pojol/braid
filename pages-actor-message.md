@@ -43,7 +43,7 @@ callback := func(interface{}) error {
 }
 args := interface{}
 
-a.RegisterTimer(dueTime, interval, callback, args)
+a.OnTimer(dueTime, interval, callback, args)
 ```
 
 * **dueTime** The startup delay time of the timer, 0 here means start immediately
@@ -56,12 +56,10 @@ a.RegisterTimer(dueTime, interval, callback, args)
 ### subscribe message and register handler
 > Sometimes when passing messages, we need some asynchronous or offline mechanisms, such as offline messages in chat channels. We can first cache the messages in a queue (mq) and process them after the actor is instantiated. This scenario can use subscriptions:
 ```go
-a.SubscriptionEvent(events.EvChatMessageStore, a.Id, func() {
-  a.RegisterEvent(events.EvChatMessageStore, events.MakeChatStoreMessage)
-}, pubsub.WithTTL(time.Hour*24*30))
+a.Sub(events.EvChatMessageStore, a.Id, events.MakeChatStoreMessage, pubsub.WithTTL(time.Hour*24*30))
 ```
 
-* **SubscriptionEvent** Subscribe to the EvChatMessageStore topic and create a channel with id a.Id
+* **Sub** Subscribe to the EvChatMessageStore topic and create a channel with id a.Id
 * **WithTTL** Set the message expiration time for this topic
 * **WithLimit** Set the maximum number of messages for this queue
 * **Callback** When a new message is retrieved from the queue, it will be routed to the actual handling function handle in the callback

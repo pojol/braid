@@ -45,7 +45,7 @@ callback := func(interface{}) error {
 }
 args := interface{}
 
-a.RegisterTimer(dueTime, interval, callback, args)
+a.OnTimer(dueTime, interval, callback, args)
 ```
 
 * **dueTime** timer 的启动延迟时间，这里填0表示立即启动
@@ -58,12 +58,10 @@ a.RegisterTimer(dueTime, interval, callback, args)
 ### 订阅消息并注册处理函数
 > 有时候我们在消息传递时，需要一些异步或离线机制，比如聊天频道中的离线消息，我们可以先将消息缓存在队列（mq)中，等待 actor 实例化之后再进行处理，这种情形就可以使用订阅；
 ```go
-a.SubscriptionEvent(events.EvChatMessageStore, a.Id, func() {
-  a.RegisterEvent(events.EvChatMessageStore, events.MakeChatStoreMessage)
-}, pubsub.WithTTL(time.Hour*24*30))
+a.Sub(events.EvChatMessageStore, a.Id, events.MakeChatStoreMessage, pubsub.WithTTL(time.Hour*24*30))
 ```
 
-* **SubscriptionEvent** 订阅 EvChatMessageStore 这个主题，并创建一个id为 a.Id 的 channel
+* **Sub** 订阅 EvChatMessageStore 这个主题，并创建一个id为 a.Id 的 channel
 * **WithTTL** 设置这个主题的消息过期时间
 * **WithLimit** 设置这个队列的最大消息数量
 * **Callback** 当从队列中获取到新的消息时，这个消息会被路由到 callback 中的实际处理函数具柄
