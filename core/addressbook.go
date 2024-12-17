@@ -26,6 +26,7 @@ type IAddressBook interface {
 	GetByType(context.Context, string) ([]AddressInfo, error)
 
 	GetLowWeightNodeForActor(ctx context.Context, actorType string) (AddressInfo, error)
+	GetActorTypeCount(ctx context.Context, actorType string) (int64, error)
 
 	Clear(context.Context) error
 }
