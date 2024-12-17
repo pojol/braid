@@ -43,49 +43,11 @@ $ cd you-project-name/node
 $ go run main.go
 ```
 
-### 2. Create a new actor and load it into the cluster
-> Register actors to nodes by configuring `node.yaml`
-
-```yaml
-actors:
-- name: "USER"
-    id : "user"
-    unique: false
-    weight: 100
-    limit: 10000
-```
-> Create actor constructors and bind them to the factory
+### 2. Implement logic for the actor
 
 ```golang
-type userActor struct {
-    *actor.Runtime
-    state *Entity
-}
-
-func NewUserActor(p core.IActorBuilder) core.IActor {
-    return &httpAcceptorActor{
-        Runtime: &actor.Runtime{Id: p.GetID(), Ty: p.GetType(), Sys: p.GetSystem()},
-        state: user.NewEntity(p.GetID())
-    }
-}
-
-func (a *userActor) Init(ctx context.Context) {
-    a.Runtime.Init(ctx)
-    a.state.Load(ctx)   // Load data from cache to local storage
-}
-
-// factory.go with node.yaml
-case template.USER:
-    factory.bind("USER", v.Unique, v.Weight, v.Limit, NewUserActor)
-```
-
-### 3. Implement logic for the actor
-> Note: All handling functions (events, timers) registered in an actor are processed synchronously. Users do not need to concern themselves with asynchronous logic within the actor.
-
-> Bind event handler
-```go
-user.OnEvent("use_item", func(ctx core.ActorContext) *actor.DefaultChain {
-    // use middleware
+user.OnEvent("xx_event", func(ctx core.ActorContext) *actor.DefaultChain {
+    // use unpack middleware
     unpackcfg := &middleware.MsgUnpackCfg[proto.xxx]{}
 
     return &actor.DefaultChain{
@@ -102,26 +64,15 @@ user.OnEvent("use_item", func(ctx core.ActorContext) *actor.DefaultChain {
     }
 })
 ```
-> Bind timer handler
-```go
-user.OnTimer(0, 1000, func(ctx core.ActorContext) error {
 
-    state := ctx.GetValue(xxxStateKey{}).(*xxxState)
+### 3. Message sending
 
-    if state.State == Init {
-        // todo & state transitions
-        state.State = Running
-    } else if state.State == Running {
-
-    }
-
-    return nil
-})
+```golang
+m := msg.NewBuilder(context.TODO())
+m.WithReqCustomFields(fields.RoomID(b.RoomID))
+ctx.Call(b.ID, template.ACTOR_USER, constant.Ev_UpdateUserInfo, m.Build())
 ```
-> Subscribe to messages and bind event handler
-```go
-user.SubscriptionEvent(events.EvChatMessageStore, a.Id, events.MakeChatStoreMessage, pubsub.WithTTL(time.Hour*24*30))
-```
+
 
 ### 4. Built-in Support for Jaeger Distributed Tracing
 [![image.png](https://i.postimg.cc/wTVhQhyM/image.png)](https://postimg.cc/XprGVBg6)

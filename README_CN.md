@@ -52,49 +52,12 @@ $ cd you-project-name/node
 $ go run main.go
 ```
 
-### 2. 创建新的 actor 并将其加载到集群中
-> 编写 node.yaml 将 actor 模板注册到节点（容器）中
 
-```yaml
-actors:
-- name: "USER"
-    id : "user"
-    unique: false
-    weight: 100
-    limit: 10000
-```
-> 将 actor 的构建函数绑定到 actor 工厂中
+### 2. 为 actor 添加一个事件具柄
 
 ```golang
-type userActor struct {
-    *actor.Runtime
-    state *Entity
-}
-
-func NewUserActor(p core.IActorBuilder) core.IActor {
-    return &httpAcceptorActor{
-        Runtime: &actor.Runtime{Id: p.GetID(), Ty: p.GetType(), Sys: p.GetSystem()},
-        state: user.NewEntity(p.GetID())
-    }
-}
-
-func (a *userActor) Init(ctx context.Context) {
-    a.Runtime.Init(ctx)
-    a.state.Load(ctx)   // Load data from cache to local storage
-}
-
-// factory.go with node.yaml
-case template.USER:
-    factory.bind("USER", v.Unique, v.Weight, v.Limit, NewUserActor)
-```
-
-### 3. 实现 actor 的逻辑
-> 注意：在 actor 中注册的所有处理函数（事件、定时器）都是同步处理的，用户无需关心集群内部的异步逻辑。
-
-> 绑定事件函数具柄
-```go
-user.OnEvent("use_item", func(ctx core.ActorContext) *actor.DefaultChain {
-    // use middleware
+user.OnEvent("xx_event", func(ctx core.ActorContext) *actor.DefaultChain {
+    // use unpack middleware
     unpackcfg := &middleware.MsgUnpackCfg[proto.xxx]{}
 
     return &actor.DefaultChain{
@@ -111,26 +74,15 @@ user.OnEvent("use_item", func(ctx core.ActorContext) *actor.DefaultChain {
     }
 })
 ```
-> 绑定 timer handler
-```go
-user.OnTimer(0, 1000, func(ctx core.ActorContext) error {
 
-    state := ctx.GetValue(xxxStateKey{}).(*xxxState)
+### 3. 消息发送
 
-    if state.State == Init {
-        // todo & state transitions
-        state.State = Running
-    } else if state.State == Running {
-
-    }
-
-    return nil
-})
+```golang
+m := msg.NewBuilder(context.TODO())
+m.WithReqCustomFields(fields.RoomID(b.RoomID))
+ctx.Call(b.ID, template.ACTOR_USER, constant.Ev_UpdateUserInfo, m.Build())
 ```
-> 订阅消息（mq
-```go
-user.SubscriptionEvent(events.EvChatMessageStore, a.Id, events.MakeChatStoreMessage, pubsub.WithTTL(time.Hour*24*30))
-```
+
 
 ### 4. 默认支持 jaeger 链路追踪
 [![image.png](https://i.postimg.cc/wTVhQhyM/image.png)](https://postimg.cc/XprGVBg6)
