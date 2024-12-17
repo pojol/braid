@@ -16,8 +16,8 @@
 |-| ------ | ------ | ------- |
 | 核心概念 | **Actor** | **Handler** | **State** |
 || ------ | ------ | ------- |
-| 消息发送 |`Call`| `Send`| `Pub`|
-| 事件订阅 |`OnEvent`| `OnTimer`| `Sub`|
+| 消息发送 |[Call](https://pojol.github.io/braid/#/zh-cn/pages-actor-send)| `Send`| `Pub`|
+| 事件订阅 |[OnEvent](https://pojol.github.io/braid/#/zh-cn/pages-actor-message)| `OnTimer`| `Sub`|
 
 - `Actor` 表示在集群中的计算单元，负责维护接收消息的handlers和状态，通常 actor = 一系列计算函数和状态的集合，比如 user, mail, rank, chat ...
 - `Handler` 表示处理具体消息的函数，可以是事件处理，也可以是定时器处理，也可以是消息订阅（在handle中的逻辑都可以认为是同步的，不需要担心异步逻辑）
