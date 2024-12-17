@@ -17,10 +17,10 @@
 
 |  |  | | |
 |-| ------ | ------ | ------- |
-| Core Concepts | `Actor` | `Handler` | `State` |
+| Core Concepts | **Actor** | **Handler** | **State** |
 || ------ | ------ | ------- |
-| Message Sending |`Call`| `Send`| `Pub`|
-| Event Subscription |`OnEvent`| `OnTimer`| `Sub`|
+| Message Sending |[Call](https://pojol.github.io/braid/#/pages-actor-send)| `Send`| `Pub`|
+| Event Subscription |[OnEvent](https://pojol.github.io/braid/#/pages-actor-message)| `OnTimer`| `Sub`|
 
 </br>
 

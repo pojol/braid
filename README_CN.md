@@ -14,7 +14,7 @@
 
 |  |  | | |
 |-| ------ | ------ | ------- |
-| 核心概念 | `Actor` | `Handler` | `State` |
+| 核心概念 | **Actor** | **Handler** | **State** |
 || ------ | ------ | ------- |
 | 消息发送 |`Call`| `Send`| `Pub`|
 | 事件订阅 |`OnEvent`| `OnTimer`| `Sub`|
