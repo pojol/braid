@@ -13,9 +13,16 @@
 [中文](https://github.com/pojol/braid/blob/master/README_CN.md)
 
 ### Features
-* Actor-Centric: Built around a pure Actor model, simplifying distributed logic.
-* Automatic Load Balancing: Intelligent resource allocation through the addressing system.
-* Development Focus: No need to consider underlying architecture like services or clusters; concentrate on game logic.
+> Braid adopts a minimalist design philosophy - with just three core concepts and six basic interfaces, you can build any single-node or distributed game server architecture
+
+|  |  | | |
+|-| ------ | ------ | ------- |
+| Core Concepts | `Actor` | `Handler` | `State` |
+|| ------ | ------ | ------- |
+| Message Sending |`Call`| `Send`| `Pub`|
+| Event Subscription |`OnEvent`| `OnTimer`| `Sub`|
+
+</br>
 
 ### 1. Quick Start
 > Install and set up a minimal working game server using the braid-cli tool

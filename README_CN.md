@@ -9,10 +9,27 @@
 
 [![image.png](https://i.postimg.cc/BbvzLhfN/image.png)](https://postimg.cc/Vr3g2W6b)
 
-### 特性
-* 以 Actor 为中心：框架本质上是 Actor 的集合，简化了分布式逻辑。
-* 自动负载均衡：通过寻址系统实现自动资源分配。
-* 专注开发：无需考虑服务或集群等底层架构，专注于游戏逻辑。
+### Features
+> braid 采用简洁的设计理念，只需通过下面的三个核心概念和六个基础接口，即可构建各类单点或分布式游戏服务器架构
+
+|  |  | | |
+|-| ------ | ------ | ------- |
+| 核心概念 | `Actor` | `Handler` | `State` |
+|| ------ | ------ | ------- |
+| 消息发送 |`Call`| `Send`| `Pub`|
+| 事件订阅 |`OnEvent`| `OnTimer`| `Sub`|
+
+- `Actor` 表示在集群中的计算单元，负责维护接收消息的handlers和状态，通常 actor = 一系列计算函数和状态的集合，比如 user, mail, rank, chat ...
+- `Handler` 表示处理具体消息的函数，可以是事件处理，也可以是定时器处理，也可以是消息订阅（在handle中的逻辑都可以认为是同步的，不需要担心异步逻辑）
+- `State` 是 actor 的状态，用于存储和读写 actor 的数据
+- `Call` 表示一次阻塞调用（调用可以传入路由规则，直接发送，广播发送，随机发送 等...
+- `Send` 表示一次非阻塞调用
+- `Pub` 表示向 MQ 的某个 Topic 发送一条消息
+- `OnEvent` 注册一个新的事件处理函数
+- `OnTimer` 注册一个新的 timer
+- `Sub` 表示订阅某个 Topic 的 Channel
+
+</br>
 
 ### 1. 快速开始
 > 使用 braid-cli 工具安装脚手架项目
