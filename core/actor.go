@@ -122,23 +122,25 @@ type IActor interface {
 	// Received pushes a message into the actor's mailbox
 	Received(mw *msg.Wrapper) error
 
-	// RegisterEvent registers an event handling chain for the actor
-	RegisterEvent(ev string, createChainF func(ActorContext) IChain) error
+	// OnEvent registers an event handling chain for the actor
+	OnEvent(ev string, createChainF func(ActorContext) IChain) error
 
-	// RegisterTimer registers a timer function for the actor (Note: all times used here are in milliseconds)
+	// OnTimer registers a timer function for the actor (Note: all times used here are in milliseconds)
 	//  dueTime: delay before execution, 0 for immediate execution
 	//  interval: time between each tick
 	//  f: callback function
 	//  args: can be used to pass the actor entity to the timer callback
-	RegisterTimer(dueTime int64, interval int64, f func(interface{}) error, args interface{}) ITimer
-	RemoveTimer(t ITimer)
+	OnTimer(dueTime int64, interval int64, f func(interface{}) error, args interface{}) ITimer
+
+	// CancelTimer cancels a timer
+	CancelTimer(t ITimer)
 
 	// SubscriptionEvent subscribes to a message
 	//  If this is the first subscription to this topic, opts will take effect (you can set some options for the topic, such as ttl)
 	//  topic: A subject that contains a group of channels (e.g., if topic = offline messages, channel = actorId, then each actor can get its own offline messages in this topic)
 	//  channel: Represents different categories within a topic
 	//  createChainF: Callback function for successful subscription
-	SubscriptionEvent(topic string, channel string, createChainF func(ActorContext) IChain, opts ...pubsub.TopicOption) error
+	Sub(topic string, channel string, createChainF func(ActorContext) IChain, opts ...pubsub.TopicOption) error
 
 	// Call sends an event to another actor
 	Call(idOrSymbol, actorType, event string, mw *msg.Wrapper) error

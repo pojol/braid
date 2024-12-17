@@ -27,7 +27,7 @@ func NewDynamicPickerActor(p core.IActorBuilder) core.IActor {
 func (a *dynamicPickerActor) Init(ctx context.Context) {
 	a.Runtime.Init(ctx)
 
-	a.RegisterEvent("MockDynamicPick", func(ctx core.ActorContext) core.IChain {
+	a.OnEvent("MockDynamicPick", func(ctx core.ActorContext) core.IChain {
 		return &actor.DefaultChain{
 
 			Handler: func(mw *msg.Wrapper) error {

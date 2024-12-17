@@ -30,7 +30,7 @@ func newMockA(p core.IActorBuilder) core.IActor {
 func (ra *mockActorA) Init(ctx context.Context) {
 	ra.Runtime.Init(ctx)
 
-	ra.RegisterEvent("reenter", func(ctx core.ActorContext) core.IChain {
+	ra.OnEvent("reenter", func(ctx core.ActorContext) core.IChain {
 		return &actor.DefaultChain{
 			Handler: func(w *msg.Wrapper) error {
 
@@ -48,7 +48,7 @@ func (ra *mockActorA) Init(ctx context.Context) {
 		}
 	})
 
-	ra.RegisterEvent("call_benchmark", func(ctx core.ActorContext) core.IChain {
+	ra.OnEvent("call_benchmark", func(ctx core.ActorContext) core.IChain {
 		return &actor.DefaultChain{
 			Handler: func(w *msg.Wrapper) error {
 				ctx.Call("mockb", "mockb", "call_benchmark", w)
@@ -57,7 +57,7 @@ func (ra *mockActorA) Init(ctx context.Context) {
 		}
 	})
 
-	ra.RegisterEvent("timeout", func(ctx core.ActorContext) core.IChain {
+	ra.OnEvent("timeout", func(ctx core.ActorContext) core.IChain {
 		return &actor.DefaultChain{
 			Handler: func(w *msg.Wrapper) error {
 
@@ -74,7 +74,7 @@ func (ra *mockActorA) Init(ctx context.Context) {
 		}
 	})
 
-	ra.SubscriptionEvent(ra.Id, "offline_msg", func(ctx core.ActorContext) core.IChain {
+	ra.Sub(ra.Id, "offline_msg", func(ctx core.ActorContext) core.IChain {
 		return &actor.DefaultChain{
 			Handler: func(w *msg.Wrapper) error {
 				atomic.AddInt64(&ReceivedMessageCount, 1)
@@ -83,7 +83,7 @@ func (ra *mockActorA) Init(ctx context.Context) {
 		}
 	})
 
-	ra.RegisterEvent("chain", func(ctx core.ActorContext) core.IChain {
+	ra.OnEvent("chain", func(ctx core.ActorContext) core.IChain {
 		return &actor.DefaultChain{
 			Handler: func(w *msg.Wrapper) error {
 
@@ -103,7 +103,7 @@ func (ra *mockActorA) Init(ctx context.Context) {
 		}
 	})
 
-	ra.RegisterEvent("test_block", func(ctx core.ActorContext) core.IChain {
+	ra.OnEvent("test_block", func(ctx core.ActorContext) core.IChain {
 		return &actor.DefaultChain{
 			Handler: func(w *msg.Wrapper) error {
 
@@ -116,7 +116,7 @@ func (ra *mockActorA) Init(ctx context.Context) {
 		}
 	})
 
-	ra.RegisterEvent("tcc_succ", func(ctx core.ActorContext) core.IChain {
+	ra.OnEvent("tcc_succ", func(ctx core.ActorContext) core.IChain {
 		return &actor.DefaultChain{
 			Handler: func(w *msg.Wrapper) error {
 

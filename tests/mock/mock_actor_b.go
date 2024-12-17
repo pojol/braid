@@ -30,7 +30,7 @@ func newMockB(p core.IActorBuilder) core.IActor {
 func (a *mockActorB) Init(ctx context.Context) {
 	a.Runtime.Init(ctx)
 
-	a.RegisterEvent("clac", func(ctx core.ActorContext) core.IChain {
+	a.OnEvent("clac", func(ctx core.ActorContext) core.IChain {
 		return &actor.DefaultChain{
 			Handler: func(w *msg.Wrapper) error {
 
@@ -42,7 +42,7 @@ func (a *mockActorB) Init(ctx context.Context) {
 		}
 	})
 
-	a.RegisterEvent("call_benchmark", func(ctx core.ActorContext) core.IChain {
+	a.OnEvent("call_benchmark", func(ctx core.ActorContext) core.IChain {
 		return &actor.DefaultChain{
 			Handler: func(w *msg.Wrapper) error {
 				atomic.AddInt64(&BechmarkCallReceivedMessageCount, 1)
@@ -51,7 +51,7 @@ func (a *mockActorB) Init(ctx context.Context) {
 		}
 	})
 
-	a.RegisterEvent("timeout", func(ctx core.ActorContext) core.IChain {
+	a.OnEvent("timeout", func(ctx core.ActorContext) core.IChain {
 		return &actor.DefaultChain{
 			Handler: func(w *msg.Wrapper) error {
 				time.Sleep(time.Second * 5)
@@ -60,7 +60,7 @@ func (a *mockActorB) Init(ctx context.Context) {
 		}
 	})
 
-	a.RegisterEvent("test_block", func(ctx core.ActorContext) core.IChain {
+	a.OnEvent("test_block", func(ctx core.ActorContext) core.IChain {
 		return &actor.DefaultChain{
 			Handler: func(w *msg.Wrapper) error {
 
@@ -73,7 +73,7 @@ func (a *mockActorB) Init(ctx context.Context) {
 		}
 	})
 
-	a.RegisterEvent("tcc_succ", func(ctx core.ActorContext) core.IChain {
+	a.OnEvent("tcc_succ", func(ctx core.ActorContext) core.IChain {
 		return &actor.DefaultChain{
 			Handler: func(w *msg.Wrapper) error {
 
@@ -92,7 +92,7 @@ func (a *mockActorB) Init(ctx context.Context) {
 		}
 	})
 
-	a.RegisterEvent("tcc_confirm", func(ctx core.ActorContext) core.IChain {
+	a.OnEvent("tcc_confirm", func(ctx core.ActorContext) core.IChain {
 		return &actor.DefaultChain{
 			Handler: func(w *msg.Wrapper) error {
 				transID := msg.GetReqCustomField[string](w, def.KeyTranscationID)
@@ -107,7 +107,7 @@ func (a *mockActorB) Init(ctx context.Context) {
 		}
 	})
 
-	a.RegisterEvent("tcc_cancel", func(ctx core.ActorContext) core.IChain {
+	a.OnEvent("tcc_cancel", func(ctx core.ActorContext) core.IChain {
 		return &actor.DefaultChain{
 			Handler: func(w *msg.Wrapper) error {
 				transID := msg.GetReqCustomField[string](w, def.KeyTranscationID)

@@ -22,7 +22,7 @@ func NewControlActor(p core.IActorBuilder) core.IActor {
 func (a *controlActor) Init(ctx context.Context) {
 	a.Runtime.Init(ctx)
 
-	a.RegisterEvent("MockUnregister", func(ctx core.ActorContext) core.IChain {
+	a.OnEvent("MockUnregister", func(ctx core.ActorContext) core.IChain {
 		return &actor.DefaultChain{
 			Handler: func(mw *msg.Wrapper) error {
 

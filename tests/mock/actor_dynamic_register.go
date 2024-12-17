@@ -24,7 +24,7 @@ func NewDynamicRegisterActor(p core.IActorBuilder) core.IActor {
 func (a *dynamicRegisterActor) Init(ctx context.Context) {
 	a.Runtime.Init(ctx)
 
-	a.RegisterEvent("MockDynamicRegister", func(ctx core.ActorContext) core.IChain {
+	a.OnEvent("MockDynamicRegister", func(ctx core.ActorContext) core.IChain {
 		return &actor.DefaultChain{
 
 			Handler: func(mw *msg.Wrapper) error {

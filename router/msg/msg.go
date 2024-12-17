@@ -75,6 +75,7 @@ func Swap(mw *Wrapper) *Wrapper {
 	return &Wrapper{
 		Ctx: ctx,
 		// 交换 Req 和 Res
+		parm: mw.parm,
 		Req:  mw.Req,
 		Res:  mw.Res,
 		Done: make(chan struct{}),

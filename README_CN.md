@@ -93,7 +93,7 @@ case template.USER:
 
 > 绑定事件函数具柄
 ```go
-user.RegisterEvent("use_item", func(ctx core.ActorContext) *actor.DefaultChain {
+user.OnEvent("use_item", func(ctx core.ActorContext) *actor.DefaultChain {
     // use middleware
     unpackcfg := &middleware.MsgUnpackCfg[proto.xxx]{}
 
@@ -113,7 +113,7 @@ user.RegisterEvent("use_item", func(ctx core.ActorContext) *actor.DefaultChain {
 ```
 > 绑定 timer handler
 ```go
-user.RegisterTimer(0, 1000, func(ctx core.ActorContext) error {
+user.OnTimer(0, 1000, func(ctx core.ActorContext) error {
 
     state := ctx.GetValue(xxxStateKey{}).(*xxxState)
 

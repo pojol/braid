@@ -84,7 +84,7 @@ case template.USER:
 
 > Bind event handler
 ```go
-user.RegisterEvent("use_item", func(ctx core.ActorContext) *actor.DefaultChain {
+user.OnEvent("use_item", func(ctx core.ActorContext) *actor.DefaultChain {
     // use middleware
     unpackcfg := &middleware.MsgUnpackCfg[proto.xxx]{}
 
@@ -104,7 +104,7 @@ user.RegisterEvent("use_item", func(ctx core.ActorContext) *actor.DefaultChain {
 ```
 > Bind timer handler
 ```go
-user.RegisterTimer(0, 1000, func(ctx core.ActorContext) error {
+user.OnTimer(0, 1000, func(ctx core.ActorContext) error {
 
     state := ctx.GetValue(xxxStateKey{}).(*xxxState)
 

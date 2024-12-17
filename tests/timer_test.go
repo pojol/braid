@@ -33,32 +33,32 @@ var tick5 int32
 func (ta *mockTimerActor) Init(ctx context.Context) {
 	ta.Runtime.Init(ctx)
 
-	ta.RegisterTimer(0, 1000, func(i interface{}) error {
+	ta.OnTimer(0, 1000, func(i interface{}) error {
 		atomic.AddInt32(&tick1, 1)
 		return nil
 	}, nil)
 
-	ta.RegisterTimer(500, 500, func(i interface{}) error {
+	ta.OnTimer(500, 500, func(i interface{}) error {
 		atomic.AddInt32(&tick2, 1)
 		return nil
 	}, nil)
 
-	ta.RegisterTimer(0, 100, func(i interface{}) error {
+	ta.OnTimer(0, 100, func(i interface{}) error {
 		atomic.AddInt32(&tick3, 1)
 		return nil
 	}, nil)
 
-	ta.RegisterTimer(1000, 0, func(i interface{}) error {
+	ta.OnTimer(1000, 0, func(i interface{}) error {
 		atomic.AddInt32(&tick4, 1)
 		return nil
 	}, nil)
 
 	var t core.ITimer
-	t = ta.RegisterTimer(0, 200, func(i interface{}) error {
+	t = ta.OnTimer(0, 200, func(i interface{}) error {
 		atomic.AddInt32(&tick5, 1)
 
 		if atomic.LoadInt32(&tick5) == 5 {
-			ta.RemoveTimer(t)
+			ta.CancelTimer(t)
 		}
 
 		return nil

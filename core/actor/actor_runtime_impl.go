@@ -78,7 +78,7 @@ func (a *Runtime) Context() core.ActorContext {
 	return a.actorCtx
 }
 
-func (a *Runtime) RegisterEvent(ev string, chainFunc func(ctx core.ActorContext) core.IChain) error {
+func (a *Runtime) OnEvent(ev string, chainFunc func(ctx core.ActorContext) core.IChain) error {
 	if _, exists := a.chains[ev]; exists {
 		return fmt.Errorf("actor: repeat register event %v", ev)
 	}
@@ -86,13 +86,13 @@ func (a *Runtime) RegisterEvent(ev string, chainFunc func(ctx core.ActorContext)
 	return nil
 }
 
-// RegisterTimer register timer
+// OnTimer register timer
 //
 //	dueTime: Delay time before starting the timer (in milliseconds). If 0, starts immediately
 //	interval: Time interval between executions (in milliseconds). If 0, executes only once
 //	f: Callback function
 //	args: Arguments for the callback function
-func (a *Runtime) RegisterTimer(dueTime int64, interval int64, f func(interface{}) error, args interface{}) core.ITimer {
+func (a *Runtime) OnTimer(dueTime int64, interval int64, f func(interface{}) error, args interface{}) core.ITimer {
 	info := NewTimerInfo(
 		time.Duration(dueTime)*time.Millisecond,
 		time.Duration(interval)*time.Millisecond,
@@ -112,7 +112,7 @@ func (a *Runtime) RegisterTimer(dueTime int64, interval int64, f func(interface{
 				if info.interval > 0 {
 					info.Reset(0)
 				} else {
-					a.RemoveTimer(info)
+					a.CancelTimer(info)
 					return
 				}
 			case <-a.shutdownCh:
@@ -124,7 +124,7 @@ func (a *Runtime) RegisterTimer(dueTime int64, interval int64, f func(interface{
 	return info
 }
 
-func (a *Runtime) RemoveTimer(t core.ITimer) {
+func (a *Runtime) CancelTimer(t core.ITimer) {
 	if t == nil {
 		return
 	}
@@ -133,13 +133,13 @@ func (a *Runtime) RemoveTimer(t core.ITimer) {
 	delete(a.timers, t)
 }
 
-// SubscriptionEvent subscribes to a message
+// Sub subscribes to a message
 //
 //	If this is the first subscription to this topic, opts will take effect (you can set some options for the topic, such as ttl)
 //	topic: A subject that contains a group of channels (e.g., if topic = offline messages, channel = actorId, then each actor can get its own offline messages in this topic)
 //	channel: Represents different categories within a topic
 //	callback: Callback function for successful subscription
-func (a *Runtime) SubscriptionEvent(topic string, channel string, callback func(ctx core.ActorContext) core.IChain, opts ...pubsub.TopicOption) error {
+func (a *Runtime) Sub(topic string, channel string, callback func(ctx core.ActorContext) core.IChain, opts ...pubsub.TopicOption) error {
 
 	ch, err := a.Sys.Sub(topic, channel, opts...)
 	if err != nil {
@@ -148,7 +148,7 @@ func (a *Runtime) SubscriptionEvent(topic string, channel string, callback func(
 
 	ch.Arrived(a.q)
 
-	a.RegisterEvent(channel, callback)
+	a.OnEvent(channel, callback)
 
 	return nil
 }
@@ -339,7 +339,7 @@ func (a *Runtime) Exit() {
 	<-a.closeCh         // 等待所有消息处理完毕
 
 	for t := range a.timers {
-		a.RemoveTimer(t)
+		a.CancelTimer(t)
 	}
 	a.timerWg.Wait()
 	close(a.timerChan)
