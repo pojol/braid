@@ -1,6 +1,5 @@
-# Braid: A Lightweight Actor Framework for Game Development
-> Braid is an innovative serverless game framework powered by the Actor model. It achieves intelligent load management through a unified addressing system, allowing developers to focus on designing and implementing Actors without the need to concern themselves with complex distributed system components.
-
+# Braid
+> A high-performance distributed framework powered by Actor model, designed for building scalable microservices and real-time applications with ease.
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/pojol/braid?style=flat-square)](https://goreportcard.com/report/github.com/pojol/braid)
 [![Documentation](https://img.shields.io/badge/Documentation-Available-brightgreen)](https://pojol.github.io/braid/#/)
@@ -12,15 +11,31 @@
 
 [中文](https://github.com/pojol/braid/blob/master/README_CN.md)
 
-### Features
-> Braid adopts a minimalist design philosophy - with just three core concepts and six basic interfaces, you can build any single-node or distributed game server architecture
+## Core Features
 
-|  |  | | |
-|-| ------ | ------ | ------- |
-| Core Concepts | **Actor** | **Handler** | **State** |
-|| ------ | ------ | ------- |
-| Message Sending |[Call](https://pojol.github.io/braid/#/pages-actor-send)| `Send`| `Pub`|
-| Event Subscription |[OnEvent](https://pojol.github.io/braid/#/pages-actor-message)| `OnTimer`| `Sub`|
+- **Lightweight Actor Model**: Efficient Actor system based on Go goroutines, where each Actor is an independent computation unit
+- **Flexible Message Routing**: Supports point-to-point communication, broadcasting, and wildcard routing
+- **Distributed Addressing**: Built-in distributed address book with dynamic service discovery and load balancing
+- **High-Performance Communication**: Efficient inter-node communication based on gRPC
+- **Observability**: Built-in tracing and monitoring support
+- **Fault Tolerance**: Built-in fault recovery and error handling mechanisms
+- **Pub/Sub**: Topic-based message publishing and subscription support
+
+## Use Cases
+
+- **Game Servers**: Ideal for handling large numbers of concurrent users and real-time communication
+- **IoT Applications**: Managing large-scale device connections and message routing
+- **Microservices Architecture**: Building scalable distributed service systems
+- **Real-time Data Processing**: Handling high-concurrency data and event streams
+- **Distributed Computing**: Supporting complex distributed computation tasks
+
+## Advantages
+
+1. **Easy to Use**: Provides intuitive APIs, reducing the complexity of distributed system development
+2. **High Performance**: Delivers exceptional performance leveraging Go's concurrency features
+3. **Scalability**: Supports horizontal scaling to easily handle business growth
+4. **Reliability**: Built-in recovery mechanisms enhance system stability
+5. **Development Efficiency**: Offers a complete toolkit to accelerate development cycles
 
 </br>
 

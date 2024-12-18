@@ -1,33 +1,39 @@
-# Braid 一个轻量级的 Actor 游戏开发框架
-> Braid 是一个以 Actor 模型为核心驱动的创新型无服务器游戏框架。它通过统一的寻址系统实现自动负载管理，使开发者能够专注于设计和实现，而无需关心复杂的分布式系统组件。
+# Braid
+> Braid 是一个轻量级的分布式 Actor 框架，专为构建高性能、可扩展的微服务应用而设计。它提供了一种简单而强大的方式来处理分布式系统中的并发和通信问题。
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/pojol/braid?style=flat-square)](https://goreportcard.com/report/github.com/pojol/braid)
-[![Documentation](https://img.shields.io/badge/Documentation-Available-brightgreen)](https://pojol.github.io/braid/#/)
+[![文档](https://img.shields.io/badge/文档-Available-brightgreen)](https://pojol.github.io/braid/#/)
 <!--
 [![Discord](https://img.shields.io/discord/1210543471593791488?color=7289da&label=Discord&logo=discord&style=flat-square)](https://discord.gg/yXJgTrkWxT)
 -->
 
 [![image.png](https://i.postimg.cc/BbvzLhfN/image.png)](https://postimg.cc/Vr3g2W6b)
 
-### Features
-> braid 采用简洁的设计理念，只需通过下面的三个核心概念和六个基础接口，即可构建各类单点或分布式游戏服务器架构
+## 核心特性
 
-|  |  | | |
-|-| ------ | ------ | ------- |
-| 核心概念 | **Actor** | **Handler** | **State** |
-|| ------ | ------ | ------- |
-| 消息发送 |[Call](https://pojol.github.io/braid/#/zh-cn/pages-actor-send)| `Send`| `Pub`|
-| 事件订阅 |[OnEvent](https://pojol.github.io/braid/#/zh-cn/pages-actor-message)| `OnTimer`| `Sub`|
+- **轻量级 Actor 模型**: 基于 Go 协程实现的高效 Actor 系统，每个 Actor 都是独立的计算单元
+- **灵活的消息路由**: 支持点对点通信、广播和通配符路由
+- **分布式寻址**: 内置分布式地址簿，支持动态服务发现和负载均衡
+- **高性能通信**: 基于 gRPC 的高效节点间通信
+- **可观测性**: 内置追踪和监控支持
+- **容错机制**: 内置故障恢复和错误处理机制
+- **发布订阅**: 支持基于主题的消息发布和订阅
 
-- `Actor` 表示在集群中的计算单元，负责维护接收消息的handlers和状态，通常 actor = 一系列计算函数和状态的集合，比如 user, mail, rank, chat ...
-- `Handler` 表示处理具体消息的函数，可以是事件处理，也可以是定时器处理，也可以是消息订阅（在handle中的逻辑都可以认为是同步的，不需要担心异步逻辑）
-- `State` 是 actor 的状态，用于存储和读写 actor 的数据
-- `Call` 表示一次阻塞调用（调用可以传入路由规则，直接发送，广播发送，随机发送 等...
-- `Send` 表示一次非阻塞调用
-- `Pub` 表示向 MQ 的某个 Topic 发送一条消息
-- `OnEvent` 注册一个新的事件处理函数
-- `OnTimer` 注册一个新的 timer
-- `Sub` 表示订阅某个 Topic 的 Channel
+## 适用场景
+
+- **游戏服务器**: 适用于需要处理大量并发用户和实时通信的游戏服务
+- **物联网应用**: 处理大规模设备连接和消息路由
+- **微服务架构**: 构建可扩展的分布式服务系统
+- **实时数据处理**: 处理高并发的数据流和事件流
+- **分布式计算**: 支持复杂的分布式计算任务
+
+## 优势
+
+1. **简单易用**: 提供直观的 API，降低分布式系统开发难度
+2. **高性能**: 基于 Go 的高并发特性，提供卓越的性能表现
+3. **可扩展**: 支持水平扩展，轻松应对业务增长
+4. **可靠性**: 内置故障恢复机制，提高系统稳定性
+5. **开发效率**: 提供完整的工具集，加速开发周期
 
 </br>
 
