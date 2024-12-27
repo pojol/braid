@@ -9,21 +9,10 @@ $ go install github.com/pojol/braid-cli@latest
 
 2. 使用 CLI 生成一个新的空项目
 ```bash
-$ braid-cli new "you-project-name" v0.0.1
+$ braid-cli new "chat-server" v0.1.8
 ```
 
-3. 从 Actor 模板配置创建 .go 文件
-```bash
-$ cd you-project-name/template
-$ go generate
-```
-
-4. 进入到 services 目录，然后尝试构建并运行 demo
-```bash
-$ cd you-project-name/node
-$ go run main.go
-```
-
+3. 目录结构
 ```
 ├── actors      # 用户设计的 actor 存放在这个目录
 ├── template    # 模版配置目录

@@ -1,11 +1,19 @@
 
-- Braid使用指引
-    - [1.通过脚手架构建hello braid](zh-cn/pages-hello-world.md)
-    - [2.构建一个服务，并注册actor进去](zh-cn/pages-container.md)
-    - [3.为actor引入状态](zh-cn/pages-entity-state.md)
-    - [4.处理消息](zh-cn/pages-actor-message.md)
-    - [5.发送消息](zh-cn/pages-actor-send.md)
-    - [6.搭建一个websocket服务器](zh-cn/pages-websocket.md)
-    - [7.设计一个聊天服务器](zh-cn/pages-chat.md)
-    - [8.搭建一个集群](zh-cn/pages-cluster.md)
-    - [9.分布式事务TCC](pages-transaction.md)
+- 使用指引(编写一个聊天服务器
+[1. 通过脚手架初始化项目](zh-cn/pages-hello-world.md)
+[2. 设计 chat actors](zh-cn/pages-chat-actors.md)
+[3. 实现各个 actor 的 handlers](zh-cn/pages-chat-handler.md)
+[4. 部署分布式聊天服务器](zh-cn/pages-chat-node.md)
+
+</br>
+
+- 核心概念
+[1. Actor 计算单元](zh-cn/pages-actor)
+[2. Handler 计算处理函数](zh-cn/pages-actor-handlers.md)
+[3. State 计算状态](zh-cn/pages-actor-state.md)
+
+</br>
+
+- 核心接口
+[1. Call, Send, Pub](zh-cn/pages-message.md)
+[2. OnEvent, OnTimer, Sub](zh-cn/pages-handlers.md)
