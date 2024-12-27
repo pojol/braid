@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/pojol/braid/core"
+	"github.com/pojol/braid/core/node"
 	"github.com/pojol/braid/lib/log"
 	"github.com/pojol/braid/lib/mpsc"
 	"github.com/pojol/braid/lib/pubsub"
@@ -167,6 +168,12 @@ func (a *Runtime) Call(idOrSymbol, actorType, event string, mw *msg.Wrapper) err
 }
 
 func (a *Runtime) Received(mw *msg.Wrapper) error {
+
+	if mw.Req.Header.OrgActorID != "" {
+		if mw.Req.Header.OrgActorID == a.Id {
+			return node.ErrSelfCall
+		}
+	}
 
 	mw.GetWg().Add(1)
 	if atomic.LoadInt32(&a.closed) == 0 { // 并不是所有的actor都需要处理退出信号

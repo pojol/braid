@@ -255,7 +255,11 @@ func (sys *NormalSystem) Call(idOrSymbol, actorType, event string, mw *msg.Wrapp
 	}
 
 	if info.Ip == sys.nodeIP && info.Port == sys.nodePort {
-		log.WarnF("[braid.system] call err actorTy %v actorID %v call ev %v self-call", actorType, idOrSymbol, event)
+		if err := sys.addressbook.Unregister(mw.Ctx, info.ActorId, sys.factory.Get(actorType).Weight); err != nil {
+			log.WarnF("[braid.system] unregister stale actor record err actorTy %v actorID %v err %v", actorType, info.ActorId, err)
+		}
+		log.WarnF("[braid.system] found inconsistent actor record actorTy %v actorID %v call ev %v, cleaned up", actorType, info.ActorId, event)
+
 		return ErrSelfCall
 	}
 
@@ -395,7 +399,10 @@ func (sys *NormalSystem) Send(idOrSymbol, actorType, event string, mw *msg.Wrapp
 	}
 
 	if info.Ip == sys.nodeIP && info.Port == sys.nodePort {
-		log.WarnF("[braid.system] send err actorTy %v actorID %v call ev %v self-call", actorType, idOrSymbol, event)
+		if err := sys.addressbook.Unregister(mw.Ctx, info.ActorId, sys.factory.Get(actorType).Weight); err != nil {
+			log.WarnF("[braid.system] unregister stale actor record err actorTy %v actorID %v err %v", actorType, info.ActorId, err)
+		}
+		log.WarnF("[braid.system] found inconsistent actor record actorTy %v actorID %v call ev %v, cleaned up", actorType, info.ActorId, event)
 		return ErrSelfCall
 	}
 

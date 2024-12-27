@@ -19,7 +19,8 @@ type NodeInfo struct {
 }
 
 type IAddressBook interface {
-	Register(context.Context, string, string, int) error // 将 actor 注册到 address book；
+	//
+	Register(context.Context, string, string, int) error
 	Unregister(context.Context, string, int) error
 
 	GetByID(context.Context, string) (AddressInfo, error)
