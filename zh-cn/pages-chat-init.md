@@ -4,15 +4,15 @@
 
 1. 安装 CLI 工具
 ```bash
-$ go install github.com/pojol/braid-cli@latest
+$ go install gitee.com/pojol/braidcn-cli@latest
 ```
 
 2. 使用 CLI 生成一个新的空项目
 ```bash
-$ braid-cli new "chat-server" v0.1.8
+$ braidcn-cli new "chat-server" v0.1.9
 ```
 
-3. 目录结构
+3. 项目所使用的目录结构
 ```
 ├── actors      # 用户设计的 actor 存放在这个目录
 ├── template    # 模版配置目录

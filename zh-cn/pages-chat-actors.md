@@ -2,46 +2,40 @@
 
 </br>
 
-* [设计](#设计)
-* [聊天的数据模型](#聊天的数据模型)
-* [ChatActor](#聊天-actor)
-* [构建ChatActor](#构建-chatactor)
-* [功能逻辑:消息是如何被路由到各个ChatActor的](#消息是如何被路由到各个chatactor的)
-* [功能逻辑:聊天消息处理](#聊天消息处理)
-* [功能逻辑:离线聊天消息处理](#离线聊天消息处理)
+* [1.设计聊天所需的 actor](#设计聊天所需的-actor)
+* [2.声明ChatActor](#声明ChatActor)
+* [3.聊天依赖的数据项](#聊天依赖的数据项)
+* [4.构建ChatActor](#构建-chatactor)
 
-### 设计
-> 提前概括一些逻辑，用于抽象设计
-1. 为玩家actor添加 进入/离开频道 的API
-    * 我们需要玩家有自由进入和离开频道的能力，在游戏中聊天服务本质上就是提供频道服务
-2. 设计一个 频道actor 用于处理聊天逻辑
-    * 每个频道都是一个单独的 actor 但他们的权重可能不一样
-    * 每个平台需要有状态信息，用于管理频道中的数据（用户，和内容
-    * 频道需要有广播能力，通知给订阅这个频道的玩家
-3. 离线消息处理
-    * 私聊频道可能还需要有离线存储能力（因为很多时候并不能保证目标玩家在线
-4. 设计一个 消息路由 actor
-    * 为了方便聊天消息处理，用一个统一的聊天消息路由器去处理消息的重定向
+## 设计聊天所需的 actor
+> 在编写代码之前，我们先梳理一下一个完备的 chat server 应该所需哪些功能项
+1. 我们应该需要一个 channel 的概念，让用户可以在不同的分组中进行聊天
+	* 创建，销毁
+	* 加入，离开
+	* 需要一个 channel 的 state 维护这个 channel 中的用户和聊天信息
+2. 在整个集群中我们应该并行处理若干 channel，同时这些 channel 有的可能人多，有的可能人少，所以我们需要赋予不同的 channel 不同的权重
+3. 每个 channel 都需要有广播能力，对于全服聊天，对于广播来说可能需要特殊处理
+4. 离线消息处理（私聊频道可能还需要有离线存储能力，因为很多时候并不能保证目标玩家在线
+5. 需要一个消息路由，来对聊天消息进行重定向，这不属于其他 actor 的职责
+
+> 因此我们需要设计如下的 actor
+
+| Actor | 状态 |  描述 |
+|-------|------|------|
+| chat_channel_actor || 用于包装 channel 的逻辑 |
+| | chat_channel_state | 用于包装 channel 的 state |
+| chat_router_actor || 用于包装消息路由的逻辑 |
 
 </br>
 
-### 聊天的数据模型
-```go
-type State struct {
-    // 频道名称
-	Channel string
-    // 玩家的 session 信息
-	Users   []comm.UserSession
-	// 这个频道内的消息列表
-	MsgHistory []gameproto.ChatMessage
-}
-```
 
-### 聊天 Actor
+## 声明ChatActor
+> chat channel actor 会被区分为三类（ private 表示私聊频道，一个用户持有一个， global 表示全服聊天， 自定义频道 用户可以自行创建
+
 ```go
 type chatChannelActor struct {
 	*actor.Runtime
-	state *chat.State
+	state *chat.State	// 持有 chat state
 }
 
 func NewChatActor(p core.IActorBuilder) core.IActor {
@@ -56,31 +50,58 @@ func NewChatActor(p core.IActorBuilder) core.IActor {
 func (a *chatChannelActor) Init(ctx context.Context) {
 	a.Runtime.Init(ctx)
 
+	// 将 state 绑定到 actor 的 context 中
 	a.Context().WithValue(events.ChatStateType{}, a.state)
 
+	// 绑定事件 - 接收到新的消息
 	a.OnEvent(events.EvChatChannelReceived, events.MakeChatRecved)
+	// 绑定事件 - 添加用户
 	a.OnEvent(events.EvChatChannelAddUser, events.MakeChatAddUser)
+	// 绑定事件 - 移除用户
 	a.OnEvent(events.EvChatChannelRmvUser, events.MakeChatRemoveUser)
 
-	err := a.Sub(events.EvChatMessageStore, a.Id, events.MakeChatStoreMessage, pubsub.WithTTL(time.Hour*24*30))
-	if err != nil {
-		log.WarnF("actor %v ty %v subscription event %v err %v", a.Id, a.Ty, events.EvChatMessageStore, err.Error())
-	}
+	// 绑定事件 - 存储离线消息
+	a.Sub(events.EvChatMessageStore, a.Id, events.MakeChatStoreMessage, pubsub.WithTTL(time.Hour*24*30))
 }
 ```
 
-* 主要细节
-1. 置入 state 到 actor
-2. 构建的时候 将 channel 名称填入（这个 actor 可以用于各种类型的 chat actor
-3. 在 init 内
-    * 绑定 state 到 ctx
-    * 绑定 add / remove user 的事件处理
-    * 绑定 接收到消息 的事件处理
-    * 绑定离线消息的处理（并设置消息的超时时间
-
 </br>
 
-### 构建 ChatActor
+
+## 聊天依赖的数据项
+* 频道内玩家信息
+	* 拉黑用户列表
+	* 玩家的 session 信息
+	* 玩家的基础数据
+* 给自定义房间添加密码
+* 频道名
+* 消息队列
+
+```go
+type ChatUser struct {
+	UserID    string
+	NickName  string
+	Avatar    string
+
+	SessionID string // 玩家的 session id
+
+	BlackList []string // 黑名单列表
+}
+
+type State struct {
+    // 频道名称（唯一，也可以表示类型
+	Channel string
+	// 密码 (自定义频道可以设置私密还是公开
+	Password string
+
+    // 频道内的玩家列表
+	Users   []ChatUser
+	// 这个频道内的消息列表
+	MsgHistory []gameproto.ChatMessage
+}
+```
+
+## 构建 ChatActor
 > 对于静态的 chat actor 比如 工会聊天频道，全服聊天频道，地区聊天频道等，通过配置进行构建
 ```yaml
   actors:
@@ -88,148 +109,14 @@ func (a *chatChannelActor) Init(ctx context.Context) {
       options:
         channel: "global"   # 全服聊天频道
         weight: 10000       # 大一些，如果用户数多可以独占一个节点
+	- name: "Private"
+	  options:
+		channel: "private"  # 私聊频道(一个用户附带一个，在 user actor 构建成功后创建)
+		weight: 100
     - name: "CHAT"
       options:
-        channel: "guild"    # 工会聊天频道
-        weight: 100
-```
-
-> 动态构建的聊天频道(私聊，一个用户附带一个（在 user actor 构建成功后创建
-```go
-userActor.Sys.Loader(actor_types.CHAT).
-    WithID("chat."+constant.ChatPrivateChannel+"."+a.Id).
-    WithOpt("channel", constant.ChatPrivateChannel).
-    WithOpt("actorID", a.Id).WithPicker().Build()
-}
+        channel: "custom"    # 自定义频道
+        weight: 1000
 ```
 
 </br>
-
-### 消息是如何被路由到各个ChatActor的
-> 设计一个 ChatRouterActor, 无状态，只负责转发逻辑（所以只需要绑定下面的实现函数即可， 主要的逻辑就是转发消息
-```go
-func MakeChatSendCmd(ctx core.ActorContext) core.IChain {
-
-	unpackCfg := &middleware.MessageUnpackCfg[*gameproto.ChatSendReq]{}
-
-	return &actor.DefaultChain{
-		Before: []actor.EventHandler{middleware.MessageUnpack(unpackCfg)},
-		Handler: func(mw *msg.Wrapper) error {
-
-			req := unpackCfg.Msg.(*gameproto.ChatSendReq)
-
-            if req.Msg.Channel == constant.ChatPrivateChannel { // 私聊需要特殊处理
-				if ctx.AddressBook().Exist(req.Msg.ReceiverID) {
-					ctx.Call(router.Target{ID: "ReceiverChatID", Ev: EvChatChannelReceived}, mw)
-				} else { // 离线将 聊天信息 存储在目标用户的离线channel中，等待用户上线后消费
-					ctx.Pub(EvChatMessageStore, msg)
-				}
-			} else {
-				ctx.Call(router.Target{ID: def.SymbolLocalFirst, Ty: "channel_type", Ev: EvChatChannelReceived}, mw)
-			}
-
-			return nil
-		},
-	}
-}
-```
-
-
-### 聊天消息处理
-> 消息处理的主要逻辑是，将消息存储在频道的消息队列中，并将刚刚接收到的消息通知给频道内的玩家
-```go
-func MakeChatRecved(ctx core.ActorContext) core.IChain {
-
-	unpackCfg := &middleware.MessageUnpackCfg[*gameproto.ChatSendReq]{}
-
-	return &actor.DefaultChain{
-		Before: []actor.EventHandler{middleware.MessageUnpack(unpackCfg)},
-		Handler: func(mw *msg.Wrapper) error {
-
-			req := unpackCfg.Msg.(*gameproto.ChatSendReq)
-			state := ctx.GetValue(ChatStateType{}).(*chat.State)
-
-            // 存起来
-			state.MsgHistory = append(state.MsgHistory, *req.Msg)
-
-			notify := gameproto.ChatMessageNotify{
-				MsgLst: []*gameproto.ChatMessage{
-					req.Msg,
-				},
-			}
-
-			mw.Res.Body, _ = proto.Marshal(&notify)
-
-			if req.Msg.Channel == constant.ChatPrivateChannel {
-				ctx.Send(router.Target{ID: def.SymbolLocalFirst, Ty: config.ACTOR_WEBSOCKET_ACCEPTOR, Ev: EvWebsoketNotify},
-					mw,
-				)
-			} else {
-
-				for _, v := range state.Users {
-
-					mw.Res.Header.Token = v.ActorToken
-					mw.Res.Header.Event = EvChatMessageNty
-
-					ctx.Send(router.Target{
-						ID: v.ActorGate,
-						Ty: config.ACTOR_WEBSOCKET_ACCEPTOR,
-						Ev: EvWebsoketNotify,
-					},
-						mw,
-					)
-				}
-
-			}
-
-			return nil
-		},
-	}
-}
-```
-
-</br>
-
-### 离线聊天消息处理
-> 离线聊天处理主要分两部分 1. 在构建一个 user actor 时，同时需要构建一个它的专属 private chat actor， 2. 在玩家自己的 private chat actor 启动时，从 topic 中拿出离线聊天数据，并同步给玩家
-
-1. 动态构建 private chat actor
-
-```go
-func (a *UserActor) Init(ctx context.Context) {
-
-// 用户构建完成时，构建一个专属的 private chat actor
-a.Sys.Loader(config.ACTOR_PRIVATE_CHAT).
-    WithID("chat."+constant.ChatPrivateChannel+"."+a.Id).
-    WithOpt("channel", constant.ChatPrivateChannel).
-    WithOpt("actorID", a.Id).WithPicker().Build()
-
-}
-```
-
-2. 离线消息处理
-
-```go
-func MakeChatStoreMessage(ctx core.ActorContext) core.IChain {
-	return &actor.DefaultChain{
-		Handler: func(mw *msg.Wrapper) error {
-
-            offlineMsg := mw.req.msg
-
-            state := ctx.GetValue(ChatStateType{}).(*chat.State)
-
-            // 存起来
-			state.MsgHistory = append(state.MsgHistory, *req.Msg)
-
-            // 广播给用户自己
-            ctx.Send(router.Target{ID: "actor_id", Ev: EvWebsoketNotify}, mw)
-
-			return nil
-		},
-	}
-}
-```
-
----
-
-### [完整的实现](https://github.com/pojol/braid-demo/tree/master/demos/3_chat)

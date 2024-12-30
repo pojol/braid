@@ -96,3 +96,5 @@ future.Then(func(i interface{}, err error) {
 // 注意：这里立即返回，不等待异步操作完成
 return nil
 ```
+
+
