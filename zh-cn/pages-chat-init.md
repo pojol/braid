@@ -4,10 +4,15 @@
 
 1. 安装 CLI 工具
 ```bash
+# 您可以选择自己的环境进行安装
+$ GOOS=darwin GOARCH=arm64 go install gitee.com/pojol/braidcn-cli@latest
+
+# 如果您没有设置 GOBIN (允许交叉编译) 可以尝试直接执行命令
 $ go install gitee.com/pojol/braidcn-cli@latest
 ```
 
 2. 使用 CLI 生成一个新的空项目
+> 使用 braid@v0.1.9 版本
 ```bash
 $ braidcn-cli new "chat-server" v0.1.9
 ```
