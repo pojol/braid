@@ -1,12 +1,13 @@
+# 实现 chat 的事件逻辑
+
+* [EvChatRouterMessage](#消息路由)
+* [EvChatChannelAddUser](#添加用户)
+* [EvChatChannelRmvUser](#移除用户)
+* [EvChatChannelReceived](#接收到新的消息)
+* [EvChatMessageStore](#存储离线消息)
 
 
-* [功能逻辑:消息是如何被路由到各个ChatActor的](#消息是如何被路由到各个chatactor的)
-* [功能逻辑:聊天消息处理](#聊天消息处理)
-* [功能逻辑:离线聊天消息处理](#离线聊天消息处理)
-
-
-
-### 消息是如何被路由到各个ChatActor的
+### 消息路由
 > 设计一个 ChatRouterActor, 无状态，只负责转发逻辑（所以只需要绑定下面的实现函数即可， 主要的逻辑就是转发消息
 ```go
 func MakeChatSendCmd(ctx core.ActorContext) core.IChain {
@@ -36,7 +37,7 @@ func MakeChatSendCmd(ctx core.ActorContext) core.IChain {
 ```
 
 
-### 聊天消息处理
+### 接收到新的消息
 > 消息处理的主要逻辑是，将消息存储在频道的消息队列中，并将刚刚接收到的消息通知给频道内的玩家
 ```go
 func MakeChatRecved(ctx core.ActorContext) core.IChain {
@@ -91,7 +92,7 @@ func MakeChatRecved(ctx core.ActorContext) core.IChain {
 
 </br>
 
-### 离线聊天消息处理
+### 存储离线消息
 > 离线聊天处理主要分两部分 1. 在构建一个 user actor 时，同时需要构建一个它的专属 private chat actor， 2. 在玩家自己的 private chat actor 启动时，从 topic 中拿出离线聊天数据，并同步给玩家
 
 1. 动态构建 private chat actor

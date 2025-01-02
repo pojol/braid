@@ -2,8 +2,8 @@
 - 使用指引(编写一个聊天服务器
 * [1. 通过脚手架初始化项目](zh-cn/pages-chat-init.md)
 * [2. 设计 chat actors](zh-cn/pages-chat-actors.md)
-* [3. 实现各个 actor 的 handlers](zh-cn/pages-chat-handler.md)
-* [4. 部署分布式聊天服务器](zh-cn/pages-chat-node.md)
+* [3. 实现各个 actor 的 handlers](zh-cn/pages-chat-handlers.md)
+* [4. 部署分布式聊天服务器](zh-cn/pages-chat-deploy.md)
 
 </br>
 
