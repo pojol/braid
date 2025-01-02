@@ -6,7 +6,6 @@
 * [EvChatChannelReceived](#接收到新的消息)
 * [EvChatMessageStore](#存储离线消息)
 
-
 ### 消息路由
 > 设计一个 ChatRouterActor, 无状态，只负责转发逻辑（所以只需要绑定下面的实现函数即可， 主要的逻辑就是转发消息
 ```go

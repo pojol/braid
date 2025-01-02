@@ -13,7 +13,7 @@
 	* 创建，销毁
 	* 加入，离开
 	* 需要一个 channel 的 state 维护这个 channel 中的用户和聊天信息
-2. 在整个集群中我们应该并行处理若干 channel，同时这些 channel 有的可能人多，有的可能人少，所以我们需要赋予不同的 channel 不同的权重
+2. 在整个集群中我们应该并行处理若干 channel，同时这些 channel 有的可能人多，有的可能人少，所以我们需要赋予 channel 不同的权重
 3. 每个 channel 都需要有广播能力，对于全服聊天，对于广播来说可能需要特殊处理
 4. 离线消息处理（私聊频道可能还需要有离线存储能力，因为很多时候并不能保证目标玩家在线
 5. 需要一个消息路由，来对聊天消息进行重定向，这不属于其他 actor 的职责
@@ -67,7 +67,6 @@ func (a *chatChannelActor) Init(ctx context.Context) {
 
 </br>
 
-
 ## 聊天依赖的数据项
 * 频道内玩家信息
 	* 拉黑用户列表
@@ -109,6 +108,7 @@ type State struct {
       options:
         channel: "global"   # 全服聊天频道
         weight: 10000       # 大一些，如果用户数多可以独占一个节点
+		parallel: true		# 开启并行能力（主从
 	- name: "Private"
 	  options:
 		channel: "private"  # 私聊频道(一个用户附带一个，在 user actor 构建成功后创建)
@@ -117,6 +117,7 @@ type State struct {
       options:
         channel: "custom"    # 自定义频道
         weight: 1000
+		memberLimit: 1000 # 自定义频道的最大人数
 ```
 
 </br>
