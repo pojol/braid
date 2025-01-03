@@ -38,7 +38,10 @@
       --base-line-height: 1.4;
       --base-font-size: 1rem;
 
-      --cover-max-width: 45em;
+      --content-max-width: 1000px;  /* 新增这行 */
+      --cover-max-width: 1000px;    /* 修改这行 */
+      --sidebar-width: 300px;       /* 适当增加侧边栏宽度 */
+
 
       --heading-h2-border-style: none;
       --heading-h1-margin: 1rem 0rem -0.5rem 0rem;
@@ -70,20 +73,14 @@
       --sidebar-nav-link-font-weight--active: bold;
 
       --sidebar-nav-pagelink-background--active:
-          no-repeat 0px center / 5px 6px
-          linear-gradient(225deg, transparent 2.75px, #0374B5 2.75px 4.25px, transparent 4.25px),
-          no-repeat 5px center / 5px 6px
-          linear-gradient(135deg, transparent 2.75px, #0374B5 2.75px 4.25px, transparent 4.25px);
+        no-repeat 0px center / 5px 6px linear-gradient(225deg, transparent 2.75px, #0374B5 2.75px 4.25px, transparent 4.25px),
+        no-repeat 5px center / 5px 6px linear-gradient(135deg, transparent 2.75px, #0374B5 2.75px 4.25px, transparent 4.25px);
       --sidebar-nav-pagelink-background--collapse:
-          no-repeat 2px calc(50% - 2.5px) / 6px 5px
-          linear-gradient(45deg, transparent 2.75px, #0374B5 2.75px 4.25px, transparent 4px),
-          no-repeat 2px calc(50% + 2.5px) / 6px 5px
-          linear-gradient(135deg, transparent 2.75px, #0374B5 2.75px 4.25px, transparent 4px);
+        no-repeat 2px calc(50% - 2.5px) / 6px 5px linear-gradient(45deg, transparent 2.75px, #0374B5 2.75px 4.25px, transparent 4px),
+        no-repeat 2px calc(50% + 2.5px) / 6px 5px linear-gradient(135deg, transparent 2.75px, #0374B5 2.75px 4.25px, transparent 4px);
       --sidebar-nav-pagelink-background--loaded:
-          no-repeat 0px center / 5px 6px
-          linear-gradient(225deg, transparent 2.75px, #0374B5 2.75px 4.25px, transparent 4.25px),
-          no-repeat 5px center / 5px 6px
-          linear-gradient(135deg, transparent 2.75px, #0374B5 2.75px 4.25px, transparent 4.25px);
+        no-repeat 0px center / 5px 6px linear-gradient(225deg, transparent 2.75px, #0374B5 2.75px 4.25px, transparent 4.25px),
+        no-repeat 5px center / 5px 6px linear-gradient(135deg, transparent 2.75px, #0374B5 2.75px 4.25px, transparent 4.25px);
 
       --navbar-root-margin: 0 0 0 .8em;
       --navbar-root-color--active: #0374B5;
@@ -94,7 +91,6 @@
 
       --docsifytabs-tab-color: var(--base-color);
     }
-
   </style>
 
 </head>
@@ -107,7 +103,7 @@
 
     // Set ToC to true to permanently show page Table of Contents (Sidebar and Navbar must also be hidden)
     var ToC = false;
-    
+
     // Set navbar to true to permanently override the hiding of the Navbar when displaying as standalone
     var navbar = false;
 
@@ -162,7 +158,7 @@
       loadSidebar: true,
       loadNavbar: true,
       loadFooter: (getURLParameterByName('footer') || footer || false),
-      
+
       // SIDEBAR NAVIGATION
       // -----------------------------------------------------------------
       auto2top: true,
@@ -264,7 +260,7 @@
               }
               return match;
             });
-            
+
             next(htmlElement.innerHTML);
 
           });
@@ -273,11 +269,11 @@
           hook.doneEach(function () {
             var hasEmbedly = document.getElementsByClassName('embedly-card');
             if (hasEmbedly.length > 0) {
-                // elements with class "embedly-card" exist
-                var script = document.createElement('script');
-                script.type = 'text/javascript';
-                script.src = 'https://cdn.embedly.com/widgets/platform.js';    
-                document.head.appendChild(script);
+              // elements with class "embedly-card" exist
+              var script = document.createElement('script');
+              script.type = 'text/javascript';
+              script.src = 'https://cdn.embedly.com/widgets/platform.js';
+              document.head.appendChild(script);
             }
 
             // Remove optional ToC area if full width header image is present
@@ -300,24 +296,24 @@
             const allIframes = Array.from(document.querySelectorAll('iframe[src*="youtube.com"], iframe[src*="youtube-nocookie.com"], iframe[src*="docs.google.com"], iframe[src*="onedrive.live.com"]'));
 
             // Filter out iframes that are not already wrapped with a div including the classes 'video-container-16by9' and 'video-container-4by3'
-            const targetIframes = allIframes.filter(function(iframe) {
+            const targetIframes = allIframes.filter(function (iframe) {
               const parentDiv = iframe.parentNode;
               return !parentDiv.matches('.video-container-16by9, .video-container-4by3');
             });
 
             // Wrap each target iframe with a div element
-            targetIframes.forEach(function(iframe) {
+            targetIframes.forEach(function (iframe) {
               const wrapperDiv = document.createElement('div');
               wrapperDiv.classList.add('video-container-16by9');
               // Preserve existing classes on the iframe
-              iframe.classList.forEach(function(className) {
+              iframe.classList.forEach(function (className) {
                 wrapperDiv.classList.add(className);
               });
               // Replace the iframe with the wrapper div
               iframe.parentNode.replaceChild(wrapperDiv, iframe);
               wrapperDiv.appendChild(iframe);
             });
-            
+
           });
 
         }
