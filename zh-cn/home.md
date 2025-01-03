@@ -30,8 +30,11 @@
 </br>
 
 ## 🧩 核心接口
-* Call, Send, Pub
-* OnEvent, OnTimer, Sub
+* [Call & Send](zh-cn/page-actor-call.md)
+* [Pub](zh-cn/page-actor-pub.md)
+* [OnEvent](zh-cn/page-actor-onevent.md)
+* [OnTimer](zh-cn/page-actor-ontimer.md)
+* [Sub](zh-cn/page-actor-sub.md)
 
 ---
 
