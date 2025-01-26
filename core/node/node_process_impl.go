@@ -2,7 +2,6 @@ package node
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"os/signal"
 	"sync"
@@ -10,6 +9,7 @@ import (
 	"time"
 
 	"github.com/pojol/braid/core"
+	"github.com/pojol/braid/lib/log"
 )
 
 type process struct {
@@ -60,7 +60,7 @@ func (pn *process) WaitClose() {
 	ch := make(chan os.Signal, 1)
 	signal.Notify(ch, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
 	s := <-ch
-	fmt.Printf("Received signal %v, initiating graceful shutdown...\n", s)
+	log.InfoF("Received signal %v, initiating graceful shutdown...", s)
 
 	// Create a WaitGroup and a context with timeout
 	var wg sync.WaitGroup
@@ -82,13 +82,13 @@ func (pn *process) WaitClose() {
 	// Wait for either all actors to finish or the timeout to occur
 	select {
 	case <-done:
-		fmt.Println("All actors have shut down gracefully. Exiting process.")
+		log.InfoF("All actors have shut down gracefully. Exiting process.")
 	case <-ctx.Done():
-		fmt.Println("Shutdown timed out after 30 seconds. Force exiting.")
+		log.InfoF("Shutdown timed out after 30 seconds. Force exiting.")
 	}
 
 	// Perform any final cleanup if necessary
 	// ...
 
-	fmt.Println("Process exited.")
+	log.InfoF("Process exited.")
 }

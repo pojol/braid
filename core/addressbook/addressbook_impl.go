@@ -350,6 +350,7 @@ func (ab *AddressBook) Clear(ctx context.Context) error {
 				continue
 			}
 			if actor.Node == ab.NodeID {
+				log.InfoF("addressbook clear node %v actor %v", ab.NodeID, actor.ActorId)
 				pipe.SRem(ctx, actorTypeKey, actorJSON)
 				pipe.HDel(ctx, def.RedisAddressbookIDField, actor.ActorId)
 			}

@@ -149,6 +149,8 @@ func (sys *NormalSystem) Register(ctx context.Context, builder core.IActorBuilde
 
 func (sys *NormalSystem) Unregister(id, ty string) error {
 	// First, check if the actor exists and get it
+	log.InfoF("[braid.system] unregister actor id %v node %v ty %v", id, sys.addressbook.NodeID, ty)
+
 	sys.RLock()
 	actor, exists := sys.actoridmap[id]
 	sys.RUnlock()
@@ -172,10 +174,10 @@ func (sys *NormalSystem) Unregister(id, ty string) error {
 	err := sys.addressbook.Unregister(context.TODO(), id, sys.factory.Get(ty).Weight)
 	if err != nil {
 		// Log the error, but don't return it as the actor has already been removed locally
-		log.WarnF("[braid.system] Failed to unregister actor %s from address book: %v", id, err)
+		log.WarnF("[braid.system] unregister actor id %s failed from address book err: %v", id, err)
 	}
 
-	log.InfoF("[braid.system] Actor %s unregistered successfully", id)
+	log.InfoF("[braid.system] unregister actor id %s successfully", id)
 
 	return nil
 }
@@ -248,6 +250,7 @@ func (sys *NormalSystem) Call(idOrSymbol, actorType, event string, mw *msg.Wrapp
 
 		// If not local, get from addressbook
 		info, err = sys.addressbook.GetByID(mw.Ctx, idOrSymbol)
+
 	}
 
 	if err != nil {
@@ -442,6 +445,7 @@ func (sys *NormalSystem) Exit(wait *sync.WaitGroup) {
 		wait.Add(1)
 		if sys.acceptor != nil {
 			sys.acceptor.Exit()
+			log.InfoF("[braid.system] acceptor exit")
 		}
 		wait.Done()
 	}
@@ -452,6 +456,7 @@ func (sys *NormalSystem) Exit(wait *sync.WaitGroup) {
 		go func(a core.IActor) {
 			defer wait.Done()
 			a.Exit()
+			log.InfoF("[braid.system] actor exit %v", a.ID())
 		}(actor)
 	}
 
@@ -459,4 +464,5 @@ func (sys *NormalSystem) Exit(wait *sync.WaitGroup) {
 	if err != nil {
 		log.WarnF("[braid.addressbook] clear err %v", err.Error())
 	}
+	log.InfoF("[braid.system] addressbook exit")
 }
