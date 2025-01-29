@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"reflect"
 	"runtime/debug"
-	"sync"
 	"sync/atomic"
 	"time"
 
@@ -37,7 +36,7 @@ type Runtime struct {
 
 	timers    map[core.ITimer]struct{}
 	timerChan chan core.ITimer
-	timerWg   sync.WaitGroup // 用于等待所有 timer goroutine 退出
+	//timerWg   sync.WaitGroup // 用于等待所有 timer goroutine 退出
 
 	actorCtx *actorContext
 }
@@ -100,10 +99,10 @@ func (a *Runtime) OnTimer(dueTime int64, interval int64, f func(interface{}) err
 		f, args)
 
 	a.timers[info] = struct{}{}
-	a.timerWg.Add(1)
+	//a.timerWg.Add(1)
 
 	go func() {
-		defer a.timerWg.Done()
+		//defer a.timerWg.Done()
 
 		for {
 			select {
@@ -273,19 +272,32 @@ func (a *Runtime) ReenterCall(idOrSymbol, actorType, event string, rmw *msg.Wrap
 
 func (a *Runtime) update() {
 	checkClose := func() {
+		timeout := time.After(10 * time.Second)
+		ticker := time.NewTicker(10 * time.Millisecond)
+		defer ticker.Stop()
+
 		for !a.q.Empty() || !a.reenterQueue.Empty() {
-			time.Sleep(10 * time.Millisecond)
+			select {
+			case <-timeout:
+				log.WarnF("[braid.actor] %s force close due to timeout waiting for queue to empty remaining %v", a.Id, a.q.Count())
+				goto ForceClose
+			case <-ticker.C:
+				continue
+			}
 		}
+
+	ForceClose:
 		if atomic.CompareAndSwapInt32(&a.closed, 1, 2) {
+			log.InfoF("[braid.actor] %s closing channel", a.Id)
 			close(a.closeCh)
 		}
 	}
 
 	for {
 		select {
-		case timerInfo, ok := <-a.timerChan:
-			if !ok {
-				return // channel closed
+		case timerInfo := <-a.timerChan:
+			if atomic.LoadInt32(&a.closed) != 0 {
+				continue
 			}
 			if err := timerInfo.Execute(); err != nil {
 				log.WarnF("actor %v timer callback error: %v", a.Id, err)
@@ -318,38 +330,33 @@ func (a *Runtime) update() {
 				}
 			}()
 
-			if mw.Req.Header.Event == "exit" {
-				if atomic.CompareAndSwapInt32(&a.closed, 0, 1) {
-					go checkClose()
-				}
-				return
-			}
 		case <-a.reenterQueue.C:
 			reenterMsgInterface := a.reenterQueue.Pop()
 			if reenterMsg, ok := reenterMsgInterface.(*reenterMessage); ok {
 				reenterMsg.action(reenterMsg.msg.(*msg.Wrapper))
 			}
+
 		case <-a.shutdownCh:
 			if atomic.CompareAndSwapInt32(&a.closed, 0, 1) {
+				log.DebugF("[braid.actor] %s exiting check close %v", a.Id, atomic.LoadInt32(&a.closed))
 				go checkClose()
 			}
-
 		case <-a.closeCh:
-			atomic.StoreInt32(&a.closed, 2)
+			log.DebugF("[braid.actor] %s exiting closed", a.Id)
 			return
 		}
 	}
 }
 
 func (a *Runtime) Exit() {
+	log.DebugF("[braid.actor] %s exiting state %v remaining msg %v", a.Id, atomic.LoadInt32(&a.closed), a.q.Count())
 	close(a.shutdownCh) // 发送关闭信号
 	<-a.closeCh         // 等待所有消息处理完毕
 
 	for t := range a.timers {
 		a.CancelTimer(t)
 	}
-	a.timerWg.Wait()
-	close(a.timerChan)
+	//a.timerWg.Wait()
 
 	log.InfoF("[braid.actor] %s has exited", a.Id)
 }
