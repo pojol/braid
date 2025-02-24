@@ -96,7 +96,7 @@ func GetReqCustomField[T any](msg *Wrapper, key string) T {
 
 	val, ok := data[key]
 	if !ok {
-		log.WarnF("[braid.router] key %q not found in request body", key)
+		log.InfoF("[braid.router] key %q not found in request body", key)
 		return zero
 	}
 
@@ -173,7 +173,7 @@ func GetResCustomField[T any](msg *Wrapper, key string) T {
 
 	val, ok := data[key]
 	if !ok {
-		log.WarnF("[braid.router] key %q not found in response body", key)
+		log.InfoF("[braid.router] key %q not found in response body", key)
 		return zero
 	}
 

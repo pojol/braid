@@ -3,10 +3,13 @@ package actor
 import (
 	"sync/atomic"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type TimerInfo struct {
-	timer    *time.Timer
+	ID       string
+	ticker   *time.Ticker
 	dueTime  time.Duration
 	interval time.Duration
 	callback func(interface{}) error
@@ -20,11 +23,17 @@ func (t *TimerInfo) Stop() bool {
 		return false
 	}
 	t.active.Store(false)
-	return t.timer.Stop()
+	t.ticker.Stop()
+
+	return true
 }
 
 func (t *TimerInfo) Reset(interval time.Duration) bool {
 	if interval > 0 {
+		// 如果 interval 和 t.interval 相同，则不处理
+		if t.interval == interval {
+			return true
+		}
 		t.interval = interval
 	}
 	if t.interval <= 0 {
@@ -33,7 +42,9 @@ func (t *TimerInfo) Reset(interval time.Duration) bool {
 
 	t.active.Store(true)
 	t.nextTick.Store(time.Now().Add(t.interval))
-	return t.timer.Reset(t.interval)
+
+	t.ticker.Reset(t.interval)
+	return true
 }
 
 func (t *TimerInfo) IsActive() bool {
@@ -57,6 +68,7 @@ func (t *TimerInfo) Execute() error {
 
 func NewTimerInfo(dueTime, interval time.Duration, callback func(interface{}) error, args interface{}) *TimerInfo {
 	t := &TimerInfo{
+		ID:       uuid.NewString(),
 		dueTime:  dueTime,
 		interval: interval,
 		callback: callback,
@@ -70,6 +82,5 @@ func NewTimerInfo(dueTime, interval time.Duration, callback func(interface{}) er
 		t.nextTick.Store(time.Now().Add(interval))
 	}
 
-	t.timer = time.NewTimer(interval)
 	return t
 }

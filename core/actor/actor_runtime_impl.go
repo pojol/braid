@@ -104,18 +104,20 @@ func (a *Runtime) OnTimer(dueTime int64, interval int64, f func(interface{}) err
 	go func() {
 		//defer a.timerWg.Done()
 
+		// 如果 dueTime 大于 0，使用 dueTime 进行第一次触发
+		if info.dueTime > 0 {
+			<-time.After(info.dueTime)
+			a.timerChan <- info
+		}
+
+		info.ticker = time.NewTicker(info.interval)
+
 		for {
 			select {
-			case <-info.timer.C:
+			case <-info.ticker.C:
 				a.timerChan <- info
-
-				if info.interval > 0 {
-					info.Reset(0)
-				} else {
-					a.CancelTimer(info)
-					return
-				}
 			case <-a.shutdownCh:
+				log.InfoF("[braid.timer] shutdown ch")
 				return
 			}
 		}
@@ -128,6 +130,8 @@ func (a *Runtime) CancelTimer(t core.ITimer) {
 	if t == nil {
 		return
 	}
+
+	log.InfoF("[braid.timer] %v timer cancel", a.Id)
 
 	t.Stop()
 	delete(a.timers, t)
