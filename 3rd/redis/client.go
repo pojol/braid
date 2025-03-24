@@ -470,6 +470,14 @@ func Incr(ctx context.Context, key string) *redis.IntCmd {
 	return client.Incr(ctx, key)
 }
 
+func Keys(ctx context.Context, pattern string) *redis.StringSliceCmd {
+	span, err := doTracing(ctx, spanTag{"cmd", "Keys"}, spanTag{"pattern", pattern})
+	if err == nil {
+		defer span.End(ctx)
+	}
+	return client.Keys(ctx, pattern)
+}
+
 func init() {
 	rand.Seed(time.Now().UnixNano())
 }

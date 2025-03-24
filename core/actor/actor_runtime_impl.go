@@ -71,7 +71,7 @@ func (a *Runtime) Init(ctx context.Context) {
 }
 
 func defaultRecovery(r interface{}) {
-	fmt.Printf("Recovered from panic: %v\nStack trace:\n%s\n", r, debug.Stack())
+	log.WarnF("[braid.actor] Recovered from panic: %v\nStack trace:\n%s\n", r, debug.Stack())
 }
 
 func (a *Runtime) Context() core.ActorContext {
@@ -303,9 +303,17 @@ func (a *Runtime) update() {
 			if atomic.LoadInt32(&a.closed) != 0 {
 				continue
 			}
-			if err := timerInfo.Execute(); err != nil {
-				log.WarnF("actor %v timer callback error: %v", a.Id, err)
-			}
+			func() {
+				defer func() {
+					if r := recover(); r != nil {
+						a.recovery(r)
+					}
+				}()
+
+				if err := timerInfo.Execute(); err != nil {
+					log.WarnF("actor %v timer callback error: %v", a.Id, err)
+				}
+			}()
 		case <-a.q.C:
 			msgInterface := a.q.Pop()
 
