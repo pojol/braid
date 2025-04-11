@@ -5,6 +5,7 @@ import (
 	"errors"
 	fmt "fmt"
 	"sync"
+	"time"
 
 	"github.com/opentracing/opentracing-go"
 	"github.com/pojol/braid/core"
@@ -33,6 +34,8 @@ type NormalSystem struct {
 	nodeIP   string
 	nodePort int
 
+	callTimeout time.Duration // sync call timeout
+
 	trac tracer.ITracer
 
 	sync.RWMutex
@@ -44,15 +47,16 @@ func buildSystemWithOption(nodId, nodeIp string, nodePort int, loader core.IActo
 	var err error
 
 	sys := &NormalSystem{
-		actoridmap: make(map[string]core.IActor),
-		nodeID:     nodId,
-		nodeIP:     nodeIp,
-		nodePort:   nodePort,
-		trac:       trac,
+		actoridmap:  make(map[string]core.IActor),
+		nodeID:      nodId,
+		nodeIP:      nodeIp,
+		nodePort:    nodePort,
+		trac:        trac,
+		callTimeout: time.Second * 5,
 	}
 
 	if loader == nil || factory == nil {
-		panic("[braid.system] loader or factory is nil!")
+		panic("braid.system loader or factory is nil!")
 	}
 
 	var unaryInterceptors []realgrpc.UnaryClientInterceptor
@@ -74,7 +78,7 @@ func buildSystemWithOption(nodId, nodeIp string, nodePort int, loader core.IActo
 	if sys.nodePort != 0 {
 		sys.acceptor, err = NewAcceptor(sys, sys.nodePort, trac)
 		if err != nil {
-			panic(fmt.Errorf("[braid.system] new acceptor err %v", err.Error()))
+			panic(fmt.Errorf("braid.system new acceptor err %v", err.Error()))
 		}
 
 		// run grpc acceptor
@@ -95,13 +99,13 @@ func (sys *NormalSystem) AddressBook() core.IAddressBook {
 func (sys *NormalSystem) Register(ctx context.Context, builder core.IActorBuilder) (core.IActor, error) {
 
 	if builder.GetID() == "" || builder.GetType() == "" {
-		return nil, fmt.Errorf("[braid.system] register actor id %v type %v parm err", builder.GetID(), builder.GetType())
+		return nil, fmt.Errorf("braid.system register actor id %v type %v parm err", builder.GetID(), builder.GetType())
 	}
 
 	sys.Lock()
 	if _, ok := sys.actoridmap[builder.GetID()]; ok {
 		sys.Unlock()
-		return nil, fmt.Errorf("[braid.system] register actor %v repeat", builder.GetID())
+		return nil, core.ErrActorRegisterRepeat
 	}
 	sys.Unlock()
 
@@ -120,7 +124,7 @@ func (sys *NormalSystem) Register(ctx context.Context, builder core.IActorBuilde
 			return nil, fmt.Errorf("[barid.system] get type count err %v", err)
 		}
 		if int(cnt) >= builder.GetGlobalQuantityLimit() {
-			return nil, fmt.Errorf("[braid.system] actor %v global quantity limit current count %v", builder.GetType(), cnt)
+			return nil, fmt.Errorf("braid.system actor %v global quantity limit current count %v", builder.GetType(), cnt)
 		}
 	}
 
@@ -136,20 +140,20 @@ func (sys *NormalSystem) Register(ctx context.Context, builder core.IActorBuilde
 		actor = builder.GetConstructor()(builder)
 		actor.Init(ctx)
 	} else {
-		panic(fmt.Errorf("[braid.system] actor %v register err, constructor is nil", builder.GetType()))
+		panic(fmt.Errorf("braid.system actor %v register err, constructor is nil", builder.GetType()))
 	}
 
 	sys.Lock()
 	sys.actoridmap[builder.GetID()] = actor
 	sys.Unlock()
 
-	log.InfoF("[braid.system] node %v register %v %v succ", sys.addressbook.NodeID, builder.GetType(), builder.GetID())
+	log.InfoF("braid.system node %v register %v %v succ", sys.addressbook.NodeID, builder.GetType(), builder.GetID())
 	return actor, nil
 }
 
 func (sys *NormalSystem) Unregister(id, ty string) error {
 	// First, check if the actor exists and get it
-	log.InfoF("[braid.system] unregister actor id %v node %v ty %v", id, sys.addressbook.NodeID, ty)
+	log.InfoF("braid.system unregister actor id %v node %v ty %v", id, sys.addressbook.NodeID, ty)
 
 	sys.RLock()
 	actor, exists := sys.actoridmap[id]
@@ -168,16 +172,16 @@ func (sys *NormalSystem) Unregister(id, ty string) error {
 	// Unregister from the address book
 	ac := sys.factory.Get(ty)
 	if ac == nil {
-		return fmt.Errorf("[braid.system] unregister actor id %v unknown type %v", id, ty)
+		return fmt.Errorf("braid.system unregister actor id %v unknown type %v", id, ty)
 	}
 
 	err := sys.addressbook.Unregister(context.TODO(), id, sys.factory.Get(ty).Weight)
 	if err != nil {
 		// Log the error, but don't return it as the actor has already been removed locally
-		log.WarnF("[braid.system] unregister actor id %s failed from address book err: %v", id, err)
+		log.WarnF("braid.system unregister actor id %s failed from address book err: %v", id, err)
 	}
 
-	log.InfoF("[braid.system] unregister actor id %s successfully", id)
+	log.InfoF("braid.system unregister actor id %s successfully", id)
 
 	return nil
 }
@@ -216,7 +220,7 @@ func (sys *NormalSystem) Call(idOrSymbol, actorType, event string, mw *msg.Wrapp
 	}
 
 	if idOrSymbol == "" {
-		return fmt.Errorf("[braid.system] call unknown target id")
+		return fmt.Errorf("braid.system call unknown target id")
 	}
 
 	switch idOrSymbol {
@@ -250,18 +254,18 @@ func (sys *NormalSystem) Call(idOrSymbol, actorType, event string, mw *msg.Wrapp
 
 		// If not local, get from addressbook
 		info, err = sys.addressbook.GetByID(mw.Ctx, idOrSymbol)
-
+		log.InfoF("braid.system id call %v is not local, get from addressbook ip %v port %v err %v", idOrSymbol, info.Ip, info.Port, err)
 	}
 
 	if err != nil {
-		return fmt.Errorf("[braid.system] call id %v ty %v err %w", idOrSymbol, actorType, err)
+		return fmt.Errorf("braid.system call id %v ty %v err %w", idOrSymbol, actorType, err)
 	}
 
 	if info.Ip == sys.nodeIP && info.Port == sys.nodePort {
 		if err := sys.addressbook.Unregister(mw.Ctx, info.ActorId, sys.factory.Get(actorType).Weight); err != nil {
-			log.WarnF("[braid.system] unregister stale actor record err actorTy %v actorID %v err %v", actorType, info.ActorId, err)
+			log.WarnF("braid.system unregister stale actor record err actorTy %v actorID %v err %v", actorType, info.ActorId, err)
 		}
-		log.WarnF("[braid.system] found inconsistent actor record actorTy %v actorID %v call ev %v, cleaned up", actorType, info.ActorId, event)
+		log.WarnF("braid.system found inconsistent actor record actorTy %v actorID %v call ev %v, cleaned up", actorType, info.ActorId, event)
 
 		return ErrSelfCall
 	}
@@ -272,13 +276,14 @@ func (sys *NormalSystem) Call(idOrSymbol, actorType, event string, mw *msg.Wrapp
 
 func (sys *NormalSystem) findLocalOrWildcardActor(ctx context.Context, ty string) (core.IActor, core.AddressInfo, error) {
 	sys.RLock()
-	defer sys.RUnlock()
 
 	for id, actor := range sys.actoridmap {
 		if actor.Type() == ty {
+			sys.RUnlock()
 			return actor, core.AddressInfo{ActorId: id, ActorTy: ty}, nil
 		}
 	}
+	sys.RUnlock()
 
 	// If not found locally, use GetWildcardActor to perform a random search across the cluster
 	info, err := sys.addressbook.GetWildcardActor(ctx, ty)
@@ -289,11 +294,29 @@ func (sys *NormalSystem) localCall(actorp core.IActor, mw *msg.Wrapper) error {
 
 	root := mw.GetWg().Count() == 0
 	if root {
+		log.InfoF("braid.system local call root event %v id %v", mw.Req.Header.Event, mw.Req.Header.TargetActorID)
 		mw.Done = make(chan struct{})
 		ready := make(chan struct{})
 		go func() {
 			<-ready // Wait for Received to complete
-			mw.GetWg().Wait()
+
+			waitCh := make(chan struct{})
+			go func() {
+				mw.GetWg().Wait()
+				close(waitCh)
+			}()
+
+			select {
+			case <-waitCh:
+				// 正常完成
+			case <-time.After(sys.callTimeout):
+				log.WarnF("braid.system wait timeout for event %v id %v, remaining tasks: %d",
+					mw.Req.Header.Event, mw.Req.Header.TargetActorID, mw.GetWg().Count())
+				if mw.Err == nil {
+					mw.Err = fmt.Errorf("braid.system wait timeout, some tasks did not complete")
+				}
+			}
+
 			close(mw.Done)
 		}()
 
@@ -307,7 +330,7 @@ func (sys *NormalSystem) localCall(actorp core.IActor, mw *msg.Wrapper) error {
 		case <-mw.Done:
 			return nil
 		case <-mw.Ctx.Done():
-			timeoutErr := fmt.Errorf("[braid.system] actor %v message %v processing timed out",
+			timeoutErr := fmt.Errorf("braid actor %v message %v processing timed out",
 				mw.Req.Header.TargetActorID, mw.Req.Header.Event)
 			if mw.Err != nil {
 				timeoutErr = fmt.Errorf("%w: %v", mw.Err, timeoutErr)
@@ -316,6 +339,7 @@ func (sys *NormalSystem) localCall(actorp core.IActor, mw *msg.Wrapper) error {
 			return timeoutErr
 		}
 	} else {
+		log.InfoF("braid.system local call received event %v id %v", mw.Req.Header.Event, mw.Req.Header.TargetActorID)
 		return actorp.Received(mw)
 	}
 }
@@ -362,7 +386,7 @@ func (sys *NormalSystem) Send(idOrSymbol, actorType, event string, mw *msg.Wrapp
 	}
 
 	if idOrSymbol == "" {
-		return fmt.Errorf("[braid.system] send unknown target id")
+		return fmt.Errorf("braid.system send unknown target id")
 	}
 
 	switch idOrSymbol {
@@ -398,14 +422,14 @@ func (sys *NormalSystem) Send(idOrSymbol, actorType, event string, mw *msg.Wrapp
 	}
 
 	if err != nil {
-		return fmt.Errorf("[braid.system] send id %v ty %v err %w", idOrSymbol, actorType, err)
+		return fmt.Errorf("braid.system send id %v ty %v err %w", idOrSymbol, actorType, err)
 	}
 
 	if info.Ip == sys.nodeIP && info.Port == sys.nodePort {
 		if err := sys.addressbook.Unregister(mw.Ctx, info.ActorId, sys.factory.Get(actorType).Weight); err != nil {
-			log.WarnF("[braid.system] unregister stale actor record err actorTy %v actorID %v err %v", actorType, info.ActorId, err)
+			log.WarnF("braid.system unregister stale actor record err actorTy %v actorID %v err %v", actorType, info.ActorId, err)
 		}
-		log.WarnF("[braid.system] found inconsistent actor record actorTy %v actorID %v call ev %v, cleaned up", actorType, info.ActorId, event)
+		log.WarnF("braid.system found inconsistent actor record actorTy %v actorID %v call ev %v, cleaned up", actorType, info.ActorId, event)
 		return ErrSelfCall
 	}
 
@@ -437,7 +461,7 @@ func (sys *NormalSystem) FindActor(ctx context.Context, id string) (core.IActor,
 		return actorp, nil
 	}
 
-	return nil, fmt.Errorf("[braid.system] find actor %v err", id)
+	return nil, fmt.Errorf("braid.system find actor %v err", id)
 }
 
 func (sys *NormalSystem) Exit(wait *sync.WaitGroup) {
@@ -445,7 +469,7 @@ func (sys *NormalSystem) Exit(wait *sync.WaitGroup) {
 		wait.Add(1)
 		if sys.acceptor != nil {
 			sys.acceptor.Exit()
-			log.InfoF("[braid.system] acceptor exit")
+			log.InfoF("braid.system acceptor exit")
 		}
 		wait.Done()
 	}
@@ -456,7 +480,7 @@ func (sys *NormalSystem) Exit(wait *sync.WaitGroup) {
 		go func(a core.IActor) {
 			defer wait.Done()
 			a.Exit()
-			log.InfoF("[braid.system] actor exit %v", a.ID())
+			log.InfoF("braid.system actor exit %v", a.ID())
 		}(actor)
 	}
 
@@ -464,5 +488,5 @@ func (sys *NormalSystem) Exit(wait *sync.WaitGroup) {
 	if err != nil {
 		log.WarnF("[braid.addressbook] clear err %v", err.Error())
 	}
-	log.InfoF("[braid.system] addressbook exit")
+	log.InfoF("braid.system addressbook exit")
 }

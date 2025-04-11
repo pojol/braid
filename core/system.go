@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"errors"
 	"sync"
 
 	"github.com/pojol/braid/lib/pubsub"
@@ -9,6 +10,8 @@ import (
 )
 
 type CreateFunc func(IActorBuilder) IActor
+
+var ErrActorRegisterRepeat = errors.New("[braid.system] register actor repeat")
 
 type ISystem interface {
 	Register(context.Context, IActorBuilder) (IActor, error)

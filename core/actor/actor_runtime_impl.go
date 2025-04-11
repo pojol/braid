@@ -117,7 +117,6 @@ func (a *Runtime) OnTimer(dueTime int64, interval int64, f func(interface{}) err
 			case <-info.ticker.C:
 				a.timerChan <- info
 			case <-a.shutdownCh:
-				log.InfoF("[braid.timer] shutdown ch")
 				return
 			}
 		}
@@ -178,10 +177,14 @@ func (a *Runtime) Received(mw *msg.Wrapper) error {
 		}
 	}
 
-	mw.GetWg().Add(1)
-	if atomic.LoadInt32(&a.closed) == 0 { // 并不是所有的actor都需要处理退出信号
-		a.q.Push(mw)
+	if atomic.LoadInt32(&a.closed) != 0 {
+		// Actor已关闭，不处理消息，也不增加计数器
+		log.WarnF("actor %v is closed, message %v will be ignored", a.Id, mw.Req.Header.Event)
+		return fmt.Errorf("actor %v is closed", a.Id)
 	}
+
+	mw.GetWg().Add(1)
+	a.q.Push(mw)
 
 	return nil
 }
