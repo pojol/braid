@@ -2,6 +2,7 @@ package actor
 
 import (
 	"context"
+	"sync"
 
 	"github.com/pojol/braid/core"
 )
@@ -11,6 +12,8 @@ type ActorLoaderBuilder struct {
 	core.ISystem
 	core.ActorConstructor
 	core.IActorLoader
+
+	optionsMutex sync.RWMutex
 }
 
 func (p *ActorLoaderBuilder) WithID(id string) core.IActorBuilder {
@@ -27,7 +30,9 @@ func (p *ActorLoaderBuilder) WithType(ty string) core.IActorBuilder {
 }
 
 func (p *ActorLoaderBuilder) WithOpt(key string, value string) core.IActorBuilder {
+	p.optionsMutex.Lock()
 	p.Options[key] = value
+	p.optionsMutex.Unlock()
 	return p
 }
 
@@ -52,10 +57,14 @@ func (p *ActorLoaderBuilder) GetNodeUnique() bool {
 }
 
 func (p *ActorLoaderBuilder) GetOptions() map[string]string {
+	p.optionsMutex.RLock()
+	defer p.optionsMutex.RUnlock()
 	return p.Options
 }
 
 func (p *ActorLoaderBuilder) GetOpt(key string) string {
+	p.optionsMutex.RLock()
+	defer p.optionsMutex.RUnlock()
 	return p.Options[key]
 }
 
