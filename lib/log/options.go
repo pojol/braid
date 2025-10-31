@@ -13,7 +13,7 @@ import (
 const (
 	DefaultMaxSize         = 1024
 	DefaultMaxAge          = 7
-	DefaultMaxBackups      = 30
+	DefaultMaxBackups      = 15
 	DefaultCompress        = false
 	DefaultOutStd          = false
 	DefaultTimestampFormat = "2006-01-02 15:04:05.000"

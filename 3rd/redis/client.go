@@ -418,6 +418,14 @@ func LRange(ctx context.Context, key string, start, stop int64) *redis.StringSli
 	return client.LRange(ctx, key, start, stop)
 }
 
+func LLen(ctx context.Context, key string) *redis.IntCmd {
+	span, err := doTracing(ctx, spanTag{"cmd", "LLen"}, spanTag{"key", key})
+	if err == nil {
+		defer span.End(ctx)
+	}
+	return client.LLen(ctx, key)
+}
+
 func Expire(ctx context.Context, key string, expiration time.Duration) *redis.BoolCmd {
 	span, err := doTracing(ctx, spanTag{"cmd", "Expire"}, spanTag{"key", key})
 	if err == nil {

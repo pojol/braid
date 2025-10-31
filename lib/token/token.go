@@ -2,6 +2,7 @@ package token
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/golang-jwt/jwt"
 )
@@ -11,7 +12,8 @@ var (
 )
 
 type Claims struct {
-	EntityID string
+	EntityID   string
+	CreateTime int64
 }
 
 func (c Claims) Valid() error {
@@ -33,7 +35,8 @@ func Create(entityID string) (string, error) {
 	}
 
 	claims := Claims{
-		EntityID: entityID,
+		EntityID:   entityID,
+		CreateTime: time.Now().Unix(),
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -45,14 +48,14 @@ func Create(entityID string) (string, error) {
 }
 
 // TokenParse - 从被包装过的 token 中获取 entityID
-func Parse(token string) (string, error) {
+func Parse(token string) (string, int64, error) {
 	c := &Claims{}
 	_, err := jwt.ParseWithClaims(token, c, func(*jwt.Token) (interface{}, error) {
 		return makeTokenKey(), nil
 	})
 
 	if err != nil {
-		return "", fmt.Errorf("jwt.Parse %v error:%v", token, err)
+		return "", 0, fmt.Errorf("jwt.Parse %v error:%v", token, err)
 	}
-	return c.EntityID, nil
+	return c.EntityID, c.CreateTime, nil
 }

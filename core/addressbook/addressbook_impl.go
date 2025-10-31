@@ -188,7 +188,7 @@ const (
 )
 
 // GetWildcardActor retrieves a random actor address of the specified actorType
-func (ab *AddressBook) GetWildcardActor(ctx context.Context, actorType string) (core.AddressInfo, error) {
+func (ab *AddressBook) GetWildcardActor(ctx context.Context, nodeID string, actorType string) (core.AddressInfo, error) {
 	key := fmt.Sprintf(def.RedisAddressbookTyField+"%s", actorType)
 
 	// get a random one
@@ -215,10 +215,15 @@ func (ab *AddressBook) GetWildcardActor(ctx context.Context, actorType string) (
 			continue // continue to next address
 		}
 
+		//if addr.Node == self // 优先返回当前进程的
+		if addr.Node == nodeID {
+			return addr, nil
+		}
+
 		// get the weight of the node where the actor is located
 		nodeWeight, err := trdredis.HGet(ctx, makeNodeKey(addr.Node), "total_weight").Int()
 		if err != nil {
-			fmt.Println("skip this actor if unable to get node weight")
+			log.WarnF("skip this actor if unable to get node weight")
 			continue // skip this actor if unable to get node weight
 		}
 

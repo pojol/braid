@@ -225,7 +225,7 @@ func (sys *NormalSystem) Call(idOrSymbol, actorType, event string, mw *msg.Wrapp
 
 	switch idOrSymbol {
 	case def.SymbolWildcard:
-		info, err = sys.addressbook.GetWildcardActor(mw.Ctx, actorType)
+		info, err = sys.addressbook.GetWildcardActor(mw.Ctx, sys.nodeID, actorType)
 		// Check if the wildcard actor is local
 		sys.RLock()
 		actor, ok := sys.actoridmap[info.ActorId]
@@ -286,7 +286,7 @@ func (sys *NormalSystem) findLocalOrWildcardActor(ctx context.Context, ty string
 	sys.RUnlock()
 
 	// If not found locally, use GetWildcardActor to perform a random search across the cluster
-	info, err := sys.addressbook.GetWildcardActor(ctx, ty)
+	info, err := sys.addressbook.GetWildcardActor(ctx, sys.nodeID, ty)
 	return nil, info, err
 }
 
@@ -294,7 +294,7 @@ func (sys *NormalSystem) localCall(actorp core.IActor, mw *msg.Wrapper) error {
 
 	root := mw.GetWg().Count() == 0
 	if root {
-		log.InfoF("braid.system local call root event %v id %v", mw.Req.Header.Event, mw.Req.Header.TargetActorID)
+		log.DebugF("braid.system local call root event %v id %v", mw.Req.Header.Event, mw.Req.Header.TargetActorID)
 		mw.Done = make(chan struct{})
 		ready := make(chan struct{})
 		go func() {
@@ -339,7 +339,7 @@ func (sys *NormalSystem) localCall(actorp core.IActor, mw *msg.Wrapper) error {
 			return timeoutErr
 		}
 	} else {
-		log.InfoF("braid.system local call received event %v id %v", mw.Req.Header.Event, mw.Req.Header.TargetActorID)
+		log.DebugF("braid.system local call received event %v id %v", mw.Req.Header.Event, mw.Req.Header.TargetActorID)
 		return actorp.Received(mw)
 	}
 }
@@ -391,7 +391,7 @@ func (sys *NormalSystem) Send(idOrSymbol, actorType, event string, mw *msg.Wrapp
 
 	switch idOrSymbol {
 	case def.SymbolWildcard:
-		info, err = sys.addressbook.GetWildcardActor(mw.Ctx, actorType)
+		info, err = sys.addressbook.GetWildcardActor(mw.Ctx, sys.nodeID, actorType)
 		// Check if the wildcard actor is local
 		sys.RLock()
 		actor, ok := sys.actoridmap[info.ActorId]

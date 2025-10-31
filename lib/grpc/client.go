@@ -172,7 +172,14 @@ func (c *Client) Call(ctx context.Context, addr, method string, args interface{}
 
 	conn, err := c.getConn(addr)
 	if err != nil {
-		return fmt.Errorf("[braid.client] failed to get connection: %w", err)
+		// try create
+		conn, err = c.newconn(addr)
+		if err != nil {
+			fmt.Printf("[braid.client] client get conn warning %s", err.Error())
+			return err
+		}
+
+		c.connmap.Store(addr, conn)
 	}
 
 	grpcopts := make([]grpc.CallOption, 0, len(opts))

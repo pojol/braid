@@ -2,6 +2,7 @@ package token
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -12,8 +13,9 @@ func TestToken(t *testing.T) {
 	token, err := Create(entityid)
 	assert.Equal(t, err, nil)
 
-	eid, err := Parse(token)
+	eid, ctime, err := Parse(token)
 	assert.Equal(t, err, nil)
 	assert.Equal(t, eid, entityid)
+	assert.Equal(t, ctime, time.Now().Unix())
 
 }

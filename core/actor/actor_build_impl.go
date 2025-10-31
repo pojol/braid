@@ -31,8 +31,13 @@ func (p *ActorLoaderBuilder) WithType(ty string) core.IActorBuilder {
 
 func (p *ActorLoaderBuilder) WithOpt(key string, value string) core.IActorBuilder {
 	p.optionsMutex.Lock()
+	defer p.optionsMutex.Unlock()
+
+	if p.Options == nil {
+		p.Options = make(map[string]string)
+	}
+
 	p.Options[key] = value
-	p.optionsMutex.Unlock()
 	return p
 }
 
