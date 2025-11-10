@@ -106,7 +106,7 @@ func (s *listen) Routing(ctx context.Context, req *router.RouteReq) (*router.Rou
 		req.Msg.Header.Event, routermsg)
 
 	if err != nil {
-		log.InfoF("listen routing %v err %v", req.Msg.Header.Event, err.Error())
+		log.WarnF("listen routing %v err %v", req.Msg.Header.Event, err.Error())
 	}
 
 	res.Msg = routermsg.Res
