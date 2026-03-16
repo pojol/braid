@@ -206,6 +206,14 @@ func ZAdd(ctx context.Context, key string, members ...redis.Z) *redis.IntCmd {
 	return client.ZAdd(ctx, key, members...)
 }
 
+func ZRevRangeByScore(ctx context.Context, key string, opt *redis.ZRangeBy) *redis.StringSliceCmd {
+	span, err := doTracing(ctx, spanTag{"cmd", "ZRevRangeByScore"}, spanTag{"key", key})
+	if err == nil {
+		defer span.End(ctx)
+	}
+	return client.ZRevRangeByScore(ctx, key, opt)
+}
+
 func ZRevRank(ctx context.Context, key, member string) *redis.IntCmd {
 	span, err := doTracing(ctx, spanTag{"cmd", "ZRevRank"}, spanTag{"key", key})
 	if err == nil {
@@ -254,6 +262,15 @@ func HGet(ctx context.Context, key, field string) *redis.StringCmd {
 		defer span.End(ctx)
 	}
 	return client.HGet(ctx, key, field)
+}
+
+func HMGet(ctx context.Context, key string, fields ...string) *redis.SliceCmd {
+	span, err := doTracing(ctx, spanTag{"cmd", "HMGet"}, spanTag{"key", key})
+	if err == nil {
+		defer span.End(ctx)
+	}
+
+	return client.HMGet(ctx, key, fields...)
 }
 
 func HGetAll(ctx context.Context, key string) *redis.MapStringStringCmd {
@@ -484,6 +501,14 @@ func Keys(ctx context.Context, pattern string) *redis.StringSliceCmd {
 		defer span.End(ctx)
 	}
 	return client.Keys(ctx, pattern)
+}
+
+func Scan(ctx context.Context, cursor uint64, pattern string, count int64) *redis.ScanCmd {
+	span, err := doTracing(ctx, spanTag{"cmd", "Scan"}, spanTag{"pattern", pattern})
+	if err == nil {
+		defer span.End(ctx)
+	}
+	return client.Scan(ctx, cursor, pattern, count)
 }
 
 func init() {
